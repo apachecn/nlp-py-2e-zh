@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="building-feature-based-grammars"><h1 class="title"><font id="1">9. </font><font id="2">构建基于特征的语法</font></h1>
+<p><font id="3">自然语言具有范围广泛的语法结构，用<a class="reference external" href="./ch08.html#chap-parse">8.</a>中所描述的简单的方法很难处理的如此广泛的语法结构。</font><font id="4">为了获得更大的灵活性，我们改变我们对待语法类别如<tt class="doctest"><span class="pre">S</span></tt>、<tt class="doctest"><span class="pre">NP</span></tt>和<tt class="doctest"><span class="pre">V</span></tt>的方式。我们将这些原子标签分解为类似字典的结构，其特征可以为一个范围的值。</font></p>
+<p><font id="5">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="6">我们怎样用特征扩展上下文无关语法框架，以获得更细粒度的对语法类别和产生式的控制？</font></li>
+<li><font id="7">特征结构的主要形式化属性是什么，我们如何使用它们来计算？</font></li>
+<li><font id="8">我们现在用基于特征的语法能捕捉到什么语言模式和语法结构？</font></li>
+</ol>
+<p><font id="9">一路上，我们将介绍更多的英语句法主题，包括约定、子类别和无限制依赖成分等现象。</font></p>
+<div class="section" id="grammatical-features"><h2 class="sigil_not_in_toc"><font id="10">1 语法特征</font></h2>
+<p><font id="11">在<a class="reference external" href="./ch06.html#chap-data-intensive">chap-data-intensive</a>中，我们描述了如何建立基于检测文本特征的分类器。</font><font id="12">那些特征可能非常简单，如提取一个单词的最后一个字母，或者更复杂一点儿，如分类器自己预测的词性标签。</font><font id="13">在本章中，我们将探讨特征在建立基于规则的语法中的作用。</font><font id="14">对比特征提取，记录已经自动检测到的特征，我们现在要<em>声明</em>词和短语的特征。</font><font id="15">我们以一个很简单的例子开始，使用字典存储特征和它们的值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>kim = {<span class="pysrc-string">'CAT'</span>: <span class="pysrc-string">'NP'</span>, <span class="pysrc-string">'ORTH'</span>: <span class="pysrc-string">'Kim'</span>, <span class="pysrc-string">'REF'</span>: <span class="pysrc-string">'k'</span>}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chase = {<span class="pysrc-string">'CAT'</span>: <span class="pysrc-string">'V'</span>, <span class="pysrc-string">'ORTH'</span>: <span class="pysrc-string">'chased'</span>, <span class="pysrc-string">'REL'</span>: <span class="pysrc-string">'chase'</span>}</pre>
+<p><font id="16">对象<tt class="doctest"><span class="pre">kim</span></tt>和<tt class="doctest"><span class="pre">chase</span></tt>有几个共同的特征，<tt class="doctest"><span class="pre">CAT</span></tt>（语法类别）和<tt class="doctest"><span class="pre">ORTH</span></tt>（正字法，即拼写）。</font><font id="17">此外，每一个还有更面向语义的特征：<tt class="doctest"><span class="pre">kim[<span class="pysrc-string">'REF'</span>]</span></tt>意在给出<tt class="doctest"><span class="pre">kim</span></tt>的指示物，而<tt class="doctest"><span class="pre">chase[<span class="pysrc-string">'REL'</span>]</span></tt>给出<tt class="doctest"><span class="pre">chase</span></tt>表示的关系。</font><font id="18">在基于规则的语法上下文中，这样的特征和特征值对被称为<span class="termdef">特征结构</span>，我们将很快看到它们的替代符号。</font></p>
+<p><font id="19">特征结构包含各种有关语法实体的信息。</font><font id="20">这些信息不需要详尽无遗，我们可能要进一步增加属性。</font><font id="21">例如，对于一个动词，根据动词的参数知道它扮演的“语义角色”往往很有用。</font><font id="22">对于<span class="example">chase</span>，主语扮演“施事”的角色，而宾语扮演“受事”角色。</font><font id="23">让我们添加这些信息，使用<tt class="doctest"><span class="pre"><span class="pysrc-string">'sbj'</span></span></tt>和<tt class="doctest"><span class="pre"><span class="pysrc-string">'obj'</span></span></tt>作为占位符，它会被填充，当动词和它的语法参数结合时：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>chase[<span class="pysrc-string">'AGT'</span>] = <span class="pysrc-string">'sbj'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chase[<span class="pysrc-string">'PAT'</span>] = <span class="pysrc-string">'obj'</span></pre>
+<p><font id="24">如果我们现在处理句子<cite>Kim chased Lee</cite>，我们要“绑定”动词的施事角色和主语，受事角色和宾语。</font><font id="25">我们可以通过链接到相关的<tt class="doctest"><span class="pre">NP</span></tt>的<tt class="doctest"><span class="pre">REF</span></tt>特征做到这个。</font><font id="26">在下面的例子中，我们做一个简单的假设：在动词直接左侧和右侧的<tt class="doctest"><span class="pre">NP</span></tt>分别是主语和宾语。</font><font id="27">我们还在例子结尾为<span class="example">Lee</span>添加了一个特征结构。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">"Kim chased Lee"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = sent.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>lee = {<span class="pysrc-string">'CAT'</span>: <span class="pysrc-string">'NP'</span>, <span class="pysrc-string">'ORTH'</span>: <span class="pysrc-string">'Lee'</span>, <span class="pysrc-string">'REF'</span>: <span class="pysrc-string">'l'</span>}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">lex2fs</span>(word):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> fs <span class="pysrc-keyword">in</span> [kim, lee, chase]:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> fs[<span class="pysrc-string">'ORTH'</span>] == word:
+<span class="pysrc-more">... </span>            return fs
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>subj, verb, obj = lex2fs(tokens[0]), lex2fs(tokens[1]), lex2fs(tokens[2])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>verb[<span class="pysrc-string">'AGT'</span>] = subj[<span class="pysrc-string">'REF'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>verb[<span class="pysrc-string">'PAT'</span>] = obj[<span class="pysrc-string">'REF'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> k <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'ORTH'</span>, <span class="pysrc-string">'REL'</span>, <span class="pysrc-string">'AGT'</span>, <span class="pysrc-string">'PAT'</span>]:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"%-5s =&gt; %s"</span> % (k, verb[k]))
+<span class="pysrc-output">ORTH  =&gt; chased</span>
+<span class="pysrc-output">REL   =&gt; chase</span>
+<span class="pysrc-output">AGT   =&gt; k</span>
+<span class="pysrc-output">PAT   =&gt; l</span></pre>
+<p><font id="28">同样的方法可以适用不同的动词，例如<span class="example">surprise</span>，虽然在这种情况下，主语将扮演“源事”（<tt class="doctest"><span class="pre">SRC</span></tt>）的角色，宾语扮演“体验者”（<tt class="doctest"><span class="pre">EXP</span></tt>）的角色：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>surprise = {<span class="pysrc-string">'CAT'</span>: <span class="pysrc-string">'V'</span>, <span class="pysrc-string">'ORTH'</span>: <span class="pysrc-string">'surprised'</span>, <span class="pysrc-string">'REL'</span>: <span class="pysrc-string">'surprise'</span>,
+<span class="pysrc-more">... </span>            <span class="pysrc-string">'SRC'</span>: <span class="pysrc-string">'sbj'</span>, <span class="pysrc-string">'EXP'</span>: <span class="pysrc-string">'obj'</span>}</pre>
+<p><font id="29">特征结构是非常强大的，但我们操纵它们的方式是极其<em>ad hoc</em>。</font><font id="30">我们本章接下来的任务是，显示上下文无关语法和分析如何能扩展到合适的特征结构，使我们可以一种更通用的和有原则的方式建立像这样的分析。</font><font id="31">我们将通过查看句法协议的现象作为开始；我们将展示如何使用特征典雅的表示协议约束，并在一个简单的语法中说明它们的用法。</font></p>
+<p><font id="32">由于特征结构是表示任何形式的信息的通用的数据结构，我们将从更形式化的视点简要地看着它们，并演示NLTK提供的特征结构的支持。</font><font id="33">在本章的最后一部分，我们将表明，特征的额外表现力开辟了一个用于描述语言结构的复杂性的广泛的可能性。</font></p>
+<div class="section" id="syntactic-agreement"><h2 class="sigil_not_in_toc"><font id="34">1.1 句法协议</font></h2>
+<p><font id="35">下面的例子展示词序列对，其中第一个是符合语法的而第二个不是。</font><font id="36">（我们在词序列的开头用星号表示它是不符合语法的。）</font></p>
+<p></p>
+<pre class="literal-block">S   -&gt;   NP VP
+NP  -&gt;   Det N
+VP  -&gt;   V
+
+Det  -&gt;  'this'
+N    -&gt;  'dog'
+V    -&gt;  'runs'
+</pre>
+<div class="section" id="using-attributes-and-constraints"><h2 class="sigil_not_in_toc"><font id="97">1.2 使用属性和约束</font></h2>
+<p><font id="98">我们说过非正式的语言类别具有<em>属性</em>；例如，名词具有复数的属性。</font><font id="99">让我们把这个弄的更明确：</font></p>
+<p></p>
+<pre class="literal-block">N[NUM=pl]
+</pre>
+<p><font id="139">注意一个句法类别可以有多个特征，例如<tt class="doctest"><span class="pre">V[TENSE=pres, NUM=pl]</span></tt>。</font><font id="140">在一般情况下，我们喜欢多少特征就可以添加多少。</font></p>
+<p><font id="141">关于<a class="reference internal" href="./ch09.html#code-feat0cfg">1.1</a>的最后的细节是语句<tt class="doctest"><span class="pre">%start S</span></tt>。这个“指令”告诉分析器以<tt class="doctest"><span class="pre">S</span></tt>作为文法的开始符号。</font></p>
+<p><font id="142">一般情况下，即使我们正在尝试开发很小的语法，把产生式放在一个文件中我们可以编辑、测试和修改是很方便的。</font><font id="143">我们将<a class="reference internal" href="./ch09.html#code-feat0cfg">1.1</a>以NLTK 的数据格式保存为文件<tt class="doctest"><span class="pre"><span class="pysrc-string">'feat0.fcfg'</span></span></tt>。</font><font id="144">你可以使用<tt class="doctest"><span class="pre">nltk.data.load()</span></tt>制作你自己的副本进行进一步的实验。</font></p>
+<p><font id="145"><a class="reference internal" href="./ch09.html#code-featurecharttrace">1.2</a> 说明了基于特征的语法图表解析的操作。</font><font id="146">为输入分词之后，我们导入<tt class="doctest"><span class="pre">load_parser</span></tt>函数<a class="reference internal" href="./ch09.html#load_parser1"><span id="ref-load_parser1"><img alt="[1]" class="callout" src="Images/77460905bcad52d84e324fc4821ed903.jpg"/></span></a>，以语法文件名为输入，返回一个图表分析器<tt class="doctest"><span class="pre">cp</span></tt> <a class="reference internal" href="./ch09.html#load_parser2"><span id="ref-load_parser2"><img alt="[2]" class="callout" src="Images/07e7d99633e4a107388f7202380cce55.jpg"/></span></a>。</font><font id="147">调用分析器的<tt class="doctest"><span class="pre">parse()</span></tt>方法将迭代生成的分析树；如果文法无法分析输入，<tt class="doctest"><span class="pre">trees</span></tt>将为空，并将会包含一个或多个分析树，取决于输入是否有句法歧义。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'Kim likes children'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk <span class="pysrc-keyword">import</span> load_parser <a href="./ch09.html#ref-load_parser1"><img alt="[1]" class="callout" src="Images/77460905bcad52d84e324fc4821ed903.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/feat0.fcfg'</span>, trace=2)  <a href="./ch09.html#ref-load_parser2"><img alt="[2]" class="callout" src="Images/07e7d99633e4a107388f7202380cce55.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-more">...</span>
+|.Kim .like.chil.|
+Leaf Init Rule:
+|[----]    .    .| [0:1] <span class="pysrc-string">'Kim'</span>
+|.    [----]    .| [1:2] <span class="pysrc-string">'likes'</span>
+|.    .    [----]| [2:3] <span class="pysrc-string">'children'</span>
+Feature Bottom Up Predict Combine Rule:
+|[----]    .    .| [0:1] PropN[NUM=<span class="pysrc-string">'sg'</span>] -&gt; <span class="pysrc-string">'Kim'</span> *
+Feature Bottom Up Predict Combine Rule:
+|[----]    .    .| [0:1] NP[NUM=<span class="pysrc-string">'sg'</span>] -&gt; PropN[NUM=<span class="pysrc-string">'sg'</span>] *
+Feature Bottom Up Predict Combine Rule:
+|[----&gt;    .    .| [0:1] S[] -&gt; NP[NUM=?n] * VP[NUM=?n] {?n: <span class="pysrc-string">'sg'</span>}
+Feature Bottom Up Predict Combine Rule:
+|.    [----]    .| [1:2] TV[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] -&gt; <span class="pysrc-string">'likes'</span> *
+Feature Bottom Up Predict Combine Rule:
+|.    [----&gt;    .| [1:2] VP[NUM=?n, TENSE=?t] -&gt; TV[NUM=?n, TENSE=?t] * NP[] {?n: <span class="pysrc-string">'sg'</span>, ?t: <span class="pysrc-string">'pres'</span>}
+Feature Bottom Up Predict Combine Rule:
+|.    .    [----]| [2:3] N[NUM=<span class="pysrc-string">'pl'</span>] -&gt; <span class="pysrc-string">'children'</span> *
+Feature Bottom Up Predict Combine Rule:
+|.    .    [----]| [2:3] NP[NUM=<span class="pysrc-string">'pl'</span>] -&gt; N[NUM=<span class="pysrc-string">'pl'</span>] *
+Feature Bottom Up Predict Combine Rule:
+|.    .    [----&gt;| [2:3] S[] -&gt; NP[NUM=?n] * VP[NUM=?n] {?n: <span class="pysrc-string">'pl'</span>}
+Feature Single Edge Fundamental Rule:
+|.    [---------]| [1:3] VP[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] -&gt; TV[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] NP[] *
+Feature Single Edge Fundamental Rule:
+|[==============]| [0:3] S[] -&gt; NP[NUM=<span class="pysrc-string">'sg'</span>] VP[NUM=<span class="pysrc-string">'sg'</span>] *
+(S[]
+  (NP[NUM=<span class="pysrc-string">'sg'</span>] (PropN[NUM=<span class="pysrc-string">'sg'</span>] Kim))
+  (VP[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>]
+    (TV[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] likes)
+    (NP[NUM=<span class="pysrc-string">'pl'</span>] (N[NUM=<span class="pysrc-string">'pl'</span>] children))))</pre>
+<p><font id="149">分析过程中的细节对于当前的目标并不重要。</font><font id="150">然而，有一个实施上的问题与我们前面的讨论语法的大小有关。</font><font id="151">分析包含特征限制的产生式的一种可行的方法是编译出问题中特征的所有可接受的值，是我们最终得到一个大的完全指定的<a class="reference internal" href="./ch09.html#ex-agcfg1">(6)</a>中那样的CFG。</font><font id="152">相比之下，前面例子中显示的分析器过程直接与给定语法的未指定的产生式一起运作。</font><font id="153">特征值从词汇条目“向上流动”，变量值于是通过如<tt class="doctest"><span class="pre">{?n: <span class="pysrc-string">'sg'</span>, ?t: <span class="pysrc-string">'pres'</span>}</span></tt>这样的绑定（即字典）与那些值关联起来。</font><font id="154">当分析器装配有关它正在建立的树的节点的信息时，这些变量绑定被用来实例化这些节点中的值；从而通过查找绑定中<tt class="doctest"><span class="pre">?n</span></tt>和<tt class="doctest"><span class="pre">?t</span></tt>的值，未指定的<tt class="doctest"><span class="pre">VP[NUM=?n, TENSE=?t] -&gt; TV[NUM=?n, TENSE=?t] NP[]</span></tt>实例化为<tt class="doctest"><span class="pre">VP[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] -&gt; TV[NUM=<span class="pysrc-string">'sg'</span>, TENSE=<span class="pysrc-string">'pres'</span>] NP[]</span></tt>。</font></p>
+<p><font id="155">最后，我们可以检查生成的分析树（在这种情况下，只有一个）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> trees: <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S[]</span>
+<span class="pysrc-output">  (NP[NUM='sg'] (PropN[NUM='sg'] Kim))</span>
+<span class="pysrc-output">  (VP[NUM='sg', TENSE='pres']</span>
+<span class="pysrc-output">    (TV[NUM='sg', TENSE='pres'] likes)</span>
+<span class="pysrc-output">    (NP[NUM='pl'] (N[NUM='pl'] children))))</span></pre>
+
+<div class="section" id="terminology"><h2 class="sigil_not_in_toc"><font id="156">1.3 术语</font></h2>
+<p><font id="157">到目前为止，我们只看到像<tt class="doctest"><span class="pre">sg</span></tt>和<tt class="doctest"><span class="pre">pl</span></tt>这样的特征值。</font><font id="158">这些简单的值通常被称为<span class="termdef">原子</span>——也就是，它们不能被分解成更小的部分。</font><font id="159">原子值的一种特殊情况是<span class="termdef">布尔值</span>，也就是说，值仅仅指定一个属性是真还是假。</font><font id="160">例如，我们可能要用布尔特征<tt class="doctest"><span class="pre">AUX</span></tt>区分<span class="termdef">助</span>动词，如<span class="example">can</span>，<span class="example">may</span>，<span class="example">will</span>和<span class="example">do</span>。</font><font id="161">例如，产生式<tt class="doctest"><span class="pre">V[TENSE=pres, AUX=+] -&gt; <span class="pysrc-string">'can'</span></span></tt>意味着<span class="example">can</span>接受<tt class="doctest"><span class="pre">TENSE</span></tt>的值为<tt class="doctest"><span class="pre">pres</span></tt>，并且<tt class="doctest"><span class="pre">AUX</span></tt>的值为<tt class="doctest"><span class="pre">+</span></tt>或<tt class="doctest"><span class="pre">true</span></tt>。</font><font id="162">有一个广泛采用的约定用缩写表示布尔特征<tt class="doctest"><span class="pre">f</span></tt>；不用<tt class="doctest"><span class="pre">AUX=+</span></tt>或<tt class="doctest"><span class="pre">AUX=-</span></tt>，我们分别用<tt class="doctest"><span class="pre">+AUX</span></tt>和<tt class="doctest"><span class="pre">-AUX</span></tt>。</font><font id="163">这些都是缩写，然而，分析器就像<tt class="doctest"><span class="pre">+</span></tt>和<tt class="doctest"><span class="pre">-</span></tt>是其他原子值一样解释它们。</font><font id="164"><a class="reference internal" href="./ch09.html#ex-lex">(15)</a>显示了一些有代表性的产生式：</font></p>
+<p></p>
+<pre class="literal-block">V[TENSE=pres, +AUX] -&gt; 'can'
+V[TENSE=pres, +AUX] -&gt; 'may'
+
+V[TENSE=pres, -AUX] -&gt; 'walks'
+V[TENSE=pres, -AUX] -&gt; 'likes'
+</pre>
+<p><font id="176">在传递中，我们应该指出有显示AVM的替代方法；<a class="reference internal" href="./ch09.html#fig-avm1">1.3</a>显示了一个例子。</font><font id="177">虽然特征结构呈现的<a class="reference internal" href="./ch09.html#ex-agr0">(16)</a>中的风格不太悦目，我们将坚持用这种格式，因为它对应我们将会从NLTK得到的输出。</font></p>
+<p><font id="178">关于表示，我们也注意到特征结构，像字典，对特征的<em>顺序</em>没有指定特别的意义。</font><font id="179">所以<a class="reference internal" href="./ch09.html#ex-agr0">(16)</a>等同于︰</font></p>
+<p></p>
+<pre class="literal-block">[AGR = [NUM = pl  ]]
+[      [PER = 3   ]]
+[      [GND = fem ]]
+[                  ]
+[POS = N           ]
+</pre>
+
+<div class="section" id="processing-feature-structures"><h2 class="sigil_not_in_toc"><font id="184">2 处理特征结构</font></h2>
+<p><font id="185">在本节中，我们将展示如何在NLTK中构建和操作特征结构。</font><font id="186">我们还将讨论统一的基本操作，这使我们能够结合两个不同的特征结构中的信息。</font></p>
+<p><font id="187">NLTK中的特征结构使用构造函数<tt class="doctest"><span class="pre">FeatStruct()</span></tt>声明。</font><font id="188">原子特征值可以是字符串或整数。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1 = nltk.FeatStruct(TENSE=<span class="pysrc-string">'past'</span>, NUM=<span class="pysrc-string">'sg'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs1)
+<span class="pysrc-output">[ NUM   = 'sg'   ]</span>
+<span class="pysrc-output">[ TENSE = 'past' ]</span></pre>
+<p><font id="189">一个特征结构实际上只是一种字典，所以我们可以平常的方式通过索引访问它的值。</font><font id="190">我们可以用我们熟悉的方式<em>赋</em>值给特征：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1 = nltk.FeatStruct(PER=3, NUM=<span class="pysrc-string">'pl'</span>, GND=<span class="pysrc-string">'fem'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs1[<span class="pysrc-string">'GND'</span>])
+<span class="pysrc-output">fem</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1[<span class="pysrc-string">'CASE'</span>] = <span class="pysrc-string">'acc'</span></pre>
+<p><font id="191">我们还可以为特征结构定义更复杂的值，如前面所讨论的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs2 = nltk.FeatStruct(POS=<span class="pysrc-string">'N'</span>, AGR=fs1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2)
+<span class="pysrc-output">[       [ CASE = 'acc' ] ]</span>
+<span class="pysrc-output">[ AGR = [ GND  = 'fem' ] ]</span>
+<span class="pysrc-output">[       [ NUM  = 'pl'  ] ]</span>
+<span class="pysrc-output">[       [ PER  = 3     ] ]</span>
+<span class="pysrc-output">[                        ]</span>
+<span class="pysrc-output">[ POS = 'N'              ]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2[<span class="pysrc-string">'AGR'</span>])
+<span class="pysrc-output">[ CASE = 'acc' ]</span>
+<span class="pysrc-output">[ GND  = 'fem' ]</span>
+<span class="pysrc-output">[ NUM  = 'pl'  ]</span>
+<span class="pysrc-output">[ PER  = 3     ]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2[<span class="pysrc-string">'AGR'</span>][<span class="pysrc-string">'PER'</span>])
+<span class="pysrc-output">3</span></pre>
+<p><font id="192">指定特征结构的另一种方法是使用包含<tt class="doctest"><span class="pre">feature=value</span></tt>格式的特征-值对的方括号括起的字符串，其中值本身可能是特征结构：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.FeatStruct(<span class="pysrc-string">"[POS='N', AGR=[PER=3, NUM='pl', GND='fem']]"</span>))
+<span class="pysrc-output">[       [ GND = 'fem' ] ]</span>
+<span class="pysrc-output">[ AGR = [ NUM = 'pl'  ] ]</span>
+<span class="pysrc-output">[       [ PER = 3     ] ]</span>
+<span class="pysrc-output">[                       ]</span>
+<span class="pysrc-output">[ POS = 'N'             ]</span></pre>
+<p><font id="193">特征结构本身并不依赖于语言对象；它们是表示知识的通用目的的结构。</font><font id="194">例如，我们可以将一个人的信息用特征结构编码：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.FeatStruct(NAME=<span class="pysrc-string">'Lee'</span>, TELNO=<span class="pysrc-string">'01 27 86 42 96'</span>, AGE=33))
+<span class="pysrc-output">[ AGE   = 33               ]</span>
+<span class="pysrc-output">[ NAME  = 'Lee'            ]</span>
+<span class="pysrc-output">[ TELNO = '01 27 86 42 96' ]</span></pre>
+<p><font id="195">在接下来的几页中，我们会使用这样的例子来探讨特征结构的标准操作。</font><font id="196">这将使我们暂时从自然语言处理转移，因为在我们回来谈论语法之前需要打下基础。</font><font id="197">坚持！</font></p>
+<p><font id="198">将特征结构作为图来查看往往是有用的；更具体的，作为<span class="termdef">有向无环图</span>（DAG）。</font><font id="199"><a class="reference internal" href="./ch09.html#ex-dag01">(19)</a>等同于上面的AVM。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.FeatStruct(<span class="pysrc-string">"""[NAME='Lee', ADDRESS=(1)[NUMBER=74, STREET='rue Pascal'],</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                         SPOUSE=[NAME='Kim', ADDRESS-&gt;(1)]]"""</span>))
+<span class="pysrc-output">[ ADDRESS = (1) [ NUMBER = 74           ] ]</span>
+<span class="pysrc-output">[               [ STREET = 'rue Pascal' ] ]</span>
+<span class="pysrc-output">[                                         ]</span>
+<span class="pysrc-output">[ NAME    = 'Lee'                         ]</span>
+<span class="pysrc-output">[                                         ]</span>
+<span class="pysrc-output">[ SPOUSE  = [ ADDRESS -&gt; (1)  ]           ]</span>
+<span class="pysrc-output">[           [ NAME    = 'Kim' ]           ]</span></pre>
+<p><font id="218">括号内的整数有时也被称为<span class="termdef">标记</span>或<span class="termdef">同指标志</span>。</font><font id="219">整数的选择并不重要。</font><font id="220">可以有任意数目的标记在一个单独的特征结构中。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.FeatStruct(<span class="pysrc-string">"[A='a', B=(1)[C='c'], D-&gt;(1), E-&gt;(1)]"</span>))
+<span class="pysrc-output">[ A = 'a'             ]</span>
+<span class="pysrc-output">[                     ]</span>
+<span class="pysrc-output">[ B = (1) [ C = 'c' ] ]</span>
+<span class="pysrc-output">[                     ]</span>
+<span class="pysrc-output">[ D -&gt; (1)            ]</span>
+<span class="pysrc-output">[ E -&gt; (1)            ]</span></pre>
+<div class="section" id="subsumption-and-unification"><h2 class="sigil_not_in_toc"><font id="221">2.1 包含和统一</font></h2>
+<p><font id="222">认为特征结构提供一些对象的<span class="termdef">部分信息</span>是很正常的，在这个意义上，我们可以根据它们通用的程度给特征结构排序。</font><font id="223">例如，<a class="reference internal" href="./ch09.html#ex-fs01">(23a)</a>比<a class="reference internal" href="./ch09.html#ex-fs02">(23b)</a>具有更少特征，(23b)比<a class="reference internal" href="./ch09.html#ex-fs03">(23c)</a>具有更少特征。</font></p>
+<p></p>
+<pre class="literal-block">[NUMBER = 74]
+</pre>
+<p><font id="244">统一被正式定义为一个（部分）二元操作：<span class="math">FS</span><sub>0</sub> ⊔ <span class="math">FS</span><sub>1</sub>。</font><font id="245">统一是对称的，所以<span class="math">FS</span><sub>0</sub> ⊔ <span class="math">FS</span><sub>1</sub> = <span class="math">FS</span><sub>1</sub> ⊔ <span class="math">FS</span><sub>0</sub>。</font><font id="246">在Python中也是如此：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2.unify(fs1))
+<span class="pysrc-output">[ CITY   = 'Paris'      ]</span>
+<span class="pysrc-output">[ NUMBER = 74           ]</span>
+<span class="pysrc-output">[ STREET = 'rue Pascal' ]</span></pre>
+<p><font id="247">如果我们统一两个具有包含关系的特征结构，那么统一的结果是两个中更具体的那个：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs0 = nltk.FeatStruct(A=<span class="pysrc-string">'a'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1 = nltk.FeatStruct(A=<span class="pysrc-string">'b'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fs2 = fs0.unify(fs1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2)
+<span class="pysrc-output">None</span></pre>
+<p><font id="253">现在，如果我们看一下统一如何与结构共享相互作用，事情就变得很有趣。</font><font id="254">首先，让我们在Python中定义<a class="reference internal" href="./ch09.html#ex-dag04">(21)</a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs0 = nltk.FeatStruct(<span class="pysrc-string">"""[NAME=Lee,</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                          ADDRESS=[NUMBER=74,</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                                   STREET='rue Pascal'],</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                          SPOUSE= [NAME=Kim,</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                                   ADDRESS=[NUMBER=74,</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                                            STREET='rue Pascal']]]"""</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs0)
+<span class="pysrc-output">[ ADDRESS = [ NUMBER = 74           ]               ]</span>
+<span class="pysrc-output">[           [ STREET = 'rue Pascal' ]               ]</span>
+<span class="pysrc-output">[                                                   ]</span>
+<span class="pysrc-output">[ NAME    = 'Lee'                                   ]</span>
+<span class="pysrc-output">[                                                   ]</span>
+<span class="pysrc-output">[           [ ADDRESS = [ NUMBER = 74           ] ] ]</span>
+<span class="pysrc-output">[ SPOUSE  = [           [ STREET = 'rue Pascal' ] ] ]</span>
+<span class="pysrc-output">[           [                                     ] ]</span>
+<span class="pysrc-output">[           [ NAME    = 'Kim'                     ] ]</span></pre>
+<p><font id="255">我们为Kim的地址指定一个<tt class="doctest"><span class="pre">CITY</span></tt>作为参数会发生什么？</font><font id="256">请注意，<tt class="doctest"><span class="pre">fs1</span></tt>需要包括从特征结构的根到<tt class="doctest"><span class="pre">CITY</span></tt>的整个路径。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1 = nltk.FeatStruct(<span class="pysrc-string">"[SPOUSE = [ADDRESS = [CITY = Paris]]]"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs1.unify(fs0))
+<span class="pysrc-output">[ ADDRESS = [ NUMBER = 74           ]               ]</span>
+<span class="pysrc-output">[           [ STREET = 'rue Pascal' ]               ]</span>
+<span class="pysrc-output">[                                                   ]</span>
+<span class="pysrc-output">[ NAME    = 'Lee'                                   ]</span>
+<span class="pysrc-output">[                                                   ]</span>
+<span class="pysrc-output">[           [           [ CITY   = 'Paris'      ] ] ]</span>
+<span class="pysrc-output">[           [ ADDRESS = [ NUMBER = 74           ] ] ]</span>
+<span class="pysrc-output">[ SPOUSE  = [           [ STREET = 'rue Pascal' ] ] ]</span>
+<span class="pysrc-output">[           [                                     ] ]</span>
+<span class="pysrc-output">[           [ NAME    = 'Kim'                     ] ]</span></pre>
+<p><font id="257">通过对比，如果<tt class="doctest"><span class="pre">fs1</span></tt>与<tt class="doctest"><span class="pre">fs2</span></tt>的结构共享版本统一，结果是非常不同的（如图<a class="reference internal" href="./ch09.html#ex-dag03">(22)</a>所示）：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs2 = nltk.FeatStruct(<span class="pysrc-string">"""[NAME=Lee, ADDRESS=(1)[NUMBER=74, STREET='rue Pascal'],</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">                          SPOUSE=[NAME=Kim, ADDRESS-&gt;(1)]]"""</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs1.unify(fs2))
+<span class="pysrc-output">[               [ CITY   = 'Paris'      ] ]</span>
+<span class="pysrc-output">[ ADDRESS = (1) [ NUMBER = 74           ] ]</span>
+<span class="pysrc-output">[               [ STREET = 'rue Pascal' ] ]</span>
+<span class="pysrc-output">[                                         ]</span>
+<span class="pysrc-output">[ NAME    = 'Lee'                         ]</span>
+<span class="pysrc-output">[                                         ]</span>
+<span class="pysrc-output">[ SPOUSE  = [ ADDRESS -&gt; (1)  ]           ]</span>
+<span class="pysrc-output">[           [ NAME    = 'Kim' ]           ]</span></pre>
+<p><font id="258">不是仅仅更新Kim的Lee的地址的“副本”，我们现在同时更新他们<span class="emphasis">两个</span>的地址。</font><font id="259">更一般的，如果统一包含指定一些路径π的值，那么统一同时更新<span class="emphasis">等价于π的任何路径</span>的值。</font></p>
+<p><font id="260">正如我们已经看到的，结构共享也可以使用变量表示，如<tt class="doctest"><span class="pre">?x</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fs1 = nltk.FeatStruct(<span class="pysrc-string">"[ADDRESS1=[NUMBER=74, STREET='rue Pascal']]"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fs2 = nltk.FeatStruct(<span class="pysrc-string">"[ADDRESS1=?x, ADDRESS2=?x]"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2)
+<span class="pysrc-output">[ ADDRESS1 = ?x ]</span>
+<span class="pysrc-output">[ ADDRESS2 = ?x ]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fs2.unify(fs1))
+<span class="pysrc-output">[ ADDRESS1 = (1) [ NUMBER = 74           ] ]</span>
+<span class="pysrc-output">[                [ STREET = 'rue Pascal' ] ]</span>
+<span class="pysrc-output">[                                          ]</span>
+<span class="pysrc-output">[ ADDRESS2 -&gt; (1)                          ]</span></pre>
+
+
+<div class="section" id="extending-a-feature-based-grammar"><h2 class="sigil_not_in_toc"><font id="261">3 扩展基于特征的语法</font></h2>
+<p><font id="262">在本节中，我们回到基于特征的语法，探索各种语言问题，并展示将特征纳入语法的好处。</font></p>
+<div class="section" id="subcategorization"><h2 class="sigil_not_in_toc"><font id="263">3.1 子类别</font></h2>
+<p><font id="264">第<a class="reference external" href="./ch08.html#chap-parse">8.</a>中，我们增强了类别标签表示不同类别的动词，分别用标签<tt class="doctest"><span class="pre">IV</span></tt>和<tt class="doctest"><span class="pre">TV</span></tt>表示不及物动词和及物动词。</font><font id="265">这使我们能编写如下的产生式：</font></p>
+<p></p>
+<pre class="literal-block">VP -&gt; IV
+VP -&gt; TV NP
+</pre>
+<div class="section" id="heads-revisited"><h2 class="sigil_not_in_toc"><font id="295">3.2 核心词回顾</font></h2>
+<p><font id="296">我们注意到，在上一节中，通过从主类别标签分解出子类别信息，我们可以表达有关动词属性的更多概括。</font><font id="297">类似的另一个属性如下：<tt class="doctest"><span class="pre">V</span></tt>类的表达式是<tt class="doctest"><span class="pre">VP</span></tt>类的短语的核心。</font><font id="298">同样，<tt class="doctest"><span class="pre">N</span></tt>是<tt class="doctest"><span class="pre">NP</span></tt>的核心词，<tt class="doctest"><span class="pre">A</span></tt>（即形容词）是<tt class="doctest"><span class="pre">AP</span></tt>的核心词，<tt class="doctest"><span class="pre">P</span></tt>（即介词）是<tt class="doctest"><span class="pre">PP</span></tt>的核心词。并非所有的短语都有核心词——例如，一般认为连词短语（如<span class="example">the book and the bell</span>）缺乏核心词——然而，我们希望我们的语法形式能表达它所持有的父母/核心子女关系。</font><font id="299">现在，<tt class="doctest"><span class="pre">V</span></tt>和<tt class="doctest"><span class="pre">VP</span></tt>只是原子符号，我们需要找到一种方法用特征将它们关联起来（就像我们以前关联<tt class="doctest"><span class="pre">IV</span></tt>和<tt class="doctest"><span class="pre">TV</span></tt>那样）。</font></p>
+<p><font id="300">X-bar句法通过抽象出<span class="termdef">短语级别</span>的概念，解决了这个问题。</font><font id="301">它通常认为有三个这样的级别。</font><font id="302">如果<tt class="doctest"><span class="pre">N</span></tt>表示词汇级别，那么<tt class="doctest"><span class="pre">N</span></tt>'表示更高一层级别，对应较传统的级别<cite>Nom</cite>，<tt class="doctest"><span class="pre">N</span></tt>''表示短语级别，对应类别<tt class="doctest"><span class="pre">NP</span></tt>。</font><font id="303"><a class="reference internal" href="./ch09.html#ex-xbar0">(34a)</a>演示了这种表示结构，而<a class="reference internal" href="./ch09.html#ex-xbar01">(34b)</a>是更传统的对应。</font></p>
+<p></p>
+<pre class="literal-block">S -&gt; N[BAR=2] V[BAR=2]
+N[BAR=2] -&gt; Det N[BAR=1]
+N[BAR=1] -&gt; N[BAR=1] P[BAR=2]
+N[BAR=1] -&gt; N[BAR=0] P[BAR=2]
+N[BAR=1] -&gt; N[BAR=0]XS
+</pre>
+<div class="section" id="auxiliary-verbs-and-inversion"><h2 class="sigil_not_in_toc"><font id="315">3.3 助动词与倒装</font></h2>
+<p><font id="316">倒装从句——其中的主语和动词顺序互换——出现在英语疑问句，也出现在“否定”副词之后：</font></p>
+<p></p>
+<pre class="literal-block">S[+INV] -&gt; V[+AUX] NP VP
+</pre>
+<div class="section" id="unbounded-dependency-constructions"><h2 class="sigil_not_in_toc"><font id="345">3.4 无限制依赖成分</font></h2>
+<p><font id="346">考虑下面的对比：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.data.show_cfg(<span class="pysrc-string">'grammars/book_grammars/feat1.fcfg'</span>)
+% start S
+<span class="pysrc-comment"># ###################</span>
+<span class="pysrc-comment"># Grammar Productions</span>
+<span class="pysrc-comment"># ###################</span>
+S[-INV] -&gt; NP VP
+S[-INV]/?x -&gt; NP VP/?x
+S[-INV] -&gt; NP S/NP
+S[-INV] -&gt; Adv[+NEG] S[+INV]
+S[+INV] -&gt; V[+AUX] NP VP
+S[+INV]/?x -&gt; V[+AUX] NP VP/?x
+SBar -&gt; Comp S[-INV]
+SBar/?x -&gt; Comp S[-INV]/?x
+VP -&gt; V[SUBCAT=intrans, -AUX]
+VP -&gt; V[SUBCAT=trans, -AUX] NP
+VP/?x -&gt; V[SUBCAT=trans, -AUX] NP/?x
+VP -&gt; V[SUBCAT=clause, -AUX] SBar
+VP/?x -&gt; V[SUBCAT=clause, -AUX] SBar/?x
+VP -&gt; V[+AUX] VP
+VP/?x -&gt; V[+AUX] VP/?x
+<span class="pysrc-comment"># ###################</span>
+<span class="pysrc-comment"># Lexical Productions</span>
+<span class="pysrc-comment"># ###################</span>
+V[SUBCAT=intrans, -AUX] -&gt; <span class="pysrc-string">'walk'</span> | <span class="pysrc-string">'sing'</span>
+V[SUBCAT=trans, -AUX] -&gt; <span class="pysrc-string">'see'</span> | <span class="pysrc-string">'like'</span>
+V[SUBCAT=clause, -AUX] -&gt; <span class="pysrc-string">'say'</span> | <span class="pysrc-string">'claim'</span>
+V[+AUX] -&gt; <span class="pysrc-string">'do'</span> | <span class="pysrc-string">'can'</span>
+NP[-WH] -&gt; <span class="pysrc-string">'you'</span> | <span class="pysrc-string">'cats'</span>
+NP[+WH] -&gt; <span class="pysrc-string">'who'</span>
+Adv[+NEG] -&gt; <span class="pysrc-string">'rarely'</span> | <span class="pysrc-string">'never'</span>
+NP/NP -&gt;
+Comp -&gt; <span class="pysrc-string">'that'</span></pre>
+<p><font id="420"><a class="reference internal" href="./ch09.html#code-slashcfg">3.1</a>中的语法包含一个“缺口引进”产生式，即<tt class="doctest"><span class="pre">S[-INV] -&gt; NP S/NP</span></tt>。</font><font id="421">为了正确的预填充斜线特征，我们需要为扩展<tt class="doctest"><span class="pre">S</span></tt>，<tt class="doctest"><span class="pre">VP</span></tt>和<tt class="doctest"><span class="pre">NP</span></tt>的产生式中箭头两侧的斜线添加变量值。</font><font id="422">例如，<tt class="doctest"><span class="pre">VP/?x -&gt; V SBar/?x</span></tt>是<tt class="doctest"><span class="pre">VP -&gt; V SBar</span></tt>的斜线版本，也就是说，可以为一个成分的父母<tt class="doctest"><span class="pre">VP</span></tt>指定斜线值，只要也为孩子<tt class="doctest"><span class="pre">SBar</span></tt>指定同样的值。</font><font id="423">最后，<tt class="doctest"><span class="pre">NP/NP -&gt;</span></tt>允许<tt class="doctest"><span class="pre">NP</span></tt>上的斜线信息为空字符串。</font><font id="424">使用<a class="reference internal" href="./ch09.html#code-slashcfg">3.1</a>中的语法，我们可以分析序列<span class="example">who do you claim that you like</span></font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'who do you claim that you like'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk <span class="pysrc-keyword">import</span> load_parser
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/feat1.fcfg'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S[-INV]</span>
+<span class="pysrc-output">  (NP[+WH] who)</span>
+<span class="pysrc-output">  (S[+INV]/NP[]</span>
+<span class="pysrc-output">    (V[+AUX] do)</span>
+<span class="pysrc-output">    (NP[-WH] you)</span>
+<span class="pysrc-output">    (VP[]/NP[]</span>
+<span class="pysrc-output">      (V[-AUX, SUBCAT='clause'] claim)</span>
+<span class="pysrc-output">      (SBar[]/NP[]</span>
+<span class="pysrc-output">        (Comp[] that)</span>
+<span class="pysrc-output">        (S[-INV]/NP[]</span>
+<span class="pysrc-output">          (NP[-WH] you)</span>
+<span class="pysrc-output">          (VP[]/NP[] (V[-AUX, SUBCAT='trans'] like) (NP[]/NP[] )))))))</span></pre>
+<p><font id="425">这棵树的一个更易读的版本如<a class="reference internal" href="./ch09.html#ex-gapparse">(52)</a>所示。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'you claim that you like cats'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S[-INV]</span>
+<span class="pysrc-output">  (NP[-WH] you)</span>
+<span class="pysrc-output">  (VP[]</span>
+<span class="pysrc-output">    (V[-AUX, SUBCAT='clause'] claim)</span>
+<span class="pysrc-output">    (SBar[]</span>
+<span class="pysrc-output">      (Comp[] that)</span>
+<span class="pysrc-output">      (S[-INV]</span>
+<span class="pysrc-output">        (NP[-WH] you)</span>
+<span class="pysrc-output">        (VP[] (V[-AUX, SUBCAT='trans'] like) (NP[-WH] cats))))))</span></pre>
+<p><font id="428">此外，它还允许没有<span class="example">wh</span> 结构的倒装句：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'rarely do you sing'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S[-INV]</span>
+<span class="pysrc-output">  (Adv[+NEG] rarely)</span>
+<span class="pysrc-output">  (S[+INV]</span>
+<span class="pysrc-output">    (V[+AUX] do)</span>
+<span class="pysrc-output">    (NP[-WH] you)</span>
+<span class="pysrc-output">    (VP[] (V[-AUX, SUBCAT='intrans'] sing))))</span></pre>
+
+<div class="section" id="case-and-gender-in-german"><h2 class="sigil_not_in_toc"><font id="429">3.5 德语中的格和性别</font></h2>
+<p><font id="430">与英语相比，德语的协议具有相对丰富的形态。</font><font id="431">例如，在德语中定冠词根据格、性别和数量变化，如<a class="reference internal" href="./ch09.html#tab-german-def-art">3.1</a>所示。</font></p>
+<p class="caption"><font id="432"><span class="caption-label">表 3.1</span>：</font></p>
+<p><font id="433">德语定冠词的形态范式</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.data.show_cfg(<span class="pysrc-string">'grammars/book_grammars/german.fcfg'</span>)
+<span class="pysrc-output">% start S</span>
+<span class="pysrc-output"> # Grammar Productions</span>
+<span class="pysrc-output"> S -&gt; NP[CASE=nom, AGR=?a] VP[AGR=?a]</span>
+<span class="pysrc-output"> NP[CASE=?c, AGR=?a] -&gt; PRO[CASE=?c, AGR=?a]</span>
+<span class="pysrc-output"> NP[CASE=?c, AGR=?a] -&gt; Det[CASE=?c, AGR=?a] N[CASE=?c, AGR=?a]</span>
+<span class="pysrc-output"> VP[AGR=?a] -&gt; IV[AGR=?a]</span>
+<span class="pysrc-output"> VP[AGR=?a] -&gt; TV[OBJCASE=?c, AGR=?a] NP[CASE=?c]</span>
+<span class="pysrc-output"> # Lexical Productions</span>
+<span class="pysrc-output"> # Singular determiners</span>
+<span class="pysrc-output"> # masc</span>
+<span class="pysrc-output"> Det[CASE=nom, AGR=[GND=masc,PER=3,NUM=sg]] -&gt; 'der'</span>
+<span class="pysrc-output"> Det[CASE=dat, AGR=[GND=masc,PER=3,NUM=sg]] -&gt; 'dem'</span>
+<span class="pysrc-output"> Det[CASE=acc, AGR=[GND=masc,PER=3,NUM=sg]] -&gt; 'den'</span>
+<span class="pysrc-output"> # fem</span>
+<span class="pysrc-output"> Det[CASE=nom, AGR=[GND=fem,PER=3,NUM=sg]] -&gt; 'die'</span>
+<span class="pysrc-output"> Det[CASE=dat, AGR=[GND=fem,PER=3,NUM=sg]] -&gt; 'der'</span>
+<span class="pysrc-output"> Det[CASE=acc, AGR=[GND=fem,PER=3,NUM=sg]] -&gt; 'die'</span>
+<span class="pysrc-output"> # Plural determiners</span>
+<span class="pysrc-output"> Det[CASE=nom, AGR=[PER=3,NUM=pl]] -&gt; 'die'</span>
+<span class="pysrc-output"> Det[CASE=dat, AGR=[PER=3,NUM=pl]] -&gt; 'den'</span>
+<span class="pysrc-output"> Det[CASE=acc, AGR=[PER=3,NUM=pl]] -&gt; 'die'</span>
+<span class="pysrc-output"> # Nouns</span>
+<span class="pysrc-output"> N[AGR=[GND=masc,PER=3,NUM=sg]] -&gt; 'Hund'</span>
+<span class="pysrc-output"> N[CASE=nom, AGR=[GND=masc,PER=3,NUM=pl]] -&gt; 'Hunde'</span>
+<span class="pysrc-output"> N[CASE=dat, AGR=[GND=masc,PER=3,NUM=pl]] -&gt; 'Hunden'</span>
+<span class="pysrc-output"> N[CASE=acc, AGR=[GND=masc,PER=3,NUM=pl]] -&gt; 'Hunde'</span>
+<span class="pysrc-output"> N[AGR=[GND=fem,PER=3,NUM=sg]] -&gt; 'Katze'</span>
+<span class="pysrc-output"> N[AGR=[GND=fem,PER=3,NUM=pl]] -&gt; 'Katzen'</span>
+<span class="pysrc-output"> # Pronouns</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=1,NUM=sg]] -&gt; 'ich'</span>
+<span class="pysrc-output"> PRO[CASE=acc, AGR=[PER=1,NUM=sg]] -&gt; 'mich'</span>
+<span class="pysrc-output"> PRO[CASE=dat, AGR=[PER=1,NUM=sg]] -&gt; 'mir'</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=2,NUM=sg]] -&gt; 'du'</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=3,NUM=sg]] -&gt; 'er' | 'sie' | 'es'</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=1,NUM=pl]] -&gt; 'wir'</span>
+<span class="pysrc-output"> PRO[CASE=acc, AGR=[PER=1,NUM=pl]] -&gt; 'uns'</span>
+<span class="pysrc-output"> PRO[CASE=dat, AGR=[PER=1,NUM=pl]] -&gt; 'uns'</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=2,NUM=pl]] -&gt; 'ihr'</span>
+<span class="pysrc-output"> PRO[CASE=nom, AGR=[PER=3,NUM=pl]] -&gt; 'sie'</span>
+<span class="pysrc-output"> # Verbs</span>
+<span class="pysrc-output"> IV[AGR=[NUM=sg,PER=1]] -&gt; 'komme'</span>
+<span class="pysrc-output"> IV[AGR=[NUM=sg,PER=2]] -&gt; 'kommst'</span>
+<span class="pysrc-output"> IV[AGR=[NUM=sg,PER=3]] -&gt; 'kommt'</span>
+<span class="pysrc-output"> IV[AGR=[NUM=pl, PER=1]] -&gt; 'kommen'</span>
+<span class="pysrc-output"> IV[AGR=[NUM=pl, PER=2]] -&gt; 'kommt'</span>
+<span class="pysrc-output"> IV[AGR=[NUM=pl, PER=3]] -&gt; 'kommen'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=sg,PER=1]] -&gt; 'sehe' | 'mag'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=sg,PER=2]] -&gt; 'siehst' | 'magst'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=sg,PER=3]] -&gt; 'sieht' | 'mag'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=sg,PER=1]] -&gt; 'folge' | 'helfe'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=sg,PER=2]] -&gt; 'folgst' | 'hilfst'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=sg,PER=3]] -&gt; 'folgt' | 'hilft'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=pl,PER=1]] -&gt; 'sehen' | 'moegen'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=pl,PER=2]] -&gt; 'sieht' | 'moegt'</span>
+<span class="pysrc-output"> TV[OBJCASE=acc, AGR=[NUM=pl,PER=3]] -&gt; 'sehen' | 'moegen'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=pl,PER=1]] -&gt; 'folgen' | 'helfen'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=pl,PER=2]] -&gt; 'folgt' | 'helft'</span>
+<span class="pysrc-output"> TV[OBJCASE=dat, AGR=[NUM=pl,PER=3]] -&gt; 'folgen' | 'helfen'</span></pre>
+<p><font id="472">正如你可以看到的，特征<cite>objcase</cite>被用来指定动词支配它的对象的格。</font><font id="473">下一个例子演示了包含支配与格的动词的句子的分析树。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'ich folge den Katzen'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/german.fcfg'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S[]</span>
+<span class="pysrc-output">  (NP[AGR=[NUM='sg', PER=1], CASE='nom']</span>
+<span class="pysrc-output">    (PRO[AGR=[NUM='sg', PER=1], CASE='nom'] ich))</span>
+<span class="pysrc-output">  (VP[AGR=[NUM='sg', PER=1]]</span>
+<span class="pysrc-output">    (TV[AGR=[NUM='sg', PER=1], OBJCASE='dat'] folge)</span>
+<span class="pysrc-output">    (NP[AGR=[GND='fem', NUM='pl', PER=3], CASE='dat']</span>
+<span class="pysrc-output">      (Det[AGR=[NUM='pl', PER=3], CASE='dat'] den)</span>
+<span class="pysrc-output">      (N[AGR=[GND='fem', NUM='pl', PER=3]] Katzen))))</span></pre>
+<p><font id="474">在开发语法时，排除不符合语法的词序列往往与分析符合语法的词序列一样具有挑战性。</font><font id="475">为了能知道在哪里和为什么序列分析失败，设置<tt class="doctest"><span class="pre">load_parser()</span></tt>方法的<tt class="doctest"><span class="pre">trace</span></tt>参数可能是至关重要的。</font><font id="476">思考下面的分析故障：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">'ich folge den Katze'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/german.fcfg'</span>, trace=2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">|.ich.fol.den.Kat.|</span>
+<span class="pysrc-output">Leaf Init Rule:</span>
+<span class="pysrc-output">|[---]   .   .   .| [0:1] 'ich'</span>
+<span class="pysrc-output">|.   [---]   .   .| [1:2] 'folge'</span>
+<span class="pysrc-output">|.   .   [---]   .| [2:3] 'den'</span>
+<span class="pysrc-output">|.   .   .   [---]| [3:4] 'Katze'</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|[---]   .   .   .| [0:1] PRO[AGR=[NUM='sg', PER=1], CASE='nom']</span>
+<span class="pysrc-output">                          -&gt; 'ich' *</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|[---]   .   .   .| [0:1] NP[AGR=[NUM='sg', PER=1], CASE='nom'] -&gt; PRO[AGR=[NUM='sg', PER=1], CASE='nom'] *</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|[---&gt;   .   .   .| [0:1] S[] -&gt; NP[AGR=?a, CASE='nom'] * VP[AGR=?a] {?a: [NUM='sg', PER=1]}</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   [---]   .   .| [1:2] TV[AGR=[NUM='sg', PER=1], OBJCASE='dat'] -&gt; 'folge' *</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   [---&gt;   .   .| [1:2] VP[AGR=?a] -&gt; TV[AGR=?a, OBJCASE=?c] * NP[CASE=?c] {?a: [NUM='sg', PER=1], ?c: 'dat'}</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   .   [---]   .| [2:3] Det[AGR=[GND='masc', NUM='sg', PER=3], CASE='acc'] -&gt; 'den' *</span>
+<span class="pysrc-output">|.   .   [---]   .| [2:3] Det[AGR=[NUM='pl', PER=3], CASE='dat'] -&gt; 'den' *</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   .   [---&gt;   .| [2:3] NP[AGR=?a, CASE=?c] -&gt; Det[AGR=?a, CASE=?c] * N[AGR=?a, CASE=?c] {?a: [NUM='pl', PER=3], ?c: 'dat'}</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   .   [---&gt;   .| [2:3] NP[AGR=?a, CASE=?c] -&gt; Det[AGR=?a, CASE=?c] * N[AGR=?a, CASE=?c] {?a: [GND='masc', NUM='sg', PER=3], ?c: 'acc'}</span>
+<span class="pysrc-output">Feature Bottom Up Predict Combine Rule:</span>
+<span class="pysrc-output">|.   .   .   [---]| [3:4] N[AGR=[GND='fem', NUM='sg', PER=3]] -&gt; 'Katze' *</span></pre>
+<p><font id="477">跟踪中的最后两个<tt class="doctest"><span class="pre">Scanner</span></tt>行显示<span class="example">den</span>被识别为两个可能的类别：<tt class="doctest"><span class="pre">Det[AGR=[GND=<span class="pysrc-string">'masc'</span>, NUM=<span class="pysrc-string">'sg'</span>, PER=3], CASE=<span class="pysrc-string">'acc'</span>]</span></tt>和<tt class="doctest"><span class="pre">Det[AGR=[NUM=<span class="pysrc-string">'pl'</span>, PER=3], CASE=<span class="pysrc-string">'dat'</span>]</span></tt>。</font><font id="478">我们从<a class="reference internal" href="./ch09.html#code-germancfg">3.2</a>中的语法知道<tt class="doctest"><span class="pre">Katze</span></tt>的类别是<tt class="doctest"><span class="pre">N[AGR=[GND=fem, NUM=sg, PER=3]]</span></tt>。</font><font id="479">因而，产生式<tt class="doctest"><span class="pre">NP[CASE=?c, AGR=?a] -&gt; Det[CASE=?c, AGR=?a] N[CASE=?c, AGR=?a]</span></tt>中没有变量<tt class="doctest"><span class="pre">?a</span></tt>的绑定，这将满足这些限制，因为<tt class="doctest"><span class="pre">Katze</span></tt>的<tt class="doctest"><span class="pre">AGR</span></tt>值将不与<span class="example">den</span>的任何一个<tt class="doctest"><span class="pre">AGR</span></tt>值统一，也就是<tt class="doctest"><span class="pre">[GND=<span class="pysrc-string">'masc'</span>, NUM=<span class="pysrc-string">'sg'</span>, PER=3]</span></tt>或<tt class="doctest"><span class="pre">[NUM=<span class="pysrc-string">'pl'</span>, PER=3]</span></tt>。</font></p>
+
+
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="480">4 小结</font></h2>
+<ul class="simple"><li><font id="481">上下文无关语法的传统分类是原子符号。</font><font id="482">特征结构的一个重要的作用是捕捉精细的区分，否则将需要数量翻倍的原子类别。</font></li>
+<li><font id="483">通过使用特征值上的变量，我们可以表达语法产生式中的限制，允许不同的特征规格的实现可以相互依赖。</font></li>
+<li><font id="484">通常情况下，我们在词汇层面指定固定的特征值，限制短语中的特征值与它们的孩子中的对应值统一。</font></li>
+<li><font id="485">特征值可以是原子的或复杂的。</font><font id="486">原子值的一个特定类别是布尔值，按照惯例用[+/- <tt class="doctest"><span class="pre">f</span></tt>]表示。</font></li>
+<li><font id="487">两个特征可以共享一个值（原子的或复杂的）。</font><font id="488">具有共享值的结构被称为重入。</font><font id="489">共享的值被表示为AVM中的数字索引（或标记）。</font></li>
+<li><font id="490">一个特征结构中的路径是一个特征的元组，对应从图的根开始的弧的序列上的标签。</font></li>
+<li><font id="491">两条路径是等价的，如果它们共享一个值。</font></li>
+<li><font id="492">包含的特征结构是偏序的。</font><font id="493"><span class="math">FS</span><sub>0</sub>包含<span class="math">FS</span><sub>1</sub>，当包含在<span class="math">FS</span><sub>0</sub>中的所有信息也出现在<span class="math">FS</span><sub>1</sub>中。</font></li>
+<li><font id="494">两种结构<span class="math">FS</span><sub>0</sub>和<span class="math">FS</span><sub>1</sub>的统一，如果成功，就是包含<span class="math">FS</span><sub>0</sub>和<span class="math">FS</span><sub>1</sub>的合并信息的特征结构<span class="math">FS</span><sub>2</sub>。</font></li>
+<li><font id="495">如果统一在<span class="math">FS</span>中指定一条路径π，那么它也指定等效与π的每个路径π'。</font></li>
+<li><font id="496">我们可以使用特征结构建立对大量广泛语言学现象的简洁的分析，包括动词子类别，倒装结构，无限制依赖结构和格支配。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="497">5 深入阅读</font></h2>
+<p><font id="498">本章进一步的材料请参考<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>，包括特征结构、特征语法和语法测试套件。</font></p>
+<p><font id="499">X-bar句法：<a class="reference external" href="./bibliography.html#chomsky1970rn" id="id9">(Jacobs &amp; Rosenbaum, 1970)</a>, <a class="reference external" href="./bibliography.html#jackendoff1977xs" id="id10">(Jackendoff, 1977)</a>（The primes we use replace Chomsky's typographically more demanding horizontal bars）。</font></p>
+<p><font id="500">协议现象的一个很好的介绍，请参阅<a class="reference external" href="./bibliography.html#corbett2006a" id="id11">(Corbett, 2006)</a>。</font></p>
+<p><font id="501">理论语言学中最初使用特征的目的是捕捉语音的音素特性。</font><font id="502">例如，音/<strong>b</strong>/可能会被分解成结构<tt class="doctest"><span class="pre">[+labial, +voice]</span></tt>。</font><font id="503">一个重要的动机是捕捉分割的类别之间的一般性；例如/<strong>n</strong>/在任一<tt class="doctest"><span class="pre">+labial</span></tt>辅音前面被读作/<strong>m</strong>/。</font><font id="504">在乔姆斯基语法中，对一些现象，如协议，使用原子特征是很标准的，原子特征也用来捕捉跨句法类别的概括，通过类比与音韵。</font><font id="505">句法理论中使用特征的一个激进的扩展是广义短语结构语法（GPSG; <a class="reference external" href="./bibliography.html#gazdar1985gps" id="id12">(Gazdar, Klein, &amp; and, 1985)</a>），特别是在使用带有复杂值的特征。</font></p>
+<p><font id="506">从计算语言学的角度来看，<a class="reference external" href="./bibliography.html#kay1984ug" id="id13">(Dahl &amp; Saint-Dizier, 1985)</a>提出语言的功能方面可以被属性-值结构的统一捕获，一个类似的方法由<a class="reference external" href="./bibliography.html#shieber1983fip" id="id14">(Grosz &amp; Stickel, 1983)</a>在PATR-II形式体系中精心设计完成。</font><font id="507">词汇功能语法（LFG; <a class="reference external" href="./bibliography.html#kaplan1982lfg" id="id15">(Bresnan, 1982)</a>）的早期工作介绍了<span class="termdef">f-structure</span> 概念，它的主要目的是表示语法关系和与成分结构短语关联的谓词参数结构。</font><font id="508"><a class="reference external" href="./bibliography.html#shieber1986iub" id="id16">(Shieber, 1986)</a>提供了研究基于特征语法方面的一个极好的介绍。</font></p>
+<p><font id="509">当研究人员试图为反面例子建模时，特征结构的代数方法的一个概念上的困难出现了。</font><font id="510">另一种观点，由<a class="reference external" href="./bibliography.html#kasper1986lsf" id="id17">(Kasper &amp; Rounds, 1986)</a>和<a class="reference external" href="./bibliography.html#johnson1988avl" id="id18">(Johnson, 1988)</a>开创，认为语法涉及结构功能的<span class="emphasis">描述</span>而不是结构本身。</font><font id="511">这些描述使用逻辑操作如合取相结合，而否定仅仅是特征描述上的普通的逻辑运算。</font><font id="512">这种面向描述的观点对LFG从一开始就是不可或缺的（参见</font><font id="513"><a class="reference external" href="./bibliography.html#kaplan1989fal" id="id19">(Huang &amp; Chen, 1989)</a>），也被中心词驱动短语结构语法的较高版本采用（HPSG; <a class="reference external" href="./bibliography.html#sag1999st" id="id20">(Sag &amp; Wasow, 1999)</a>）。</font><font id="514"><tt class="doctest"><span class="pre">http://www.cl.uni-bremen.de/HPSG-Bib/</span></tt>上有HPSG文献的全面的参考书目。</font></p>
+<p><font id="515">本章介绍的特征结构无法捕捉语言信息中重要的限制。</font><font id="516">例如，有没有办法表达<tt class="doctest"><span class="pre">NUM</span></tt>的值只允许是<tt class="doctest"><span class="pre">sg</span></tt>和<tt class="doctest"><span class="pre">pl</span></tt>，而指定<tt class="doctest"><span class="pre">[NUM=masc]</span></tt>是反常的。</font><font id="517">同样地，我们不能说<tt class="doctest"><span class="pre">AGR</span></tt>的复合值<span class="emphasis">必须</span>包含特征<tt class="doctest"><span class="pre">PER</span></tt>，<tt class="doctest"><span class="pre">NUM</span></tt>和<tt class="doctest"><span class="pre">gnd</span></tt>的指定，但<span class="emphasis">不能</span>包含如<tt class="doctest"><span class="pre">[SUBCAT=trans]</span></tt>这样的指定。</font><font id="518"><span class="termdef">指定类型的特征结构</span>被开发出来弥补这方面的不足。</font><font id="519">开始，我们规定总是键入特征值。</font><font id="520">对于原子值，值就是类型。</font><font id="521">例如，我们可以说<tt class="doctest"><span class="pre">NUM</span></tt>的值是类型<tt class="doctest"><span class="pre">num</span></tt>。</font><font id="522">此外，<tt class="doctest"><span class="pre">num</span></tt>是<tt class="doctest"><span class="pre">NUM</span></tt>最一般类型的值。</font><font id="523">由于类型按层次结构组织，通过指定<tt class="doctest"><span class="pre">NUM</span></tt>的值为<tt class="doctest"><span class="pre">num</span></tt>的<span class="termdef">子类型</span>，即要么是<tt class="doctest"><span class="pre">sg</span></tt>要么是<tt class="doctest"><span class="pre">pl</span></tt>，我们可以更富含信息。</font></p>
+<p><font id="524">In the case of complex values, we say that feature structures are themselves typed. </font><font id="525">So for example the value of <tt class="doctest"><span class="pre">AGR</span></tt> will be a feature structure of type <tt class="doctest"><span class="pre">AGR</span></tt>. </font><font id="526">We also stipulate that all and only <tt class="doctest"><span class="pre">PER</span></tt>, <tt class="doctest"><span class="pre">NUM</span></tt> and <tt class="doctest"><span class="pre">GND</span></tt> are <span class="termdef">appropriate</span> features for a structure of type <tt class="doctest"><span class="pre">AGR</span></tt>. </font><font id="527">一个早期的关于指定类型的特征结构的很好的总结是<a class="reference external" href="./bibliography.html#emele1990tug" id="id21">(Emele &amp; Zajac, 1990)</a>。</font><font id="528">一个形式化基础的更全面的检查可以在<a class="reference external" href="./bibliography.html#carpenter1992ltf" id="id22">(Carpenter, 1992)</a>中找到，<a class="reference external" href="./bibliography.html#copestake2002itf" id="id23">(Copestake, 2002)</a>重点关注为面向HPSG 的方法实现指定类型的特征结构。</font></p>
+<p><font id="529">有很多著作是关于德语的基于特征语法框架上的分析的。</font><font id="530"><a class="reference external" href="./bibliography.html#nerbonne1994ghd" id="id24">(Nerbonne, Netter, &amp; Pollard, 1994)</a>是这个主题的HPSG著作的一个好的起点，而<a class="reference external" href="./bibliography.html#mueller2002cp" id="id25">(M{\"u}ller, 2002)</a>给出HPSG 中的德语句法非常广泛和详细的分析。</font></p>
+<p><font id="531"><a class="reference external" href="./bibliography.html#jurafskymartin2008" id="id26">(Jurafsky &amp; Martin, 2008)</a>的第15 章讨论了特征结构、统一的算法和将统一整合到分析算法中。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="532">6 练习</font></h2>
+<ol class="arabic"><li><p class="first"><font id="533">☼ 需要什么样的限制才能正确分析词序列，如<span class="example">I am happy</span>和<span class="example">she is happy</span>而不是<span class="example">*you is happy</span>或<span class="example">*they am happy</span>？</font><font id="534">实现英语中动词<span class="example">be</span>的现在时态范例的两个解决方案，首先以语法<a class="reference internal" href="./ch09.html#ex-agcfg1">(6)</a>作为起点，然后以语法 <a class="reference internal" href="./ch09.html#ex-agr2">(18)</a>为起点。</font></p></li>
+<li><p class="first"><font id="535">☼ 开发<a class="reference internal" href="./ch09.html#code-feat0cfg">1.1</a>中语法的变体，使用特征<cite>count</cite>来区分下面显示的句子：</font></p><p></p><pre class="doctest">fs1 = nltk.FeatStruct(<span class="pysrc-string">"[A = ?x, B= [C = ?x]]"</span>)
+fs2 = nltk.FeatStruct(<span class="pysrc-string">"[B = [D = d]]"</span>)
+fs3 = nltk.FeatStruct(<span class="pysrc-string">"[B = [C = d]]"</span>)
+fs4 = nltk.FeatStruct(<span class="pysrc-string">"[A = (1)[B = b], C-&gt;(1)]"</span>)
+fs5 = nltk.FeatStruct(<span class="pysrc-string">"[A = (1)[D = ?x], C = [E -&gt; (1), F = ?x] ]"</span>)
+fs6 = nltk.FeatStruct(<span class="pysrc-string">"[A = [D = d]]"</span>)
+fs7 = nltk.FeatStruct(<span class="pysrc-string">"[A = [D = d], C = [F = [D = d]]]"</span>)
+fs8 = nltk.FeatStruct(<span class="pysrc-string">"[A = (1)[D = ?x, G = ?x], C = [B = ?x, E -&gt; (1)] ]"</span>)
+fs9 = nltk.FeatStruct(<span class="pysrc-string">"[A = [B = b], C = [E = [G = e]]]"</span>)
+fs10 = nltk.FeatStruct(<span class="pysrc-string">"[A = (1)[B = b], C -&gt; (1)]"</span>)</pre>
+<p><font id="571">在纸上计算下面的统一的结果是什么。</font><font id="572">（提示：你可能会发现绘制图结构很有用。）</font></p>
+<ol class="arabic simple"><li><font id="573"><tt class="doctest"><span class="pre">fs1</span></tt> and <tt class="doctest"><span class="pre">fs2</span></tt></font></li>
+<li><font id="574"><tt class="doctest"><span class="pre">fs1</span></tt> and <tt class="doctest"><span class="pre">fs3</span></tt></font></li>
+<li><font id="575"><tt class="doctest"><span class="pre">fs4</span></tt> and <tt class="doctest"><span class="pre">fs5</span></tt></font></li>
+<li><font id="576"><tt class="doctest"><span class="pre">fs5</span></tt> and <tt class="doctest"><span class="pre">fs6</span></tt></font></li>
+<li><font id="577"><tt class="doctest"><span class="pre">fs5</span></tt> and <tt class="doctest"><span class="pre">fs7</span></tt></font></li>
+<li><font id="578"><tt class="doctest"><span class="pre">fs8</span></tt> and <tt class="doctest"><span class="pre">fs9</span></tt></font></li>
+<li><font id="579"><tt class="doctest"><span class="pre">fs8</span></tt> and <tt class="doctest"><span class="pre">fs10</span></tt></font></li>
+</ol>
+<p><font id="580">用Python检查你的答案。</font></p>
+</li>
+<li><p class="first"><font id="581">◑ 列出两个包含[A=?x, B=?x]的特征结构。</font></p></li>
+<li><p class="first"><font id="582">◑ 忽略结构共享，给出一个统一两个特征结构的非正式算法。</font></p></li>
+<li><p class="first"><font id="583">◑ 扩展<a class="reference internal" href="./ch09.html#code-germancfg">3.2</a>中的德语语法，使它能处理所谓的动词第二顺位结构，如下所示：</font></p><p></p><table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="584">(58)</font></td>
+<td width="15"></td>
+<td><p><font id="585">Heute sieht der Hund die Katze.</font></p>
+</td>
+</tr>
+</tbody>
+</table></li>
+<li><p class="first"><font id="586">◑ 同义动词的句法属性看上去略有不同<a class="reference external" href="./bibliography.html#levin1993" id="id27">(Levin, 1993)</a>。</font><font id="587">思考下面的动词<span class="example">loaded</span>、<span class="example">filled</span>和<span class="example">dumped</span>的语法模式。</font><font id="588">你能写语法产生式处理这些数据吗？</font></p><p></p><table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="589">(59)</font></td>
+<td width="15"></td>
+<td><p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="590">a.</font></td>
+<td width="15"></td>
+<td><p><font id="591">The farmer <em>loaded</em> the cart with sand</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="592">b.</font></td>
+<td width="15"></td>
+<td><p><font id="593">The farmer <em>loaded</em> sand into the cart</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="594">c.</font></td>
+<td width="15"></td>
+<td><p><font id="595">The farmer <em>filled</em> the cart with sand</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="596">d.</font></td>
+<td width="15"></td>
+<td><p><font id="597">*The farmer <em>filled</em> sand into the cart</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="598">e.</font></td>
+<td width="15"></td>
+<td><p><font id="599">*The farmer <em>dumped</em> the cart with sand</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="600">f.</font></td>
+<td width="15"></td>
+<td><p><font id="601">The farmer <em>dumped</em> sand into the cart</font></p>
+</td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table></li>
+<li><p class="first"><font id="602">★ 形态范例很少是完全正规的，矩阵中的每个单元的意义有不同的实现。</font><font id="603">例如，词位<span class="lex">walk</span>的现在时态词性变化只有两种不同形式：第三人称单数的<span class="example">walks</span>和所有其他人称和数量的组合的<span class="example">walk</span>。</font><font id="604">一个成功的分析不应该额外要求6个可能的形态组合中有5个有相同的实现。</font><font id="605">设计和实施一个方法处理这个问题。</font></p></li>
+<li><p class="first"><font id="606">★ 所谓的<span class="termdef">核心特征</span>在父节点和核心孩子节点之间共享。</font><font id="607">例如，<tt class="doctest"><span class="pre">TENSE</span></tt>是核心特征，在一个<tt class="doctest"><span class="pre">VP</span></tt>和它的核心孩子<tt class="doctest"><span class="pre">V</span></tt>之间共享。</font><font id="608">更多细节见<a class="reference external" href="./bibliography.html#gazdar1985gps" id="id28">(Gazdar, Klein, &amp; and, 1985)</a>。</font><font id="609">我们看到的结构中大部分是核心结构——除了<tt class="doctest"><span class="pre">SUBCAT</span></tt>和<tt class="doctest"><span class="pre">SLASH</span></tt>。</font><font id="610">由于核心特征的共享是可以预见的，它不需要在语法产生式中明确表示。</font><font id="611">开发一种方法自动计算核心结构的这种规则行为的比重。</font></p></li>
+<li><p class="first"><font id="612">★ 扩展NLTK中特征结构的处理，允许统一值为列表的特征，使用这个来实现一个HPSG风格的子类别分析，核心类别的<tt class="doctest"><span class="pre">SUBCAT</span></tt>是它的补语的类别和它直接父母的<tt class="doctest"><span class="pre">SUBCAT</span></tt>值的连结。</font></p></li>
+<li><p class="first"><font id="613">★ 扩展NLTK的特征结构处理，允许带未指定类别的产生式，例如<tt class="doctest"><span class="pre">S[-INV] --&gt; ?x S/?x</span></tt>。</font></p></li>
+<li><p class="first"><font id="614">★ 扩展NLTK的特征结构处理，允许指定类型的特征结构。</font></p></li>
+<li><p class="first"><font id="615">★ 挑选一些<a class="reference external" href="./bibliography.html#huddleston2002cge" id="id29">(Huddleston &amp; Pullum, 2002)</a>中描述的文法结构，建立一个基于特征的语法计算它们的比例。</font></p></li>
+
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="616">关于本文档...</font></p>
+<p><font id="617">针对NLTK 3.0 进行更新。</font><font id="618">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="619">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="620">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+</ol>
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+</div>
+
+
+
+
+</div>
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+</div>
+</body>
+</html>

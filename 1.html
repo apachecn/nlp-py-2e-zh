@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="language-processing-and-python"><h1 class="title"><font id="1">1. </font><font id="2">语言处理与Python</font></h1>
+<p><font id="3">上百万字的文本，是容易拿到手的。</font><font id="4">假设我们会写一些简单的程序，那我们可以用它来做些什么？</font><font id="5">在本章中，我们将解决以下几个问题：</font></p>
+<ol class="arabic simple"><li><font id="6">将简单的程序与大量的文本结合起来，我们能实现什么？</font></li>
+<li><font id="7">我们如何能自动提取概括文本风格和内容的关键词和短语？</font></li>
+<li><font id="8">Python 编程语言为上述工作提供了哪些工具和技术？</font></li>
+<li><font id="9">自然语言处理中有哪些有趣的挑战？</font></li>
+</ol>
+<p><font id="10">本章分为完全不同风格的两部分。</font><font id="11">在“语言计算”部分，我们将选取一些语言相关的编程任务而不去解释它们是如何实现的。</font><font id="12">在“近观Python”部分，我们将系统地回顾关键的编程概念。</font><font id="13">两种风格将按章节标题区分，而后面几章将混合两种风格而不作明显的区分。</font><font id="14">我们希望这种风格的介绍能使你对接下来将要碰到的内容有一个真实的体味，与此同时，涵盖语言学与计算机科学的基本概念。</font><font id="15">如果你对这两个方面已经有了基本的了解，可以跳到第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-automatic-natural-language-understanding">5</a> 节 ; 我们将在后续的章节中重复所有要点，如果错过了什么，你可以很容易地在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>上查询在线参考材料。</font><font id="16">如果这些材料对你而言是全新的，那么本章将引发比解答本身更多的问题，这些问题将在本书的其余部分讨论。</font></p>
+<div class="section" id="computing-with-language-texts-and-words"><h2 class="sigil_not_in_toc"><font id="17">1 语言计算：文本和单词</font></h2>
+<p><font id="18">我们都对文本非常熟悉，因为我们每天都读到和写到。</font><font id="19">在这里，把文本视为我们写的程序的<span class="emphasis">原始数据</span>，这些程序以很多有趣的方式处理和分析文本。</font><font id="20">但在我们能写这些程序之前，我们必须得从Python 解释器开始。</font></p>
+<div class="section" id="getting-started-with-python"><h2 class="sigil_not_in_toc"><font id="21">1.1 Python 入门</font></h2>
+<p><font id="22">Python 对用户友好的一个方式是你可以交互式地直接打字给<span class="termdef">解释器</span> —— 将要运行你的Python 代码的程序。</font><font id="23">你可以通过一个简单的叫做交互式开发环境（Interactive DeveLopment Environment，简称IDLE）的图形接口来访问Python 解释器。</font><font id="24">在Mac 上，你可以在<em>应用程序</em>→<em>MacPython</em>中找到；在Windows 中，你可以在<em>程序</em>→<em>Python</em>中找到。</font><font id="25">在Unix 下，你可以在shell 输入<tt class="doctest"><span class="pre">idle</span></tt>来运行Python（如果没有安装，尝试输入<tt class="doctest"><span class="pre">python</span></tt>）。</font><font id="26">解释器将会输出关于你的Python 的版本简介，请检查你运行的是否是Python 3.2 更高的版本（这里是3.4.2）：</font></p>
+<pre class="doctest">Python 3.4.2 (default, Oct 15 2014, 22:01:37)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.40)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+<span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="27">注</font></p>
+<p class="last"><font id="28">如果你无法运行Python 解释器可能是因为没有正确安装Python。</font><font id="29">请访问<tt class="doctest"><span class="pre">http://python.org/</span></tt>查阅详细操作说明。</font><font id="30">NLTK 3.0 在Python 2.6 和2.7 上同样可以工作。</font><font id="31">如果你使用的是这些较旧的版本，注意<tt class="doctest"><span class="pre">/</span></tt> 运算符会向下舍入小数（所以<tt class="doctest"><span class="pre">1/3</span></tt> 会得到<tt class="doctest"><span class="pre">0</span></tt>）。</font><font id="32">为了得到预期的除法行为，你需要输入︰<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> __future__ <span class="pysrc-keyword">import</span> division</span></tt></font></p>
+</div>
+<p><font id="33"><tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt> 提示符表示Python 解释器正在等待输入。</font><font id="34">复制这本书的例子时，自己不要键入"<tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt>"。</font><font id="35">现在，让我们开始把Python 当作计算器使用：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>1 + 5 * 2 - 3
+<span class="pysrc-output">8</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="36">一旦解释器计算并显示出答案，提示符就会出现。</font><font id="37">这表示Python 解释器在等待另一个指令。</font></p>
+<div class="note"><p class="first admonition-title"><font id="38">注意</font></p>
+<p class="last"><font id="39"><strong>轮到你来</strong>：输入一些你自己的表达式。</font><font id="40">你可以使用星号（<tt class="doctest"><span class="pre">*</span></tt>）表示乘法，左斜线（<tt class="doctest"><span class="pre">/</span></tt>）表示除法，你可以用括号括起表达式。</font></p>
+</div>
+<p><font id="41">前面的例子演示了如何交互式的使用Python 解释器，试验Python 语言中各种表达式，看看它们做些什么。</font><font id="42">现在让我们尝试一个无意义的表达式，看看解释器如何处理：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>1 +
+<span class="pysrc-output">  File "&lt;stdin&gt;", line 1</span>
+<span class="pysrc-output">    1 +</span>
+<span class="pysrc-output">      ^</span>
+<span class="pysrc-output">SyntaxError: invalid syntax</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="43">产生了一个<span class="termdef">语法错误</span>。</font><font id="44">在Python 中，指令以加号结尾是没有意义的。</font><font id="45">Python 解释器会指出发生错误的行（“标准输入”<tt class="doctest"><span class="pre">&lt;stdin&gt;</span></tt>的第1 行）。</font></p>
+<p><font id="46">现在我们学会使用Python 解释器了，已经准备好可以开始处理语言数据了。</font></p>
+</div>
+<div class="section" id="getting-started-with-nltk"><h2 class="sigil_not_in_toc"><font id="47">1.2 NLTK 入门</font></h2>
+<p><font id="48">在进一步深入之前，应先安装 NLTK 3.0，可以从<tt class="doctest"><span class="pre">http://nltk.org/</span></tt> 免费下载。</font><font id="49">按照说明下载适合你的操作系统的版本。</font></p>
+<p><font id="50">安装完NLTK 之后，像前面那样启动Python 解释器，在Python 提示符后面输入下面两个命令来安装本书所需的数据，然后选择<tt class="doctest"><span class="pre">book</span></tt>集合，如<a class="reference internal" href="http://www.nltk.org/book/ch01.html#fig-nltk-downloader">1.1</a>所示。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> nltk
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.download()</pre>
+<div class="figure" id="fig-nltk-downloader"><img alt="Images/nltk-downloader.png" src="Images/7f27bfe5324e4d9573ddd210531a8126.jpg" style="width: 668.0px; height: 276.0px;"/><p class="caption"><font id="826"><span class="caption-label">图 1.1</span>：下载NLTK Book 集：使用<tt class="doctest"><span class="pre">nltk.download()</span></tt> 浏览可用的软件包.</font><font id="827">下载器上<strong>Collections</strong> 选项卡显示软件包如何被打包分组，选择<strong>book</strong> 标记所在行，可以获取本书的例子和练习所需的全部数据。</font><font id="828">这些数据包括约30 个压缩文件，需要100MB 硬盘空间。</font><font id="829">完整的数据集（即下载器中的<strong>all</strong>）在本书写作期间大约是这个大小的10 倍，还在不断扩充。</font></p>
+</div>
+<p><font id="52">一旦数据被下载到你的机器，你就可以使用Python 解释器加载其中一些。</font><font id="53">第一步是在Python 提示符后输入一个特殊的命令，告诉解释器去加载一些我们要用的文本：<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *</span></tt> 。</font><font id="54">这条语句是说“从NLTK 的<tt class="doctest"><span class="pre">book</span></tt> 模块加载所有的东西”。</font><font id="55">这个<tt class="doctest"><span class="pre">book</span></tt> 模块包含你阅读本章所需的所有数据。</font><font id="56">。在输出欢迎信息之后，将会加载几本书的文本（这将需要几秒钟）。</font><font id="57">下面连同你将看到的输出一起再次列出这条命令。</font><font id="58">注意拼写和标点符号的正确性，记住不要输入<tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *
+<span class="pysrc-output">*** Introductory Examples for the NLTK Book ***</span>
+<span class="pysrc-output">Loading text1, ..., text9 and sent1, ..., sent9</span>
+<span class="pysrc-output">Type the name of the text or sentence to view it.</span>
+<span class="pysrc-output">Type: 'texts()' or 'sents()' to list the materials.</span>
+<span class="pysrc-output">text1: Moby Dick by Herman Melville 1851</span>
+<span class="pysrc-output">text2: Sense and Sensibility by Jane Austen 1811</span>
+<span class="pysrc-output">text3: The Book of Genesis</span>
+<span class="pysrc-output">text4: Inaugural Address Corpus</span>
+<span class="pysrc-output">text5: Chat Corpus</span>
+<span class="pysrc-output">text6: Monty Python and the Holy Grail</span>
+<span class="pysrc-output">text7: Wall Street Journal</span>
+<span class="pysrc-output">text8: Personals Corpus</span>
+<span class="pysrc-output">text9: The Man Who Was Thursday by G . K . Chesterton 1908</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="59">任何时候我们想要找到这些文本，只需要在Python 提示符后输入它们的名字：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text1
+<span class="pysrc-output">&lt;Text: Moby Dick by Herman Melville 1851&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text2
+<span class="pysrc-output">&lt;Text: Sense and Sensibility by Jane Austen 1811&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="60">现在我们可以和这些数据一起来使用Python 解释器，我们已经准备好上手了。</font></p>
+</div>
+<div class="section" id="searching-text"><h2 class="sigil_not_in_toc"><font id="61">1.3 搜索文本</font></h2>
+<p><font id="62">除了阅读文本之外，还有很多方法可以用来研究文本内容。</font><font id="63">词语索引视角显示一个指定单词的每一次出现，连同一些上下文一起显示。</font><font id="64">下面我们输入<tt class="doctest"><span class="pre">text1</span></tt> 后面跟一个点，再输入函数名<tt class="doctest"><span class="pre">concordance</span></tt>，然后将<tt class="doctest"><span class="pre"><span class="pysrc-string">"monstrous"</span></span></tt> 放在括号里，来查一下<em>Moby Dick</em> 《白鲸记》中的词<span class="example">monstrous</span>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text1.concordance(<span class="pysrc-string">"monstrous"</span>)
+<span class="pysrc-output">Displaying 11 of 11 matches:</span>
+<span class="pysrc-output">ong the former , one was of a most monstrous size . ... This came towards us ,</span>
+<span class="pysrc-output">ON OF THE PSALMS . " Touching that monstrous bulk of the whale or ork we have r</span>
+<span class="pysrc-output">ll over with a heathenish array of monstrous clubs and spears . Some were thick</span>
+<span class="pysrc-output">d as you gazed , and wondered what monstrous cannibal and savage could ever hav</span>
+<span class="pysrc-output">that has survived the flood ; most monstrous and most mountainous ! That Himmal</span>
+<span class="pysrc-output">they might scout at Moby Dick as a monstrous fable , or still worse and more de</span>
+<span class="pysrc-output">th of Radney .'" CHAPTER 55 Of the monstrous Pictures of Whales . I shall ere l</span>
+<span class="pysrc-output">ing Scenes . In connexion with the monstrous pictures of whales , I am strongly</span>
+<span class="pysrc-output">ere to enter upon those still more monstrous stories of them which are to be fo</span>
+<span class="pysrc-output">ght have been rummaged out of this monstrous cabinet there is no telling . But</span>
+<span class="pysrc-output">of Whale - Bones ; for Whales of a monstrous size are oftentimes cast up dead u</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="65">在一段特定的文本上第一次使用concordance 会花费一点时间来构建索引，因此接下来的搜索会很快。</font></p>
+<div class="note"><p class="first admonition-title"><font id="66">注意</font></p>
+<p class="last"><font id="67"><strong>轮到你来：</strong> 尝试搜索其他词；为了方便重复输入，你也许会用到上箭头，Ctrl-上箭头或者Alt-p 获取之前输入的命令，然后修改要搜索的词。</font><font id="68">你也可以在我们包含的其他文本上搜索。</font><font id="69">例如， 使用<tt class="doctest"><span class="pre">text2.concordance(<span class="pysrc-string">"affection"</span>)</span></tt>，搜索<em>Sense and Sensibility</em>《理智与情感》中的<span class="example">affection</span>。</font><font id="70">使用<tt class="doctest"><span class="pre">text3.concordance(<span class="pysrc-string">"lived"</span>)</span></tt> 搜索Genesis《创世纪》找出某人活了多久。</font><font id="71">你也可以看看<tt class="doctest"><span class="pre">text4</span></tt>，<em>Inaugural Address Corpus</em>《就职演说语料》，回到1789 年看看那时英语的例子，搜索如<span class="example">nation</span>, <span class="example">terror</span>，<span class="example">god</span> 这样的词，看看随着时间推移这些词的使用如何不同。</font><font id="72">我们也包括了<tt class="doctest"><span class="pre">text5</span></tt>，<em>NPS Chat Corpus</em>《NPS 聊天语料库》：你可以在里面搜索一些网络词，如<span class="example">im</span> <span class="example">ur</span>，<span class="example">lol</span>。</font><font id="73">（注意这个语料库未经审查！）</font></p>
+</div>
+<p><font id="74">在你花了一小会儿研究这些文本之后，我们希望你对语言的丰富性和多样性有一个新的认识。</font><font id="75">在下一章中，你将学习获取更广泛的文本，包括英语以外其他语言的文本。</font></p>
+<p><font id="76">词语索引使我们看到词的上下文。</font><font id="77">例如，我们看到<span class="example">monstrous</span> 出现的上下文， <span class="example">the ___ pictures</span> 和<span class="example">a ___ size</span>。</font><font id="78">还有哪些词出现在相似的上下文中？</font><font id="79">我们可以通过在被查询的文本名后添加函数名<tt class="doctest"><span class="pre">similar</span></tt>，然后在括号中插入相关的词来查找到：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text1.similar(<span class="pysrc-string">"monstrous"</span>)
+<span class="pysrc-output">mean part maddens doleful gamesome subtly uncommon careful untoward</span>
+<span class="pysrc-output">exasperate loving passing mouldy christian few true mystifying</span>
+<span class="pysrc-output">imperial modifies contemptible</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text2.similar(<span class="pysrc-string">"monstrous"</span>)
+<span class="pysrc-output">very heartily so exceedingly remarkably as vast a great amazingly</span>
+<span class="pysrc-output">extremely good sweet</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="80">观察我们从不同的文本中得到的不同结果。</font><font id="81">Austen 使用这些词与Melville 完全不同；在她那里，<span class="example">monstrous</span>是正面的意思，有时它的功能像词<span class="example">very</span>一样作强调成分。</font></p>
+<p><font id="82">函数<tt class="doctest"><span class="pre">common_contexts</span></tt>允许我们研究两个或两个以上的词共同的上下文，如<span class="example">monstrous</span>和<span class="example">very</span>。</font><font id="83">我们必须用方括号和圆括号把这些词括起来，中间用逗号分割：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text2.common_contexts([<span class="pysrc-string">"monstrous"</span>, <span class="pysrc-string">"very"</span>])
+<span class="pysrc-output">a_pretty is_pretty am_glad be_glad a_lucky</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="84">注意</font></p>
+<p class="last"><font id="85"><strong>轮到你来：</strong> 挑选另一对词，使用<tt class="doctest"><span class="pre">similar()</span></tt> 和<tt class="doctest"><span class="pre">common_contexts()</span></tt> 函数比较它们在两个不同文本中的用法。</font></p>
+</div>
+<p><font id="86">自动检测出现在文本中的特定的词，并显示同样上下文中出现的一些词，这只是一个方面。</font><font id="87">我们也可以判断词在文本中的<em>位置</em>：从文本开头算起在它前面有多少词。</font><font id="88">这个位置信息可以用<span class="termdef">离散图</span>表示。</font><font id="89">每一个竖线代表一个单词，每一行代表整个文本。</font><font id="90">在<a class="reference internal" href="http://www.nltk.org/book/ch01.html#fig-inaugural">1.2</a> 中，我们看到在过去220年中的一些显著的词语用法模式（在一个由就职演说语料首尾相连的人为组合的文本中）。</font><font id="91">可以用下面的方法画出这幅图。</font><font id="92">你也许会想尝试更多的词（如，<span class="example">liberty</span>，<span class="example">constitution</span>）和不同的文本。</font><font id="93">你能在看到这幅图之前预测一个词的分布吗？</font><font id="94">跟以前一样，请保证引号、逗号、中括号及小括号的使用完全正确。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text4.dispersion_plot([<span class="pysrc-string">"citizens"</span>, <span class="pysrc-string">"democracy"</span>, <span class="pysrc-string">"freedom"</span>, <span class="pysrc-string">"duties"</span>, <span class="pysrc-string">"America"</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="figure" id="fig-inaugural"><font id="95"><img alt="Images/inaugural.png" src="Images/10a8a58e33a0a6b7fb71389ea2114566.jpg" style="width: 738.0px; height: 324.0px;"/> <p class="caption"><span class="caption-label">图 1.2</span>：美国总统就职演说词汇分布图：可以用来研究随时间推移语言使用上的变化。</p></font></div>
+<div class="note"><p class="first admonition-title"><font id="96">注意</font></p>
+<p class="last"><font id="97"><strong>重要事项：</strong> 为了画出这本书中用到的图形，你需要安装Python 的NumPy 和Matplotlib 包。</font><font id="98">请参阅<tt class="doctest"><span class="pre">http://nltk.org/</span></tt> 上的安装说明。</font></p>
+</div>
+<div class="note"><p class="first admonition-title"><font id="99">注意</font></p>
+<p class="last"><font id="100">你还可以使用<tt class="doctest"><span class="pre">https://books.google.com/ngrams</span></tt> 画出词汇随着时间的使用频率。</font></p>
+</div>
+<p><font id="101">现在轻松一下，让我们尝试产生一些刚才看到的不同风格的随机文本。</font><font id="102">要做到这一点，我们需要输入文本的名字后面跟函数名<tt class="doctest"><span class="pre">generate</span></tt>。</font><font id="103">(需要带括号，但括号里没有也什么。）</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text3.generate()
+<span class="pysrc-output">In the beginning of his brother is a hairy man , whose top may reach</span>
+<span class="pysrc-output">unto heaven ; and ye shall sow the land of Egypt there was no bread in</span>
+<span class="pysrc-output">all that he was taken out of the month , upon the earth . So shall thy</span>
+<span class="pysrc-output">wages be ? And they made their father ; and Isaac was old , and kissed</span>
+<span class="pysrc-output">him : and Laban with his cattle in the midst of the hands of Esau thy</span>
+<span class="pysrc-output">first born , and Phichol the chief butler unto his son Isaac , she</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="104">Note</font></p>
+<p class="last"><font id="105"><tt class="doctest"><span class="pre">generate()</span></tt> 方法在 NLTK 3.0 中不可用，但会在后续版本中恢复。</font></p>
+</div>
+</div>
+<div class="section" id="counting-vocabulary"><h2 class="sigil_not_in_toc"><font id="106">1.4 词汇计数</font></h2>
+<p><font id="107">关于前面例子中出现的文本，最明显的事实是它们所使用的词汇不同。</font><font id="108">在本节中，我们将看到如何使用计算机以各种有用的方式计数词汇。</font><font id="109">像以前一样，你将会马上开始用Python 解释器进行试验，即使你可能还没有系统的研究过Python。</font><font id="110">通过修改这些例子测试一下你是否理解它们，尝试一下本章结尾处的练习。</font></p>
+<p><font id="111">首先，让我们算出文本从头到尾的长度，包括文本中出现的词和标点符号。</font><font id="112">我们使用函数<tt class="doctest"><span class="pre">len</span></tt>获取长度，请看在《创世纪》中使用的例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(text3)
+<span class="pysrc-output">44764</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="113">《创世纪》有44764 个词和标点符号或者叫“词符”。</font><font id="114"><span class="termdef">词符</span> 表示一个我们想要整体对待的字符序列 —— 例如<tt class="doctest"><span class="pre">hairy</span></tt>，<tt class="doctest"><span class="pre">his</span></tt> 或 <tt class="doctest"><span class="pre">:)</span></tt>。</font><font id="115">当我们计数文本如<span class="example">to be or not to be</span> 这个短语中词符的个数时，我们计数这些序列出现的次数。</font><font id="116">因此，我们的例句中出现了<span class="example">to</span> 和<span class="example">be</span> 各两次，<span class="example">or</span> 和<span class="example">not</span> 各一次。</font><font id="117">然而在例句中只有4 个不同的词。</font><font id="118">《创世纪》中有多少不同的词？</font><font id="119">要用Python 来回答这个问题，我们处理问题的方法将稍有改变。</font><font id="120">一个文本词汇表只是它用到的词符的<em>集合</em>，因为在集合中所有重复的元素都只算一个。</font><font id="121">Python 中我们可以使用命令：<tt class="doctest"><span class="pre">set(text3)</span></tt> 获得<tt class="doctest"><span class="pre">text3</span></tt> 的词汇表。</font><font id="122">当你这样做时，屏幕上的很多词会掠过。</font><font id="123">现在尝试以下操作：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(set(text3)) <a href="http://www.nltk.org/book/ch01.html#ref-sorted-set"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">['!', "'", '(', ')', ',', ',)', '.', '.)', ':', ';', ';)', '?', '?)',</span>
+<span class="pysrc-output">'A', 'Abel', 'Abelmizraim', 'Abidah', 'Abide', 'Abimael', 'Abimelech',</span>
+<span class="pysrc-output">'Abr', 'Abrah', 'Abraham', 'Abram', 'Accad', 'Achbor', 'Adah', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(text3)) <a href="http://www.nltk.org/book/ch01.html#ref-len-set"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-output">2789</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="124">用<tt class="doctest"><span class="pre">sorted()</span></tt> 包裹起Python 表达式<tt class="doctest"><span class="pre">set(text3)</span></tt> <a class="reference internal" href="http://www.nltk.org/book/ch01.html#sorted-set"><span id="ref-sorted-set"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>，我们得到一个词汇项的排序表，这个表以各种标点符号开始，然后是以<span class="example">A</span> 开头的词汇。</font><font id="125">大写单词排在小写单词前面。</font><font id="126">我们通过求集合中元素的个数间接获得词汇表的大小，再次使用<tt class="doctest"><span class="pre">len</span></tt>来获得这个数值<a class="reference internal" href="http://www.nltk.org/book/ch01.html#len-set"><span id="ref-len-set"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="127">尽管小说中有44,764 个词符，但只有2,789 个不同的单词或“词类型”。</font><font id="128">一个<span class="termdef">词类型</span>是指一个词在一个文本中独一无二的出现形式或拼写 —— 也就是说，这个词在词汇表中是唯一的。</font><font id="129">我们计数的2,789 个元素中包括标点符号，所以我们把这些叫做唯一元素<span class="termdef">类型</span>而不是词类型。</font></p>
+<p><font id="130">现在，让我们对文本词汇丰富度进行测量。</font><font id="131">下一个例子向我们展示，不同的单词数目只是单词总数的6%，或者每个单词平均被使用了16 次（记住，如果你使用的是Python 2，请在开始输入<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> __future__ <span class="pysrc-keyword">import</span> division</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(text3)) / len(text3)
+<span class="pysrc-output">0.06230453042623537</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="132">接下来，让我们专注于特定的词。</font><font id="133">我们可以计数一个词在文本中出现的次数，计算一个特定的词在文本中占据的百分比：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text3.count(<span class="pysrc-string">"smote"</span>)
+<span class="pysrc-output">5</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>100 * text4.count(<span class="pysrc-string">'a'</span>) / len(text4)
+<span class="pysrc-output">1.4643016433938312</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="134">注</font></p>
+<p class="last"><font id="135"><strong>轮到你来：</strong> <tt class="doctest"><span class="pre">text5</span></tt> 中<span class="example">lol</span> 出现了多少次？</font><font id="136">它占文本全部词数的百分比是多少？</font></p>
+</div>
+<p><font id="137">你也许想要对几个文本重复这些计算，但重新输入公式是乏味的。</font><font id="138">你可以自己命名一个任务，如“lexical_diversity”或“percentage”，然后用一个代码块关联它。</font><font id="139">现在，你只需输入一个很短的名字就可以代替一行或多行Python 代码，而且你想用多少次就用多少次。</font><font id="140">执行一个任务的代码段叫做一个<span class="termdef">函数</span>，我们使用关键字<tt class="doctest"><span class="pre">def</span></tt> 给函数定义一个简短的名字。</font><font id="141">下面的例子演示如何定义两个新的函数，<tt class="doctest"><span class="pre">lexical_diversity()</span></tt> 和<tt class="doctest"><span class="pre">percentage()</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">lexical_diversity</span>(text): <a href="http://www.nltk.org/book/ch01.html#ref-fun-parameter1"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-more">... </span>    return len(set(text)) / len(text) <a href="http://www.nltk.org/book/ch01.html#ref-locvar"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">percentage</span>(count, total): <a href="http://www.nltk.org/book/ch01.html#ref-fun-parameter2"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-more">... </span>    return 100 * count / total
+<span class="pysrc-more">...</span></pre>
+<div class="caution"><p class="first admonition-title"><font id="142">小心！</font></p>
+<p class="last"><font id="143">当遇到第一行末尾的冒号后，Python 解释器提示符由<tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt> 变为<tt class="doctest"><span class="pre"><span class="pysrc-more">...</span></span></tt> 。</font><font id="144"><tt class="doctest"><span class="pre"><span class="pysrc-more">...</span></span></tt>提示符表示Python 期望在后面是一个<span class="termdef">缩进代码块</span> 。</font><font id="145">缩进是输入四个空格还是敲击Tab 键，这由你决定。</font><font id="146">要结束一个缩进代码段，只需输入一个空行。</font></p>
+</div>
+<p><font id="147"><tt class="doctest"><span class="pre">lexical_diversity()</span></tt> <a class="reference internal" href="http://www.nltk.org/book/ch01.html#fun-parameter1"><span id="ref-fun-parameter1"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>的定义中，我们指定了一个<tt class="doctest"><span class="pre">text</span></tt> <span class="termdef">参数</span>。</font><font id="148">这个参数是我们想要计算词汇多样性的实际文本的一个“占位符”，并在用到这个函数的时候出现在将要运行的代码块中 <a class="reference internal" href="http://www.nltk.org/book/ch01.html#locvar"><span id="ref-locvar"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="149">类似地，<tt class="doctest"><span class="pre">percentage()</span></tt> 定义了两个参数，<tt class="doctest"><span class="pre">count</span></tt> 和<tt class="doctest"><span class="pre">total</span></tt> <a class="reference internal" href="http://www.nltk.org/book/ch01.html#fun-parameter2"><span id="ref-fun-parameter2"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a>。</font></p>
+<p><font id="150">只要Python 知道了<tt class="doctest"><span class="pre">lexical_diversity()</span></tt> 和<tt class="doctest"><span class="pre">percentage()</span></tt> 是指定代码段的名字，我们就可以继续使用这些函数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexical_diversity(text3)
+<span class="pysrc-output">0.06230453042623537</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexical_diversity(text5)
+<span class="pysrc-output">0.13477005109975562</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>percentage(4, 5)
+<span class="pysrc-output">80.0</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>percentage(text4.count(<span class="pysrc-string">'a'</span>), len(text4))
+<span class="pysrc-output">1.4643016433938312</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="151">扼要重述一下，我们使用或<span class="termdef">调用</span>一个如<tt class="doctest"><span class="pre">lexical_diversity()</span></tt> 这样的函数，只要输入它的名字后面跟一个左括号，再输入文本名字，然后是右括号。</font><font id="152">这些括号经常出现，它们的作用是分割任务名—— 如<tt class="doctest"><span class="pre">lexical_diversity()</span></tt>，与任务将要处理的数据 ——如<tt class="doctest"><span class="pre">text3</span></tt>。</font><font id="153">调用函数时放在参数位置的数据值叫做函数的<span class="termdef">实参</span>。</font></p>
+<p><font id="154">在本章中你已经遇到了几个函数，如<tt class="doctest"><span class="pre">len()</span></tt>, <tt class="doctest"><span class="pre">set()</span></tt> 和<tt class="doctest"><span class="pre">sorted()</span></tt>。</font><font id="155">通常我们会在函数名后面加一对空括号，像<tt class="doctest"><span class="pre">len()</span></tt>中的那样，这只是为了表明这是一个函数而不是其他的Python 表达式。</font><font id="156">函数是编程中的一个重要概念，我们在一开始提到它们，是为了让新同学体会编程的强大和富有创造力。</font><font id="157">如果你现在觉得有点混乱，请不要担心。</font></p>
+<p><font id="158">稍后我们将看到如何使用函数列表显示数据，像表<a class="reference internal" href="http://www.nltk.org/book/ch01.html#tab-brown-types">1.1</a>显示的那样。</font><font id="159">表的每一行将包含不同数据的相同的计算，我们用函数来做这种重复性的工作。</font></p>
+<p class="caption"><font id="160"><span class="caption-label">表 1.1</span>：</font></p>
+<p><font id="161"><em>Brown 语料库</em>中各种文体的词汇多样性</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1 = [<span class="pysrc-string">'Call'</span>, <span class="pysrc-string">'me'</span>, <span class="pysrc-string">'Ishmael'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="199">在提示符后面，我们输入自己命名的<tt class="doctest"><span class="pre">sent1</span></tt>，后跟一个等号，然后是一些引用的词汇，中间用逗号分割并用括号包围。</font><font id="200">这个方括号内的东西在Python 中叫做<span class="termdef">列表</span>：它就是我们存储文本的方式。</font><font id="201">我们可以通过输入它的名字来查阅它<a class="reference internal" href="http://www.nltk.org/book/ch01.html#inspect-var"><span id="ref-inspect-var"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>。</font><font id="202">我们可以查询它的长度<a class="reference internal" href="http://www.nltk.org/book/ch01.html#len-sent"><span id="ref-len-sent"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="203">我们甚至可以对它调用我们自己的函数<tt class="doctest"><span class="pre">lexical_diversity()</span></tt><a class="reference internal" href="http://www.nltk.org/book/ch01.html#apply-function"><span id="ref-apply-function"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1 <a href="http://www.nltk.org/book/ch01.html#ref-inspect-var"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">['Call', 'me', 'Ishmael', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(sent1) <a href="http://www.nltk.org/book/ch01.html#ref-len-sent"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-output">4</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexical_diversity(sent1) <a href="http://www.nltk.org/book/ch01.html#ref-apply-function"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-output">1.0</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="204">还定义了其它几个列表，分别对应每个文本开始的句子，<tt class="doctest"><span class="pre">sent2</span></tt> … <tt class="doctest"><span class="pre">sent9</span></tt>。</font><font id="205">在这里我们检查其中的两个；你可以自己在Python 解释器中尝试其余的（如果你得到一个错误说<tt class="doctest"><span class="pre">sent2</span></tt> 没有定义，你需要先输入<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent2
+<span class="pysrc-output">['The', 'family', 'of', 'Dashwood', 'had', 'long',</span>
+<span class="pysrc-output">'been', 'settled', 'in', 'Sussex', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent3
+<span class="pysrc-output">['In', 'the', 'beginning', 'God', 'created', 'the',</span>
+<span class="pysrc-output">'heaven', 'and', 'the', 'earth', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="206">注意</font></p>
+<p class="last"><font id="207"><strong>轮到你来：</strong> 通过输入名字、等号和一个单词列表, 组建几个你自己的句子，如<tt class="doctest"><span class="pre">ex1 = [<span class="pysrc-string">'Monty'</span>, <span class="pysrc-string">'Python'</span>, <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'Holy'</span>, <span class="pysrc-string">'Grail'</span>]</span></tt>。</font><font id="208">重复一些我们先前在第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-computing-with-language-texts-and-words">1</a> 节看到的其他Python 操作，如：<tt class="doctest"><span class="pre">sorted(ex1)</span></tt>, <tt class="doctest"><span class="pre">len(set(ex1))</span></tt>, <tt class="doctest"><span class="pre">ex1.count(<span class="pysrc-string">'the'</span>)</span></tt>。</font></p>
+</div>
+<p><font id="209">令人惊喜的是，我们可以对列表使用Python 加法运算。</font><font id="210">两个列表相加<a class="reference internal" href="http://www.nltk.org/book/ch01.html#list-plus-list"><span id="ref-list-plus-list"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>创造出一个新的列表，包括第一个列表的全部，后面跟着第二个列表的全部。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[<span class="pysrc-string">'Monty'</span>, <span class="pysrc-string">'Python'</span>] + [<span class="pysrc-string">'and'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'Holy'</span>, <span class="pysrc-string">'Grail'</span>] <a href="http://www.nltk.org/book/ch01.html#ref-list-plus-list"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">['Monty', 'Python', 'and', 'the', 'Holy', 'Grail']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="211">注意</font></p>
+<p class="last"><font id="212">这种加法的特殊用法叫做<span class="termdef">连接</span>；它将多个列表组合为一个列表。</font><font id="213">我们可以把句子连接起来组成一个文本。</font></p>
+</div>
+<p><font id="214">不必逐字的输入列表，可以使用简短的名字来引用预先定义好的列表。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent4 + sent1
+<span class="pysrc-output">['Fellow', '-', 'Citizens', 'of', 'the', 'Senate', 'and', 'of', 'the',</span>
+<span class="pysrc-output">'House', 'of', 'Representatives', ':', 'Call', 'me', 'Ishmael', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="215">如果我们想要向链表中增加一个元素该如何？</font><font id="216">这种操作叫做<span class="termdef">追加</span>。</font><font id="217">当我们对一个列表使用<tt class="doctest"><span class="pre">append()</span></tt>时，列表自身会随着操作而更新。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1.append(<span class="pysrc-string">"Some"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1
+<span class="pysrc-output">['Call', 'me', 'Ishmael', '.', 'Some']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+</div>
+<div class="section" id="indexing-lists"><h2 class="sigil_not_in_toc"><font id="218">2.2 索引列表</font></h2>
+<p><font id="219">正如我们已经看到的，Python 中的一个文本是一个单词的列表，用括号和引号的组合来表示。</font><font id="220">就像处理一页普通的文本，我们可以使用<tt class="doctest"><span class="pre">len(text1)</span></tt> 计算<tt class="doctest"><span class="pre">text1</span></tt>的词数，使用<tt class="doctest"><span class="pre">text1.count(<span class="pysrc-string">'heaven'</span>)</span></tt>计算一个文本中出现的特定的词，如<tt class="doctest"><span class="pre"><span class="pysrc-string">'heaven'</span></span></tt>。</font></p>
+<p><font id="221">稍微花些耐心，我们可以挑选出打印出来的文本中的第1 个、第173 个或第14278个词。</font><font id="222">类似的，我们也可以通过它在列表中出现的次序找出一个Python 列表的元素。</font><font id="223">表示这个位置的数字叫做这个元素的<span class="termdef">索引</span>。</font><font id="224">在文本名称后面的方括号里写下索引，Python 就会表示出文本中这个索引处如<tt class="doctest"><span class="pre">173</span></tt>的元素：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text4[173]
+<span class="pysrc-output">'awaken'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="225">我们也可以反过来做；找出一个词第一次出现的索引：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text4.index(<span class="pysrc-string">'awaken'</span>)
+<span class="pysrc-output">173</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="226">索引是一种常见的用来获取文本中词汇的方式，或者更一般的，访问列表中的元素的方式。</font><font id="227">Python 也允许我们获取子列表，从大文本中任意抽取语言片段，术语叫做<span class="termdef">切片</span>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text5[16715:16735]
+<span class="pysrc-output">['U86', 'thats', 'why', 'something', 'like', 'gamefly', 'is', 'so', 'good',</span>
+<span class="pysrc-output">'because', 'you', 'can', 'actually', 'play', 'a', 'full', 'game', 'without',</span>
+<span class="pysrc-output">'buying', 'it']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text6[1600:1625]
+<span class="pysrc-output">['We', "'", 're', 'an', 'anarcho', '-', 'syndicalist', 'commune', '.', 'We',</span>
+<span class="pysrc-output">'take', 'it', 'in', 'turns', 'to', 'act', 'as', 'a', 'sort', 'of', 'executive',</span>
+<span class="pysrc-output">'officer', 'for', 'the', 'week']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="228">索引有一些微妙，我们将在一个构造的句子的帮助下探讨这些：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'word1'</span>, <span class="pysrc-string">'word2'</span>, <span class="pysrc-string">'word3'</span>, <span class="pysrc-string">'word4'</span>, <span class="pysrc-string">'word5'</span>,
+<span class="pysrc-more">... </span>        <span class="pysrc-string">'word6'</span>, <span class="pysrc-string">'word7'</span>, <span class="pysrc-string">'word8'</span>, <span class="pysrc-string">'word9'</span>, <span class="pysrc-string">'word10'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[0]
+<span class="pysrc-output">'word1'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[9]
+<span class="pysrc-output">'word10'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="229">请注意，索引从零开始：<tt class="doctest"><span class="pre">sent</span></tt> 第0 个元素写作<tt class="doctest"><span class="pre">sent[0]</span></tt>，是第一个单词<tt class="doctest"><span class="pre"><span class="pysrc-string">'word1'</span></span></tt>，而<tt class="doctest"><span class="pre">sent</span></tt> 的第9 个元素是<tt class="doctest"><span class="pre"><span class="pysrc-string">'word10'</span></span></tt>。</font><font id="230">原因很简单：Python 从计算机内存中的列表获取内容的时候，它已经位于第一个元素；我们要告诉它向前多少个元素。</font><font id="231">因此，向前0 个元素使它留在第一个元素上。</font></p>
+<div class="note"><p class="first admonition-title"><font id="232">注意</font></p>
+<p class="last"><font id="233">这种从零算起的做法刚开始接触会有些混乱，但这是现代编程语言普遍使用的。</font><font id="234">如果你已经掌握了19XY 是20 世纪中的一年这样的计数世纪的系统，或者如果你生活在一个建筑物楼层编号从1 开始的国家，你很开就会掌握它的窍门，步行<span class="math">n-1</span>级楼梯到第<span class="math">n</span> 层。</font></p>
+</div>
+<p><font id="235">现在，如果我们不小心使用的索引过大就会得到一个错误：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[10]
+<span class="pysrc-except">Traceback (most recent call last):</span>
+<span class="pysrc-except">  File "&lt;stdin&gt;", line 1, in ?</span>
+<span class="pysrc-except">IndexError: list index out of range</span>
+<span class="pysrc-except"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="236">这次不是一个语法错误，因为程序片段在语法上是正确的。</font><font id="237">相反，它是一个<span class="termdef">运行时错误</span>，它会产生一个<tt class="doctest"><span class="pre">回溯</span></tt>消息显示错误的上下文、错误的名称：<tt class="doctest"><span class="pre">IndexError</span></tt> 以及简要的解释说明。</font></p>
+<p><font id="238">让我们再次使用构造的句子仔细看看切片。</font><font id="239">这里我们发现切片<tt class="doctest"><span class="pre">5:8</span></tt> 包含<tt class="doctest"><span class="pre">sent</span></tt> 中索引为5，6 和7的元素：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[5:8]
+<span class="pysrc-output">['word6', 'word7', 'word8']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[5]
+<span class="pysrc-output">'word6'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[6]
+<span class="pysrc-output">'word7'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[7]
+<span class="pysrc-output">'word8'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="240">按照惯例，<tt class="doctest"><span class="pre">m:n</span></tt> 表示元素<span class="mathit">m</span>…<span class="mathit">n-1</span>。</font><font id="241">正如下一个例子显示的那样，如果切片从列表第一个元素开始，我们可以省略第一个数字<a class="reference internal" href="http://www.nltk.org/book/ch01.html#slice2"><span id="ref-slice2"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>, 如果切片到列表最后一个元素处结尾，我们可以省略第二个数字 <a class="reference internal" href="http://www.nltk.org/book/ch01.html#slice3"><span id="ref-slice3"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[:3] <a href="http://www.nltk.org/book/ch01.html#ref-slice2"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">['word1', 'word2', 'word3']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text2[141525:] <a href="http://www.nltk.org/book/ch01.html#ref-slice3"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-output">['among', 'the', 'merits', 'and', 'the', 'happiness', 'of', 'Elinor', 'and', 'Marianne',</span>
+<span class="pysrc-output">',', 'let', 'it', 'not', 'be', 'ranked', 'as', 'the', 'least', 'considerable', ',',</span>
+<span class="pysrc-output">'that', 'though', 'sisters', ',', 'and', 'living', 'almost', 'within', 'sight', 'of',</span>
+<span class="pysrc-output">'each', 'other', ',', 'they', 'could', 'live', 'without', 'disagreement', 'between',</span>
+<span class="pysrc-output">'themselves', ',', 'or', 'producing', 'coolness', 'between', 'their', 'husbands', '.',</span>
+<span class="pysrc-output">'THE', 'END']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="242">我们可以通过赋值给它的索引值来修改列表中的元素。</font><font id="243">在接下来的例子中，我们把<tt class="doctest"><span class="pre">sent[0]</span></tt> 放在等号左侧<a class="reference internal" href="http://www.nltk.org/book/ch01.html#list-assignment"><span id="ref-list-assignment"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>。</font><font id="244">我们也可以用新内容替换掉一整个片段<a class="reference internal" href="http://www.nltk.org/book/ch01.html#slice-assignment"><span id="ref-slice-assignment"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="245">最后一个尝试报错的原因是这个链表只有四个元素而要获取其后面的元素就产生了错误<a class="reference internal" href="http://www.nltk.org/book/ch01.html#list-error"><span id="ref-list-error"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[0] = <span class="pysrc-string">'First'</span> <a href="http://www.nltk.org/book/ch01.html#ref-list-assignment"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[9] = <span class="pysrc-string">'Last'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>len(sent)
+<span class="pysrc-output">10</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[1:9] = [<span class="pysrc-string">'Second'</span>, <span class="pysrc-string">'Third'</span>] <a href="http://www.nltk.org/book/ch01.html#ref-slice-assignment"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent
+<span class="pysrc-output">['First', 'Second', 'Third', 'Last']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent[9] <a href="http://www.nltk.org/book/ch01.html#ref-list-error"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-except">Traceback (most recent call last):</span>
+<span class="pysrc-except">  File "&lt;stdin&gt;", line 1, in ?</span>
+<span class="pysrc-except">IndexError: list index out of range</span>
+<span class="pysrc-except"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="246">注意</font></p>
+<p class="last"><font id="247"><strong>轮到你来：</strong>花几分钟定义你自己的句子，使用前文中的方法修改个别词和词组（切片）。</font><font id="248">尝试本章结尾关于列表的练习，检验你是否理解。</font></p>
+</div>
+</div>
+<div class="section" id="variables"><h2 class="sigil_not_in_toc"><font id="249">2.3 变量</font></h2>
+<p><font id="250">从第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-computing-with-language-texts-and-words">1</a>节一开始，你已经访问过名为<tt class="doctest"><span class="pre">text1</span></tt>, <tt class="doctest"><span class="pre">text2</span></tt> 等的文本。</font><font id="251">像这样只输入简短的名字来引用一本250,000 字的书节省了很多打字时间。</font><font id="252">一般情况下，我们可以对任何我们关心的计算命名。</font><font id="253">我们在前面的小节中已经这样做了，例如定义一个变量<span class="termdef">变量</span> <tt class="doctest"><span class="pre">sent1</span></tt>，如下所示：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1 = [<span class="pysrc-string">'Call'</span>, <span class="pysrc-string">'me'</span>, <span class="pysrc-string">'Ishmael'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="254">这样的语句形式是：<em>变量 = 表达式</em>。</font><font id="255">Python 将计算右边的表达式把结果保存在变量中。</font><font id="256">这个过程叫做<span class="termdef">赋值</span>。</font><font id="257">它并不产生任何输出，你必须在新的一行输入变量的名字来检查它的内容。</font><font id="258">等号可能会有些误解，因为信息是从右边流到左边的。</font><font id="259">你把它想象成一个左箭头可能会有帮助。</font><font id="260">变量的名字可以是任何你喜欢的名字，如<tt class="doctest"><span class="pre">my_sent</span></tt>, <tt class="doctest"><span class="pre">sentence</span></tt>, <tt class="doctest"><span class="pre">xyzzy</span></tt>。</font><font id="261">变量必须以字母开头，可以包含数字和下划线。</font><font id="262">下面是变量和赋值的一些例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>my_sent = [<span class="pysrc-string">'Bravely'</span>, <span class="pysrc-string">'bold'</span>, <span class="pysrc-string">'Sir'</span>, <span class="pysrc-string">'Robin'</span>, <span class="pysrc-string">','</span>, <span class="pysrc-string">'rode'</span>,
+<span class="pysrc-more">... </span><span class="pysrc-string">'forth'</span>, <span class="pysrc-string">'from'</span>, <span class="pysrc-string">'Camelot'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>noun_phrase = my_sent[1:4]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>noun_phrase
+<span class="pysrc-output">['bold', 'Sir', 'Robin']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wOrDs = sorted(noun_phrase)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wOrDs
+<span class="pysrc-output">['Robin', 'Sir', 'bold']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="263">请记住，排序表中大写字母出现在小写字母之前。</font></p>
+<div class="note"><p class="first admonition-title"><font id="264">注意</font></p>
+<p class="last"><font id="265">请注意，在前面的例子中，我们将<tt class="doctest"><span class="pre">my_sent</span></tt> 的定义分成两行。</font><font id="266">Python 表达式可以被分割成多行，只要它出现在任何一种括号内。</font><font id="267">Python 使用"<tt class="doctest"><span class="pre"><span class="pysrc-more">...</span></span></tt>"提示符表示期望更多的输入。</font><font id="268">在这些连续的行中有多少缩进都没有关系，只是加入缩进通常会便于阅读。</font></p>
+</div>
+<p><font id="269">最好是选择有意义的变量名，它能提醒你代码的含义，也帮助别人读懂你的Python 代码。</font><font id="270">Python 并不会理解这些名称的意义;它只是盲目的服从你的指令，如果你输入一些令人困惑的代码，例如<tt class="doctest"><span class="pre">one = <span class="pysrc-string">'two'</span></span></tt> 或<tt class="doctest"><span class="pre">two = 3</span></tt>,它也不会反对。</font><font id="271">唯一的限制是变量名不能是Python 的保留字，如<tt class="doctest"><span class="pre">def</span></tt>, <tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>, <tt class="doctest"><span class="pre"><span class="pysrc-keyword">not</span></span></tt>, 和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>。</font><font id="272">如果你使用了保留字，Python 会产生一个语法错误：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">not</span> = <span class="pysrc-string">'Camelot'</span>           
+<span class="pysrc-output">File "&lt;stdin&gt;", line 1</span>
+<span class="pysrc-output">    not = 'Camelot'</span>
+<span class="pysrc-output">        ^</span>
+<span class="pysrc-output">SyntaxError: invalid syntax</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="273">我们将经常使用变量来保存计算的中间步骤，尤其是当这样做使代码更容易读懂时。</font><font id="274">因此，<tt class="doctest"><span class="pre">len(set(text1))</span></tt> 也可以写作：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>vocab = set(text1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vocab_size = len(vocab)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vocab_size
+<span class="pysrc-output">19317</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="caution"><p class="first admonition-title"><font id="275">小心！</font></p>
+<p class="last"><font id="276">为Python 变量选择名称（<span class="termdef">标识符</span>）时请注意。</font><font id="277">首先，应该以字母开始，后面跟数字（<tt class="doctest"><span class="pre">0</span></tt> 到<tt class="doctest"><span class="pre">9</span></tt>）或字母。</font><font id="278">因此，<tt class="doctest"><span class="pre">abc23</span></tt> 是好的，但是<tt class="doctest"><span class="pre">23abc</span></tt> 会导致一个语法错误。</font><font id="279">名称是大小写敏感的，这意味着<tt class="doctest"><span class="pre">myVar</span></tt> 和<tt class="doctest"><span class="pre">myvar</span></tt> 是不同的变量。</font><font id="280">变量名不能包含空格，但可以用下划线把单词分开，例如<tt class="doctest"><span class="pre">my_var</span></tt>。</font><font id="281">注意不要插入连字符来代替下划线：<tt class="doctest"><span class="pre">my-var</span></tt> 不对，因为Python 会把"<tt class="doctest"><span class="pre">-</span></tt>"解释为减号。</font></p>
+</div>
+</div>
+<div class="section" id="strings"><h2 class="sigil_not_in_toc"><font id="282">2.4 字符串</font></h2>
+<p><font id="283">我们用来访问列表元素的一些方法也可以用在单独的词或<span class="termdef">字符串</span>上。</font><font id="284">例如可以把一个字符串指定给一个变量<a class="reference internal" href="http://www.nltk.org/book/ch01.html#assign-string"><span id="ref-assign-string"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>，索引一个字符串<a class="reference internal" href="http://www.nltk.org/book/ch01.html#index-string"><span id="ref-index-string"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>，切片一个字符串<a class="reference internal" href="http://www.nltk.org/book/ch01.html#slice-string"><span id="ref-slice-string"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>name = <span class="pysrc-string">'Monty'</span> <a href="http://www.nltk.org/book/ch01.html#ref-assign-string"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>name[0] <a href="http://www.nltk.org/book/ch01.html#ref-index-string"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-output">'M'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>name[:4] <a href="http://www.nltk.org/book/ch01.html#ref-slice-string"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-output">'Mont'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="285">我们还可以对字符串执行乘法和加法：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>name * 2
+<span class="pysrc-output">'MontyMonty'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>name + <span class="pysrc-string">'!'</span>
+<span class="pysrc-output">'Monty!'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="286">我们可以把列表中的单词连接起来组成单个字符串，或者把字符串分割成一个列表，如下面所示：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-string">' '</span>.join([<span class="pysrc-string">'Monty'</span>, <span class="pysrc-string">'Python'</span>])
+<span class="pysrc-output">'Monty Python'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-string">'Monty Python'</span>.split()
+<span class="pysrc-output">['Monty', 'Python']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="287">我们将在第<a class="reference external" href="http://www.nltk.org/book/ch03.html#chap-words">3</a>章回到字符串的主题。</font><font id="288">目前，我们已经有了两个重要的基石——列表和字符串——已经准备好可以重新做一些语言分析了。</font></p>
+</div>
+</div>
+<div class="section" id="computing-with-language-simple-statistics"><h2 class="sigil_not_in_toc"><font id="289">3 计算语言：简单的统计</font></h2>
+<p><font id="290">让我们重新开始探索用我们的计算资源处理大量文本的方法。</font><font id="291">我们在第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-computing-with-language-texts-and-words">1</a>节已经开始讨论了，在那里我们看到如何搜索词及其上下文，如何汇编一个文本中的词汇，如何产生一种文体的随机文本等。</font></p>
+<p><font id="292">在本节中，我们重新拾起是什么让一个文本不同与其他文本这样的问题，并使用程序自动寻找特征词汇和文字表达。</font><font id="293">正如在第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-computing-with-language-texts-and-words">1</a>节中那样，你可以通过复制它们到Python 解释器中来尝试Python 语言的新特征，你将在下一节中系统的了解这些功能。</font></p>
+<p><font id="294">在这之前，你可能会想通过预测下面的代码的输出来检查你对上一节的理解。</font><font id="295">你可以使用解释器来检查你是否正确。</font><font id="296">如果你不确定如何做这个任务，你最好在继续之前复习一下上一节的内容。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>saying = [<span class="pysrc-string">'After'</span>, <span class="pysrc-string">'all'</span>, <span class="pysrc-string">'is'</span>, <span class="pysrc-string">'said'</span>, <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'done'</span>,
+<span class="pysrc-more">... </span>          <span class="pysrc-string">'more'</span>, <span class="pysrc-string">'is'</span>, <span class="pysrc-string">'said'</span>, <span class="pysrc-string">'than'</span>, <span class="pysrc-string">'done'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = set(saying)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = sorted(tokens)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens[-2:]
+<span class="pysrc-output">what output do you expect here?</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="section" id="frequency-distributions"><h2 class="sigil_not_in_toc"><font id="297">3.1 频率分布</font></h2>
+<p><font id="298">我们如何能自动识别文本中最能体现文本的主题和风格的词汇？</font><font id="299">试想一下，要找到一本书中使用最频繁的50 个词你会怎么做？</font><font id="300">一种方法是为每个词项设置一个计数器，如图<a class="reference internal" href="http://www.nltk.org/book/ch01.html#fig-tally">3.1</a>显示的那样。</font><font id="301">计数器可能需要几千行，这将是一个极其繁琐的过程——如此繁琐以至于我们宁愿把任务交给机器来做。</font></p>
+<div class="figure" id="fig-tally"><font id="302"><img alt="Images/tally.png" src="Images/de0715649664a49a5ab2e2b61ae2675a.jpg" style="width: 231.8px; height: 155.0px;"/> <p class="caption"><span class="caption-label">图 3.1</span>：计数一个文本中出现的词（频率分布）</p></font></div>
+<p><font id="303">图<a class="reference internal" href="http://www.nltk.org/book/ch01.html#fig-tally">3.1</a> 中的表被称为<span class="termdef">频率分布</span>，它告诉我们在文本中的每一个词项的频率。</font><font id="304">（一般情况下，它能计数任何观察得到的事件。）</font><font id="305">这是一个“分布”因为它告诉我们文本中单词词符的总数是如何分布在词项中的。</font><font id="306">因为我们经常需要在语言处理中使用频率分布，NLTK 中内置了它们。</font><font id="307">让我们使用<tt class="doctest"><span class="pre">FreqDist</span></tt> 寻找<em>《白鲸记》</em>中最常见的50 个词：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist1 = FreqDist(text1) <a href="http://www.nltk.org/book/ch01.html#ref-freq-dist-call"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fdist1) <a href="http://www.nltk.org/book/ch01.html#ref-freq-dist-inspect"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-output">&lt;FreqDist with 19317 samples and 260819 outcomes&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist1.most_common(50) <a href="http://www.nltk.org/book/ch01.html#ref-freq-dist-most-common"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-output">[(',', 18713), ('the', 13721), ('.', 6862), ('of', 6536), ('and', 6024),</span>
+<span class="pysrc-output">('a', 4569), ('to', 4542), (';', 4072), ('in', 3916), ('that', 2982),</span>
+<span class="pysrc-output">("'", 2684), ('-', 2552), ('his', 2459), ('it', 2209), ('I', 2124),</span>
+<span class="pysrc-output">('s', 1739), ('is', 1695), ('he', 1661), ('with', 1659), ('was', 1632),</span>
+<span class="pysrc-output">('as', 1620), ('"', 1478), ('all', 1462), ('for', 1414), ('this', 1280),</span>
+<span class="pysrc-output">('!', 1269), ('at', 1231), ('by', 1137), ('but', 1113), ('not', 1103),</span>
+<span class="pysrc-output">('--', 1070), ('him', 1058), ('from', 1052), ('be', 1030), ('on', 1005),</span>
+<span class="pysrc-output">('so', 918), ('whale', 906), ('one', 889), ('you', 841), ('had', 767),</span>
+<span class="pysrc-output">('have', 760), ('there', 715), ('But', 705), ('or', 697), ('were', 680),</span>
+<span class="pysrc-output">('now', 646), ('which', 640), ('?', 637), ('me', 627), ('like', 624)]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist1[<span class="pysrc-string">'whale'</span>]
+<span class="pysrc-output">906</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="308">第一次调用<tt class="doctest"><span class="pre">FreqDist</span></tt>时，传递文本的名称作为参数<a class="reference internal" href="http://www.nltk.org/book/ch01.html#freq-dist-call"><span id="ref-freq-dist-call"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>。</font><font id="309">我们可以看到已经被计算出来的<em>《白鲸记》</em>中的总的词数（“outcomes”）—— 260,819<a class="reference internal" href="http://www.nltk.org/book/ch01.html#freq-dist-inspect"><span id="ref-freq-dist-inspect"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="310">表达式<tt class="doctest"><span class="pre">most_common(50)</span></tt> 给出文本中50 个出现频率最高的单词类型<a class="reference internal" href="http://www.nltk.org/book/ch01.html#freq-dist-most-common"><span id="ref-freq-dist-most-common"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a>。</font></p>
+<div class="note"><p class="first admonition-title"><font id="311">注意</font></p>
+<p class="last"><font id="312"><strong>轮到你来：</strong>使用<tt class="doctest"><span class="pre">text2</span></tt>尝试前面的频率分布的例子。</font><font id="313">注意正确使用括号和大写字母。</font><font id="314">如果你得到一个错误消息<tt class="doctest"><span class="pre">NameError: name <span class="pysrc-string">'FreqDist'</span> <span class="pysrc-keyword">is</span> <span class="pysrc-keyword">not</span> defined</span></tt>，你需要在一开始输入<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *</span></tt></font></p>
+</div>
+<p><font id="315">上一个例子中是否有什么词有助于我们把握这个文本的主题或风格呢？</font><font id="316">只有一个词，<span class="example">whale</span>，稍微有些信息量！</font><font id="317">它出现了超过900 次。</font><font id="318">其余的词没有告诉我们关于文本的信息；它们只是“管道”英语。</font><font id="319">这些词在文本中占多少比例？</font><font id="320">我们可以产生一个这些词汇的累积频率图，使用<tt class="doctest"><span class="pre">fdist1.plot(50, cumulative=True)</span></tt> 来生成<a class="reference internal" href="http://www.nltk.org/book/ch01.html#fig-fdist-moby">3.2</a> 中的图。</font><font id="321">这50 个词占了书的将近一半！</font></p>
+<div class="figure" id="fig-fdist-moby"><font id="322"><img alt="Images/fdist-moby.png" src="Images/513df73dfd52feca2c96a86dcc261c8b.jpg" style="width: 207.20000000000002px; height: 116.2px;"/> <p class="caption"><span class="caption-label">图 3.2</span>: <em>《白鲸记》</em>中50 个最常用词的累积频率图：这些词占了所有词符的将近一半。</p></font></div>
+<p><font id="323">如果高频词对我们没有帮助，那些只出现了一次的词（所谓的<span class="termdef">hapaxes</span>）又如何呢？</font><font id="324">输入<tt class="doctest"><span class="pre">fdist1.hapaxes()</span></tt> 来查看它们。</font><font id="325">这个列表包含<span class="example">lexicographer</span>, <span class="example">cetological</span>, <span class="example">contraband</span>, <span class="example">expostulations</span> 以及其他9,000 多个。</font><font id="326">看来低频词太多了，没看到上下文我们很可能有一半的hapaxes 猜不出它们的意义！</font><font id="327">既然高频词和低频词都没有帮助，我们需要尝试其他的办法。</font></p>
+</div>
+<div class="section" id="fine-grained-selection-of-words"><h2 class="sigil_not_in_toc"><font id="328">3.2 细粒度的选择词</font></h2>
+<p><font id="329">接下来，让我们看看文本中的<em>长</em>词，也许它们有更多的特征和信息量。</font><font id="330">为此我们采用集合论的一些符号。</font><font id="331">我们想要找出文本词汇表长度中超过15 个字符的词。</font><font id="332">我们定义这个性质为<span class="math">P</span>，则<span class="math">P(w)</span> 为真当且仅当词<span class="math">w</span> 的长度大余15 个字符。</font><font id="333">现在我们可以用<a class="reference internal" href="http://www.nltk.org/book/ch01.html#ex-set-comprehension-math">(1a)</a> 中的数学集合符号表示我们感兴趣的词汇。</font><font id="334">它的含义是：此集合中所有<span class="math">w</span> 都满足<span class="math">w</span> 是集合<span class="math">V</span> V（词汇表）的一个元素且<span class="math">w</span>有性质<span class="math">P</span>。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>V = set(text1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>long_words = [w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> V <span class="pysrc-keyword">if</span> len(w) &gt; 15]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(long_words)
+<span class="pysrc-output">['CIRCUMNAVIGATION', 'Physiognomically', 'apprehensiveness', 'cannibalistically',</span>
+<span class="pysrc-output">'characteristically', 'circumnavigating', 'circumnavigation', 'circumnavigations',</span>
+<span class="pysrc-output">'comprehensiveness', 'hermaphroditical', 'indiscriminately', 'indispensableness',</span>
+<span class="pysrc-output">'irresistibleness', 'physiognomically', 'preternaturalness', 'responsibilities',</span>
+<span class="pysrc-output">'simultaneousness', 'subterraneousness', 'supernaturalness', 'superstitiousness',</span>
+<span class="pysrc-output">'uncomfortableness', 'uncompromisedness', 'undiscriminating', 'uninterpenetratingly']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="344">对于词汇表<tt class="doctest"><span class="pre">V</span></tt> 中的每一个词<tt class="doctest"><span class="pre">w</span></tt>，我们检查<tt class="doctest"><span class="pre">len(w)</span></tt> 是否大于15；所有其他词汇将被忽略。</font><font id="345">我们将在后面更仔细的讨论这里的语法。</font></p>
+<div class="note"><p class="first admonition-title"><font id="346">注意</font></p>
+<p class="last"><font id="347"><strong>轮到你来：</strong> 在Python 解释器中尝试上面的表达式，改变文本和长度条件做一些实验。</font><font id="348">如果改变变量名，你的结果会产生什么变化吗，如使用<tt class="doctest"><span class="pre">[word <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> vocab <span class="pysrc-keyword">if</span> ...]</span></tt>？</font></p>
+</div>
+<p><font id="349">让我们回到寻找文本特征词汇的任务上来。</font><font id="350">请注意，<tt class="doctest"><span class="pre">text4</span></tt> 中的长词反映国家主题 — <span class="example">constitutionally</span>, <span class="example">transcontinental</span> — 而<tt class="doctest"><span class="pre">text5</span></tt> 中的长词反映的不是真正的内容<span class="example">boooooooooooglyyyyyy</span> 和 <span class="example">yuuuuuuuuuuuummmmmmmmmmmm</span>。</font><font id="351">我们是否已经成功的自动提取出文本的特征词汇呢？</font><font id="352">好的，这些很长的词通常是hapaxes（即唯一的），也许找出<em>频繁出现的</em>长词会更好。</font><font id="353">这样看起来更有前途，因为这样忽略了短高频词（如<span class="example">the</span>）和长低频词（如</font><font id="354"><span class="example">antiphilosophists</span>）。</font><font id="355">以下是聊天语料库中所有长度超过7 个字符，且出现次数超过7 次的词：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist5 = FreqDist(text5)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(text5) <span class="pysrc-keyword">if</span> len(w) &gt; 7 <span class="pysrc-keyword">and</span> fdist5[w] &gt; 7)
+<span class="pysrc-output">['#14-19teens', '#talkcity_adults', '((((((((((', '........', 'Question',</span>
+<span class="pysrc-output">'actually', 'anything', 'computer', 'cute.-ass', 'everyone', 'football',</span>
+<span class="pysrc-output">'innocent', 'listening', 'remember', 'seriously', 'something', 'together',</span>
+<span class="pysrc-output">'tomorrow', 'watching']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="356">注意我们是如何使用两个条件：<tt class="doctest"><span class="pre">len(w) &gt; 7</span></tt> 保证词长都超过七个字母，<tt class="doctest"><span class="pre">fdist5[w] &gt; 7</span></tt> 保证这些词出现超过7 次。</font><font id="357">最后，我们已成功地自动识别出与文本内容相关的高频词。</font><font id="358">这很小的一步却是一个重要的里程碑：一小块代码，处理数以万计的词，产生一些有信息量的输出。</font></p>
+</div>
+<div class="section" id="collocations-and-bigrams"><h2 class="sigil_not_in_toc"><font id="359">3.3 词语搭配和双连词</font></h2>
+<p><font id="360">一个<span class="termdef">搭配</span>是异乎寻常地经常在一起出现的词序列。</font><font id="361"><span class="example">red wine</span> 是一个搭配，而<span class="example">the wine</span> 不是。</font><font id="362">搭配的一个特点是其中的词不能被类似的词置换。例如：<span class="example">maroon wine</span>（粟色酒）听起来就很奇怪。</font></p>
+<p><font id="363">要获取搭配，我们先从提取文本词汇中的词对，也就是<span class="termdef">双连词</span>开始。</font><font id="364">使用函数<tt class="doctest"><span class="pre">bigrams()</span></tt>很容易实现：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(bigrams([<span class="pysrc-string">'more'</span>, <span class="pysrc-string">'is'</span>, <span class="pysrc-string">'said'</span>, <span class="pysrc-string">'than'</span>, <span class="pysrc-string">'done'</span>]))
+<span class="pysrc-output">[('more', 'is'), ('is', 'said'), ('said', 'than'), ('than', 'done')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<div class="note"><p class="first admonition-title"><font id="365">注意</font></p>
+<p class="last"><font id="366">如果上面省掉<tt class="doctest"><span class="pre">list()</span></tt>，只输入<tt class="doctest"><span class="pre">bigrams([<span class="pysrc-string">'more'</span>, ...])</span></tt>，你将看到<tt class="doctest"><span class="pre">&lt;generator object bigrams at 0x10fb8b3a8&gt;</span></tt> 的输出形式。</font><font id="367">这是 Python 的方式表示它已经准备好要计算一个序列，在这里是双连词。</font><font id="368">现在，你只需要知道告诉Python 使用<tt class="doctest"><span class="pre">list()</span></tt>将它转换成一个列表。</font></p>
+</div>
+<p><font id="369">在这里我们看到词对<span class="example">than-done</span>是一个双连词，在Python 中写成<tt class="doctest"><span class="pre">(<span class="pysrc-string">'than'</span>, <span class="pysrc-string">'done'</span>)</span></tt>。</font><font id="370">现在，搭配基本上就是频繁的双连词，除非我们更加注重包含不常见词的的情况。</font><font id="371">特别的，我们希望找到比我们基于单个词的频率预期得到的更频繁出现的双连词。</font><font id="372"><tt class="doctest"><span class="pre">collocations()</span></tt> 函数为我们做这些。</font><font id="373">我们将在以后看到它是如何工作。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text4.collocations()
+<span class="pysrc-output">United States; fellow citizens; four years; years ago; Federal</span>
+<span class="pysrc-output">Government; General Government; American people; Vice President; Old</span>
+<span class="pysrc-output">World; Almighty God; Fellow citizens; Chief Magistrate; Chief Justice;</span>
+<span class="pysrc-output">God bless; every citizen; Indian tribes; public debt; one another;</span>
+<span class="pysrc-output">foreign nations; political parties</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text8.collocations()
+<span class="pysrc-output">would like; medium build; social drinker; quiet nights; non smoker;</span>
+<span class="pysrc-output">long term; age open; Would like; easy going; financially secure; fun</span>
+<span class="pysrc-output">times; similar interests; Age open; weekends away; poss rship; well</span>
+<span class="pysrc-output">presented; never married; single mum; permanent relationship; slim</span>
+<span class="pysrc-output">build</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="374">文本中出现的搭配很能体现文本的风格。</font><font id="375">为了找到<span class="example">red wine</span>这个搭配，我们将需要处理更大的文本。</font></p>
+</div>
+<div class="section" id="counting-other-things"><h2 class="sigil_not_in_toc"><font id="376">3.4 计数其他东西</font></h2>
+<p><font id="377">计数词汇是有用的，我们也可以计数其他东西。</font><font id="378">例如，我们可以查看文本中词长的分布，通过创造一长串数字的列表的<tt class="doctest"><span class="pre">FreqDist</span></tt>，其中每个数字是文本中对应词的长度：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[len(w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1] <a href="http://www.nltk.org/book/ch01.html#ref-word-lengths"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">[1, 4, 4, 2, 6, 8, 4, 1, 9, 1, 1, 8, 2, 1, 4, 11, 5, 2, 1, 7, 6, 1, 3, 4, 5, 2, ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist = FreqDist(len(w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1)  <a href="http://www.nltk.org/book/ch01.html#ref-freq-word-lengths"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(fdist)  <a href="http://www.nltk.org/book/ch01.html#ref-freq-word-lengths-size"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></a>
+<span class="pysrc-output">&lt;FreqDist with 19 samples and 260819 outcomes&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist
+<span class="pysrc-output">FreqDist({3: 50223, 1: 47933, 4: 42345, 2: 38513, 5: 26597, 6: 17111, 7: 14399,</span>
+<span class="pysrc-output">  8: 9966, 9: 6428, 10: 3528, ...})</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="379">我们以导出<tt class="doctest"><span class="pre">text1</span></tt> 中每个词的长度的列表开始<a class="reference internal" href="http://www.nltk.org/book/ch01.html#word-lengths"><span id="ref-word-lengths"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>，然后<tt class="doctest"><span class="pre">FreqDist</span></tt> 计数列表中每个数字出现的次数<a class="reference internal" href="http://www.nltk.org/book/ch01.html#freq-word-lengths"><span id="ref-freq-word-lengths"><img alt="[2]" class="callout" src="Images/3a93e0258a010fdda935b4ee067411a5.jpg"/></span></a>。</font><font id="380">结果<a class="reference internal" href="http://www.nltk.org/book/ch01.html#freq-word-lengths-size"><span id="ref-freq-word-lengths-size"><img alt="[3]" class="callout" src="Images/334be383b5db7ffe3599cc03bc74bf9e.jpg"/></span></a> 是一个包含25 万左右个元素的分布，每一个元素是一个数字，对应文本中一个词标识符。</font><font id="381">但是只有20 个不同的元素，从1 到20，因为只有20 个不同的词长。</font><font id="382">也就是说，有由1 个字符，2 个字符，...，20 个字符组成的词，而没有由21 个或更多字符组成的词。</font><font id="383">有人可能会问不同长度的词的频率是多少？（例如，文本中有多少长度为4 的词？长度为5 的词是否比长度为4 的词多？等等）。</font><font id="384">下面我们回答这个问题：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist.most_common()
+<span class="pysrc-output">[(3, 50223), (1, 47933), (4, 42345), (2, 38513), (5, 26597), (6, 17111), (7, 14399),</span>
+<span class="pysrc-output">(8, 9966), (9, 6428), (10, 3528), (11, 1873), (12, 1053), (13, 567), (14, 177),</span>
+<span class="pysrc-output">(15, 70), (16, 22), (17, 12), (18, 1), (20, 1)]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist.max()
+<span class="pysrc-output">3</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist[3]
+<span class="pysrc-output">50223</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist.freq(3)
+<span class="pysrc-output">0.19255882431878046</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="385">由此我们看到，最频繁的词长度是3，长度为3 的词有50,000 多个（约占书中全部词汇的20％）。</font><font id="386">虽然我们不会在这里追究它，关于词长的进一步分析可能帮助我们了解作者、文体或语言之间的差异。</font></p>
+<p><font id="387"><a class="reference internal" href="http://www.nltk.org/book/ch01.html#tab-freqdist">3.1</a> 总结了NLTK 频率分布类中定义的函数。</font></p>
+<p class="caption"><font id="388"><span class="caption-label">表 3.1</span>：</font></p>
+<p><font id="389">NLTK 频率分布类中定义的函数</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent7
+<span class="pysrc-output">['Pierre', 'Vinken', ',', '61', 'years', 'old', ',', 'will', 'join', 'the',</span>
+<span class="pysrc-output">'board', 'as', 'a', 'nonexecutive', 'director', 'Nov.', '29', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent7 <span class="pysrc-keyword">if</span> len(w) &lt; 4]
+<span class="pysrc-output">[',', '61', 'old', ',', 'the', 'as', 'a', '29', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent7 <span class="pysrc-keyword">if</span> len(w) &lt;= 4]
+<span class="pysrc-output">[',', '61', 'old', ',', 'will', 'join', 'the', 'as', 'a', 'Nov.', '29', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent7 <span class="pysrc-keyword">if</span> len(w) == 4]
+<span class="pysrc-output">['will', 'join', 'Nov.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent7 <span class="pysrc-keyword">if</span> len(w) != 4]
+<span class="pysrc-output">['Pierre', 'Vinken', ',', '61', 'years', 'old', ',', 'the', 'board',</span>
+<span class="pysrc-output">'as', 'a', 'nonexecutive', 'director', '29', '.']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="446">所有这些例子都有一个共同的模式：<tt class="doctest"><span class="pre">[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text <span class="pysrc-keyword">if</span></span></tt> <em>condition</em> <tt class="doctest"><span class="pre">]</span></tt>，其中<em>condition</em> 是Python 中的一个“测试”，得到真或者假。</font><font id="447">在前面的代码例子所示的情况中，条件始终是数值比较。</font><font id="448">然而，我们也可以使用表<a class="reference internal" href="http://www.nltk.org/book/ch01.html#tab-word-tests">4.2</a> 中列出的函数测试词汇的各种属性。</font></p>
+<p class="caption"><font id="449"><span class="caption-label">表 4.2</span>:</font></p>
+<p><font id="450">一些词比较运算符</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(text1) <span class="pysrc-keyword">if</span> w.endswith(<span class="pysrc-string">'ableness'</span>))
+<span class="pysrc-output">['comfortableness', 'honourableness', 'immutableness', 'indispensableness', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(term <span class="pysrc-keyword">for</span> term <span class="pysrc-keyword">in</span> set(text4) <span class="pysrc-keyword">if</span> <span class="pysrc-string">'gnt'</span> <span class="pysrc-keyword">in</span> term)
+<span class="pysrc-output">['Sovereignty', 'sovereignties', 'sovereignty']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(item <span class="pysrc-keyword">for</span> item <span class="pysrc-keyword">in</span> set(text6) <span class="pysrc-keyword">if</span> item.istitle())
+<span class="pysrc-output">['A', 'Aaaaaaaaah', 'Aaaaaaaah', 'Aaaaaah', 'Aaaah', 'Aaaaugh', 'Aaagh', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(item <span class="pysrc-keyword">for</span> item <span class="pysrc-keyword">in</span> set(sent7) <span class="pysrc-keyword">if</span> item.isdigit())
+<span class="pysrc-output">['29', '61']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="473">我们还可以创建更复杂的条件。</font><font id="474">如果<span class="math">c</span> 是一个条件，那么<tt class="doctest"><span class="pre"><span class="pysrc-keyword">not</span></span></tt> <span class="math">c</span> 也是一个条件。</font><font id="475">如果我们有两个条件<span class="math">c</span><sub>1</sub> 和<span class="math">c</span><sub>2</sub>，那么我们可以使用合取和析取将它们合并形成一个新的条件：<span class="math">c</span><sub>1</sub> <tt class="doctest"><span class="pre"><span class="pysrc-keyword">and</span></span></tt> <span class="math">c</span><sub>2</sub>, <span class="math">c</span><sub>1</sub> <tt class="doctest"><span class="pre"><span class="pysrc-keyword">or</span></span></tt> <span class="math">c</span><sub>2</sub>。</font></p>
+<div class="note"><p class="first admonition-title"><font id="476">注意</font></p>
+<p class="last"><font id="477"><strong>轮到你来：</strong> 运行下面的例子，尝试解释每一条指令中所发生的事情。</font><font id="478">然后，试着自己组合一些条件。</font></p>
+</div>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(text7) <span class="pysrc-keyword">if</span> <span class="pysrc-string">'-'</span> <span class="pysrc-keyword">in</span> w <span class="pysrc-keyword">and</span> <span class="pysrc-string">'index'</span> <span class="pysrc-keyword">in</span> w)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(wd <span class="pysrc-keyword">for</span> wd <span class="pysrc-keyword">in</span> set(text3) <span class="pysrc-keyword">if</span> wd.istitle() <span class="pysrc-keyword">and</span> len(wd) &gt; 10)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(sent7) <span class="pysrc-keyword">if</span> <span class="pysrc-keyword">not</span> w.islower())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(t <span class="pysrc-keyword">for</span> t <span class="pysrc-keyword">in</span> set(text2) <span class="pysrc-keyword">if</span> <span class="pysrc-string">'cie'</span> <span class="pysrc-keyword">in</span> t <span class="pysrc-keyword">or</span> <span class="pysrc-string">'cei'</span> <span class="pysrc-keyword">in</span> t)</pre>
+</div>
+<div class="section" id="operating-on-every-element"><h2 class="sigil_not_in_toc"><font id="479">4.2 对每个元素进行操作</font></h2>
+<p><font id="480">在<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-computing-with-language-simple-statistics">3</a>节中，我们看到计数词汇以外的其他项目的一些例子。</font><font id="481">让我们仔细看看我们所使用的符号：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[len(w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1]
+<span class="pysrc-output">[1, 4, 4, 2, 6, 8, 4, 1, 9, 1, 1, 8, 2, 1, 4, 11, 5, 2, 1, 7, 6, 1, 3, 4, 5, 2, ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w.upper() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1]
+<span class="pysrc-output">['[', 'MOBY', 'DICK', 'BY', 'HERMAN', 'MELVILLE', '1851', ']', 'ETYMOLOGY', '.', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="482">这些表达式形式为<tt class="doctest"><span class="pre">[f(w) <span class="pysrc-keyword">for</span> ...]</span></tt> 或<tt class="doctest"><span class="pre">[w.f() <span class="pysrc-keyword">for</span> ...]</span></tt>，其中<tt class="doctest"><span class="pre">f</span></tt> 是一个函数，用来计算词长，或把字母转换为大写。</font><font id="483">现阶段你还不需要理解两种表示方法：<tt class="doctest"><span class="pre">f(w)</span></tt> 和<tt class="doctest"><span class="pre">w.f()</span></tt>。</font><font id="484">而只需学习对列表上的所有元素执行相同的操作的这种Python 习惯用法。</font><font id="485">在前面的例子中，遍历<tt class="doctest"><span class="pre">text1</span></tt>中的每一个词，一个接一个的赋值给变量<tt class="doctest"><span class="pre">w</span></tt> 并在变量上执行指定的操作。</font></p>
+<div class="note"><p class="first admonition-title"><font id="486">注意</font></p>
+<p class="last"><font id="487">上面描述的表示法被称为“列表推导”。</font><font id="488">这是我们的第一个Python 习惯用法的例子，一中固定的表示法，我们习惯使用的方法，省去了每次分析的烦恼。</font><font id="489">掌握这些习惯用法是成为一流Python 程序员的一个重要组成部分。</font></p>
+</div>
+<p><font id="490">让我们回到计数词汇的问题，这里使用相同的习惯用法：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(text1)
+<span class="pysrc-output">260819</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(text1))
+<span class="pysrc-output">19317</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(word.lower() <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text1))
+<span class="pysrc-output">17231</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="491">由于我们不重复计算像<span class="example">This</span>和<span class="example">this</span>这样仅仅大小写不同的词，就已经从词汇表计数中抹去了2,000 个！</font><font id="492">还可以更进一步，通过过滤掉所有非字母元素，从词汇表中消除数字和标点符号：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(word.lower() <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text1 <span class="pysrc-keyword">if</span> word.isalpha()))
+<span class="pysrc-output">16948</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="493">这个例子稍微有些复杂：将所有纯字母组成的词小写。</font><font id="494">也许只计数小写的词会更简单一些，但这却是一个错误的答案（为什么？</font><font id="495">）。</font></p>
+<p><font id="496">如果你对列表推导不那么充满信心，请不要担心，因为在下面的章节中你会看到更多的例子及解释。</font></p>
+</div>
+<div class="section" id="nested-code-blocks"><h2 class="sigil_not_in_toc"><font id="497">4.3 嵌套代码块</font></h2>
+<p><font id="498">大多数编程语言允许我们在<span class="termdef">条件表达式</span>或者<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句条件满足时执行代码块。</font><font id="499">我们在<tt class="doctest"><span class="pre">[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent7 <span class="pysrc-keyword">if</span> len(w) &lt; 4]</span></tt> 这样的代码中已经看到条件测试的例子。</font><font id="500">在下面的程序中，我们创建一个叫<tt class="doctest"><span class="pre">word</span></tt>的变量包含字符串值<tt class="doctest"><span class="pre"><span class="pysrc-string">'cat'</span></span></tt>。</font><font id="501"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt> 语句中检查<tt class="doctest"><span class="pre">len(word) &lt; 5</span></tt> 是否为真。</font><font id="502">它确实为真，所以<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt> 语句的代码块被调用，<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt> 语句被执行，向用户显示一条消息。</font><font id="503">别忘了要缩进，在<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt>语句前输入四个空格。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>word = <span class="pysrc-string">'cat'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">if</span> len(word) &lt; 5:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(<span class="pysrc-string">'word length is less than 5'</span>)
+<span class="pysrc-more">... </span>  <a href="http://www.nltk.org/book/ch01.html#ref-blank-line"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></a>
+<span class="pysrc-output">word length is less than 5</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="504">使用Python 解释器时，我们必须添加一个额外的空白行<a class="reference internal" href="http://www.nltk.org/book/ch01.html#blank-line"><span id="ref-blank-line"><img alt="[1]" class="callout" src="Images/4b5cae275c53c53ccc8f2f779acada3e.jpg"/></span></a>，这样它才能检测到嵌套块结束。</font></p>
+<div class="note"><p class="first admonition-title"><font id="505">注意</font></p>
+<p><font id="506">如果你正在使用Python 2.6 或2.7，为了识别上面的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt>函数，需要包括以下行︰</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> __future__ <span class="pysrc-keyword">import</span> print_function</pre>
+</div>
+<p><font id="507">如果我们改变测试条件为<tt class="doctest"><span class="pre">len(word) &gt;= 5</span></tt>来检查<tt class="doctest"><span class="pre">word</span></tt>的长度是否大于等于<tt class="doctest"><span class="pre">5</span></tt>，那么测试将不再为真。</font><font id="508">此时，<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句后面的代码段将不会被执行，没有消息显示给用户：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">if</span> len(word) &gt;= 5:
+<span class="pysrc-more">... </span>  <span class="pysrc-keyword">print</span>(<span class="pysrc-string">'word length is greater than or equal to 5'</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="509"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句被称为一种<span class="termdef">控制结构</span>，因为它控制缩进块中的代码将是否运行。</font><font id="510">另一种控制结构是<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环。</font><font id="511">尝试下面的代码，请记住包含冒号和四个空格：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'Call'</span>, <span class="pysrc-string">'me'</span>, <span class="pysrc-string">'Ishmael'</span>, <span class="pysrc-string">'.'</span>]:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(word)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">Call</span>
+<span class="pysrc-output">me</span>
+<span class="pysrc-output">Ishmael</span>
+<span class="pysrc-output">.</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="512">这叫做循环，因为Python 以循环的方式执行里面的代码。</font><font id="513">它以<tt class="doctest"><span class="pre">word = <span class="pysrc-string">'Call'</span></span></tt>赋值开始，使用变量<tt class="doctest"><span class="pre">word</span></tt> 命名列表的第一个元素。</font><font id="514">然后，显示<tt class="doctest"><span class="pre">word</span></tt>的值给用户。</font><font id="515">接下来它回到<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句，执行<tt class="doctest"><span class="pre">word = <span class="pysrc-string">'me'</span></span></tt>赋值，然后显示这个新值给用户，以此类推。</font><font id="516">它以这种方式不断运行，直到列表中所有项都被处理完。</font></p>
+</div>
+<div class="section" id="looping-with-conditions"><h2 class="sigil_not_in_toc"><font id="517">4.4 条件循环</font></h2>
+<p><font id="518">现在，我们可以将<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句结合。</font><font id="519">循环链表中每一项，只输出结尾字母是<em>l</em>的词。我们将为变量挑选另一个名字以表明Python 并不在意变量名的意义。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent1 = [<span class="pysrc-string">'Call'</span>, <span class="pysrc-string">'me'</span>, <span class="pysrc-string">'Ishmael'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> xyzzy <span class="pysrc-keyword">in</span> sent1:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> xyzzy.endswith(<span class="pysrc-string">'l'</span>):
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(xyzzy)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">Call</span>
+<span class="pysrc-output">Ishmael</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="520">你会发现在<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt> 和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句所在行末尾——缩进开始之前——有一个冒号。</font><font id="521">事实上，所有的Python 控制结构都以冒号结尾。</font><font id="522">冒号表示当前语句与后面的缩进块有关联。</font></p>
+<p><font id="523">我们也可以指定当<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句的条件不满足时采取的行动。</font><font id="524">在这里，我们看到<tt class="doctest"><span class="pre"><span class="pysrc-keyword">elif</span></span></tt>(else if)语句和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">else</span></span></tt>语句。</font><font id="525">请注意，这些在缩进代码前也有冒号。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> token <span class="pysrc-keyword">in</span> sent1:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> token.islower():
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(token, <span class="pysrc-string">'is a lowercase word'</span>)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">elif</span> token.istitle():
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(token, <span class="pysrc-string">'is a titlecase word'</span>)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(token, <span class="pysrc-string">'is punctuation'</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">Call is a titlecase word</span>
+<span class="pysrc-output">me is a lowercase word</span>
+<span class="pysrc-output">Ishmael is a titlecase word</span>
+<span class="pysrc-output">. is punctuation</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+<p><font id="526">正如你看到的，即便只有这么一点儿Python 知识，你就已经可以开始构建多行的Python 程序。</font><font id="527">分块开发程序，在整合它们之前测试每一块代码是否达到你的预期是很重要的。</font><font id="528">这也是Python 交互式解释器的价值所在，也是为什么你必须适应它的原因。</font></p>
+<p><font id="529">最后，让我们把一直在探索的习惯用法组合起来。</font><font id="530">首先，我们创建一个包含<span class="example">cie</span> 或<span class="example">cei</span>的词的列表，然后循环输出其中的每一项。</font><font id="531">请注意print语句中给出的额外信息︰<cite>end=' '</cite>。</font><font id="532">它告诉Python 在每个单词后面打印一个空格（而不是默认的换行）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tricky = sorted(w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(text2) <span class="pysrc-keyword">if</span> <span class="pysrc-string">'cie'</span> <span class="pysrc-keyword">in</span> w <span class="pysrc-keyword">or</span> <span class="pysrc-string">'cei'</span> <span class="pysrc-keyword">in</span> w)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> tricky:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(word, end=<span class="pysrc-string">' '</span>)
+<span class="pysrc-output">ancient ceiling conceit conceited conceive conscience</span>
+<span class="pysrc-output">conscientious conscientiously deceitful deceive ...</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt;</span></pre>
+</div>
+</div>
+<div class="section" id="automatic-natural-language-understanding"><h2 class="sigil_not_in_toc"><font id="533">5 自动理解自然语言</font></h2>
+<p><font id="534">我们一直在各种文本和Python 编程语言的帮助自下而上的探索语言。</font><font id="535">然而，我们也对通过构建有用的语言技术，开拓我们的语言和计算知识感兴趣。</font><font id="536">现在，我们将借此机会从代码的细节中退出来，描绘一下自然语言处理的全景图。</font></p>
+<p><font id="537">纯粹应用层面，我们大家都需要帮助才能找到隐含在网络上的文本中的浩瀚的信息。</font><font id="538">搜索引擎在网络的发展和普及中发挥了关键作用，但也有一些缺点。</font><font id="539">它需要技能、知识和一点运气才能找到这样一些问题的答案：<span class="example">我用有限的预算能参观费城和匹兹堡的哪些景点？</span></font><font id="540"><span class="example">专家们怎么评论数码单反相机？</span></font><font id="541"><span class="example">过去的一周里可信的评论员都对钢材市场做了哪些预测？</span></font><font id="542">让计算机来自动回答这些问题，涉及包括信息提取、推理与总结在内的广泛的语言处理任务，将需要在一个更大规模更稳健的层面实施，这超出了我们当前的能力。</font></p>
+<p><font id="543">哲学层面，构建智能机器是人工智能长久以来的挑战，语言理解是智能行为的重要组成部分。</font><font id="544">这一目标多年来一直被看作是太困难了。</font><font id="545">然而，随着NLP 技术日趋成熟，分析非结构化文本的方法越来越健壮，应用越来越广泛，对自然语言理解的期望变成一个合理的目标再次浮现。</font></p>
+<p><font id="546">在本节中，我们将描述一些语言理解技术，给你一种有趣的挑战正在等着你的感觉。</font></p>
+<div class="section" id="word-sense-disambiguation"><h2 class="sigil_not_in_toc"><font id="547">5.1 词意消歧</font></h2>
+<p><font id="548">在<span class="termdef">词意消歧</span>中，我们要算出特定上下文中的词被赋予的是哪个意思。</font><font id="549">思考存在歧义的词<span class="example">serve</span> 和<span class="example">dish</span>：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(set(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> set(text1))</pre>
+<li><p class="first"><font id="793">◑ 下面两个测试的差异是什么：<tt class="doctest"><span class="pre">w.isupper()</span></tt> 和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">not</span> w.islower()</span></tt>？</font></p></li>
+<li><p class="first"><font id="794">◑ 写一个切片表达式提取<tt class="doctest"><span class="pre">text2</span></tt>中最后两个词。</font></p></li>
+<li><p class="first"><font id="795">◑ 找出聊天语料库（<tt class="doctest"><span class="pre">text5</span></tt>）中所有四个字母的词。</font><font id="796">使用频率分布函数（<tt class="doctest"><span class="pre">FreqDist</span></tt>），以频率从高到低显示这些词。</font></p></li>
+<li><p class="first"><font id="797">◑ 复习第<a class="reference internal" href="http://www.nltk.org/book/ch01.html#sec-making-decisions">4</a>节中条件循环的讨论。</font><font id="798">使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句组合循环遍历<em>《巨蟒和圣杯》</em>（<tt class="doctest"><span class="pre">text6</span></tt>）的电影剧本中的词，<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt>所有的大写词，每行输出一个。</font></p></li>
+<li><p class="first"><font id="799">◑ 写表达式找出<tt class="doctest"><span class="pre">text6</span></tt>中所有符合下列条件的词。</font><font id="800">结果应该是单词列表的形式：<tt class="doctest"><span class="pre">[<span class="pysrc-string">'word1'</span>, <span class="pysrc-string">'word2'</span>, ...]</span></tt>。</font></p><ol class="loweralpha simple"><li><font id="801">以<span class="example">ize</span> 结尾</font></li>
+<li><font id="802">包含字母<span class="example">z</span></font></li>
+<li><font id="803">包含字母序列<span class="example">pt</span></font></li>
+<li><font id="804">除了首字母外是全部小写字母的词（即<tt class="doctest"><span class="pre">titlecase</span></tt>）</font></li>
+</ol></li>
+<li><p class="first"><font id="805">◑ 定义<tt class="doctest"><span class="pre">sent</span></tt>为一个单词列表：<tt class="doctest"><span class="pre">[<span class="pysrc-string">'she'</span>, <span class="pysrc-string">'sells'</span>, <span class="pysrc-string">'sea'</span>, <span class="pysrc-string">'shells'</span>, <span class="pysrc-string">'by'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'sea'</span>, <span class="pysrc-string">'shore'</span>]</span></tt>。</font><font id="806">编写代码执行以下任务：</font></p><ol class="loweralpha simple"><li><font id="807">输出所有<span class="example">sh</span>开头的单词</font></li>
+<li><font id="808">输出所有长度超过4 个字符的词</font></li>
+</ol></li>
+<li><p class="first"><font id="809">◑ 下面的Python 代码是做什么的？</font><font id="810"><tt class="doctest"><span class="pre">sum(len(w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text1)</span></tt> 你可以用它来算出一个文本的平均字长吗？</font></p></li>
+<li><p class="first"><font id="811">◑ 定义一个名为<tt class="doctest"><span class="pre">vocab_size(text)</span></tt>的函数，以文本作为唯一的参数，返回文本的词汇量。</font></p></li>
+<li><p class="first"><font id="812">◑ 定义一个函数<tt class="doctest"><span class="pre">percent(word, text)</span></tt>，计算一个给定的词在文本中出现的频率，结果以百分比表示。</font></p></li>
+<li><p class="first"><font id="813">◑ 我们一直在使用集合存储词汇表。</font><font id="814">试试下面的Python 表达式：<tt class="doctest"><span class="pre">set(sent3) &lt; set(text1)</span></tt>。</font><font id="815">实验在<tt class="doctest"><span class="pre">set()</span></tt>中使用不同的参数。</font><font id="816">它是做什么用的？</font><font id="817">你能想到一个实际的应用吗？</font></p></li>
+
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="818">关于本文档...</font></p>
+<p><font id="819">针对NLTK 3.0 进行更新。</font><font id="820">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="821">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="822">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+<div class="system-messages section"><h2 class="sigil_not_in_toc"><font id="823">Docutils System Messages</font></h2>
+<div class="system-message" id="id8"><p class="system-message-title"><font id="824">System Message: ERROR/3 (<tt class="docutils">ch01.rst2</tt>, line 1889); <em><a href="http://www.nltk.org/book/ch01.html#id9">backlink</a></em></font></p>
+<font id="825"> Unknown target name: "finegan2007".</font></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

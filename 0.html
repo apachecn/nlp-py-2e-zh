@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="preface"><h1 class="title"><font id="1">前言</font></h1>
+<p><font id="2">这是一本关于自然语言处理的书。</font><font id="3">所谓“自然语言”，是指人们日常交流使用的语言，如英语，印地语，葡萄牙语等。</font><font id="4">相对于编程语言和数学符号这样的人工语言，自然语言随着一代人传给另一代人而不断演化，因而很难用明确的规则来刻画。</font><font id="5">从广义上讲，“自然语言处理”（Natural Language Processing 简称NLP）包含所有用计算机对自然语言进行的操作。</font><font id="6">举个极端的例子，它可以是简单的通过计数词出现的频率来比较不同的写作风格。</font><font id="7">另外一个极端的例子，NLP 包括完全“理解”人所说的话，至少要能达到对人的话语作出有效反应的程度。</font></p>
+<p><font id="8">基于NLP 的技术应用日益广泛。</font><font id="9">例如：手机和手持电脑支持输入法联想提示和手写识别；网络搜索引擎能搜到非结构化文本中的信息；机器翻译能把中文文本翻译成西班牙文；文本分析让我们能够检测推文和博客中的情感。</font><font id="10">通过提供更自然的人机界面和更复杂的存储信息获取手段，语言处理正在这个多语种的信息社会中扮演更核心的角色。</font></p>
+<p><font id="11">这本书提供自然语言处理领域非常方便的入门指南。</font><font id="12">它可以用来自学，也可以作为自然语言处理或计算语言学课程的教科书，或是人工智能、文本挖掘、语料库语言学课程的补充读物。</font><font id="13">本书的实践性很强，包括几百个实际可用的例子和分级练习。</font></p>
+<p><font id="14">本书基于Python 编程语言及其上的一个名为<em>自然语言工具包</em>（Natural Language Toolkit ，简称NLTK）的开源库。</font><font id="15">NLTK 包含大量的软件、数据和文档，所有这些都可以从<tt class="doctest"><span class="pre">http://nltk.org/</span></tt> 免费下载。</font><font id="16">NLTK 的发行版本支持Windows、Macintosh 和Unix 平台。</font><font id="17">我们强烈建议你下载Python 和NLTk，与我们一起尝试书中的例子和练习。</font></p>
+<div class="section" id="audience"><h2 class="sigil_not_in_toc"><font id="18">读者</font></h2>
+<p><font id="19">NLP 是科学、经济、社会和文化的一个重要因素。</font><font id="20">NLP 正在迅速成长，它的很多理论和方法在大量新的语言技术中得到应用。</font><font id="21">所以对很多行业的人来说掌握NLP 知识十分重要。</font><font id="22">在应用领域包括从事人机交互、商业信息分析、web 软件开发的人。</font><font id="23">在学术界包括从人文计算学、语料库语言学到计算机科学和人工智能领域的人。</font><font id="24">（学术界的很多人把NLP 叫称为“计算语言学”。）</font></p>
+<p><font id="25">本书旨在帮助所有想要学习如何编写程序分析书面语言的人，不管他们以前的编程经验如何：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> line <span class="pysrc-keyword">in</span> open(<span class="pysrc-string">"file.txt"</span>):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> line.split():
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> word.endswith(<span class="pysrc-string">'ing'</span>):
+<span class="pysrc-more">... </span>            <span class="pysrc-keyword">print</span>(word)</pre>
+<p><font id="94">这段程序演示了Python 的一些主要特征。</font><font id="95">首先，使用空格<em>缩进</em>代码，从而使<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>后面的代码都在前面一行<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句的范围之内；这保证了检查单词是否以<tt class="doctest"><span class="pre">ing</span></tt> 结尾的测试对所有单词都进行。</font><font id="96">第二，Python 是<em>面向对象</em>语言；每一个变量都是包含特定属性和方法的对象。</font><font id="97">例如，变量<tt class="doctest"><span class="pre">line</span></tt> 的值不仅仅是一个字符串序列。</font><font id="98">它是一个string 对象，包含一个用来把字符串分割成词的<tt class="doctest"><span class="pre">split()</span></tt> 方法（或叫操作）。</font><font id="99">我们在对象名称后面写上一个点再写上方法名称就可以调用对象的一个方法，例如</font><font id="100"><tt class="doctest"><span class="pre">line.split()</span></tt>。</font><font id="101">第三，方法的<em>参数</em>写在括号内。</font><font id="102">例如，上面的例子中的<tt class="doctest"><span class="pre">word.endswith(<span class="pysrc-string">'ing'</span>)</span></tt>具有一个参数<tt class="doctest"><span class="pre"><span class="pysrc-string">'ing'</span></span></tt> 表示我们需要找的是<span class="example">ing</span> 结尾的词而不是别的结尾的词。</font><font id="103">最后也是最重要的，Python 的可读性如此之强以至于可以相当容易的猜出程序的功能，即使你以前从未写过一行代码。</font></p>
+<p><font id="104">我们选择Python 是因为它的学习曲线比较平缓，文法和语义都很清晰，具有良好的处理字符串的功能。</font><font id="105">作为解释性语言，Python 便于交互式编程。</font><font id="106">作为面向对象语言，Python 允许数据和方法被方便的封装和重用。</font><font id="107">作为动态语言，Python 允许属性等到程序运行时才被添加到对象，允许变量自动类型转换，提高开发效率。</font><font id="108">Python 自带强大的标准库，包括图形编程、数值处理和网络连接等组件。</font></p>
+<p><font id="109">Python 在世界各地的工业、科研、教育领域应用广泛。</font><font id="110">它因为提高了软件的生产效率、质量和可维护性而备受称赞。</font><font id="111"><tt class="doctest"><span class="pre">http://python.org/about/success/</span></tt> 中列举了许多成功使用Python 的故事。</font></p>
+<p><font id="112">NLTK 定义了一个使用Python 进行NLP 编程的基础工具。</font><font id="113">它提供重新表示自然语言处理相关数据的基本类，词性标注、文法分析、文本分类等任务的标准接口以及这些任务的标准实现，可以组合起来解决复杂的问题。</font></p>
+<p><font id="114">NLTK 自带大量文档。</font><font id="115">作为本书的补充，<tt class="doctest"><span class="pre">http://nltk.org/</span></tt> 网站提供的API 文档涵盖工具包中每一个模块、类和函数，详细说明了各种参数，还给出了用法示例。</font></p>
+</div>
+<div class="section" id="python-3-and-nltk-3"><h2 class="sigil_not_in_toc"><font id="116">Python 3和 NLTK 3</font></h2>
+<p><font id="117">本书的这个版本已更新并支持Python 3 和NLTK 3。</font><font id="118">Python 3包括一些重大的变化︰</font></p>
+<ul class="simple"><li><font id="119"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt> 语句现在是函数，因此需要括号；</font></li>
+<li><font id="120">许多函数现在返回迭代器而不是列表 （以节省内存使用）;</font></li>
+<li><font id="121">整数除法返回一个浮点数</font></li>
+<li><font id="122">所有文本现在都是Unicode 编码</font></li>
+<li><font id="123">字符串的格式化使用<tt class="doctest"><span class="pre">format</span></tt> 方法</font></li>
+</ul>
+<p><font id="124">这些变化的更多细节请参见<tt class="doctest"><span class="pre">https://docs.python.org/dev/whatsnew/3.0.html</span></tt>.。</font><font id="125">有一个<tt class="doctest"><span class="pre">2to3.py</span></tt> 工具可以将Python 2代码转换为Python 3；关详细信息请参阅<tt class="doctest"><span class="pre">https://docs.python.org/2/library/2to3.html</span></tt>。</font></p>
+<p><font id="126">NLTK 同样很多地方都有更改︰</font></p>
+<ul class="simple"><li><font id="127">许多类型使用<tt class="doctest"><span class="pre">fromstring()</span></tt> 方法从字符串初始化</font></li>
+<li><font id="128">许多函数现在返回迭代器而不是列表</font></li>
+<li><font id="129"><tt class="doctest"><span class="pre">ContextFreeGrammar</span></tt> 现在叫做<tt class="doctest"><span class="pre">CFG</span></tt>，<tt class="doctest"><span class="pre">WeightedGrammar</span></tt> 现在叫做<tt class="doctest"><span class="pre">PCFG</span></tt></font></li>
+<li><font id="130"><tt class="doctest"><span class="pre">batch_tokenize()</span></tt> 现在叫做<tt class="doctest"><span class="pre">tokenize_sents()</span></tt>；对应的批taggers, parsers 和classifiers 都有变化</font></li>
+<li><font id="131">有些实现已删除以支持外部包，或因为不能充分维护</font></li>
+</ul>
+<p><font id="132">更详细的变更列表请参见<tt class="doctest"><span class="pre">https://github.com/nltk/nltk/wiki/Porting-your-code-to-NLTK-3.0</span></tt>。</font></p>
+</div>
+<div class="section" id="software-requirements"><h2 class="sigil_not_in_toc"><font id="133">软件安装需求</font></h2>
+<p><font id="134">为了充分利用好本书，你应该安装一些免费的软件包。</font><font id="135"><tt class="doctest"><span class="pre">http://nltk.org/</span></tt> 上有这些软件包当前的下载链接和安装说明。</font></p>
+<table class="docutils field-list" frame="void" rules="none"><tbody valign="top"><tr class="field"><th class="field-name"><font id="136">Python:</font></th>
+<td class="field-body"><font id="137">本书中例子假定你正在使用Python 3.2 或更高版本。</font><font id="138">（注，NLTK 3.0 也适用于 Python 2.6 和 2.7）。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="139">NLTK:</font></th>
+<td class="field-body"><font id="140">这本书中的代码示例使用NLTK 3.0 版。</font><font id="141">NLTK 的后续版本将会向后兼容NLTK 3.0。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="142">NLTK-Data:</font></th>
+<td class="field-body"><font id="143">包含本书中分析和处理的语言语料库。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="144">NumPy:</font></th>
+<td class="field-body"><font id="145">（推荐）这是一个科学计算库，支持多维数组和线性代数，在某些计算概率、标记、聚类和分类任务中用到。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="146">Matplotlib:</font></th>
+<td class="field-body"><font id="147">（推荐）这是一个用于数据可视化的2D 绘图库，本书在产生线图和条形图的程序例子中用到。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="148">斯坦福大学NLP 工具︰</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="149">（推荐）NLTK 包括斯坦福大学NLP 工具的接口，可用于大型语言处理（见<tt class="doctest"><span class="pre">http://nlp.stanford.edu/software/</span></tt>）。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="150">NetworkX:</font></th>
+<td class="field-body"><font id="151">（可选）这是一个用于存储和操作由节点和边组成的网络结构的函数库。</font><font id="152">可视化语义网络还需要安装<em>Graphviz</em> 库。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="153">Prover9:</font></th>
+<td class="field-body"><font id="154">（可选）这是一个使用一阶等式逻辑定理的自动证明器，用于支持语言处理中的推理。</font></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="natural-language-toolkit-nltk"><h2 class="sigil_not_in_toc"><font id="155">自然语言工具包 (NLTK)</font></h2>
+<p><font id="156">NLTK 创建于2001 年，最初是宾州大学计算机与信息科学系计算语言学课程的一部分。</font><font id="157">从那以后，在数十名贡献者的帮助下不断发展壮大。</font><font id="158">如今，它已被几十所大学的课程所采纳，并作为许多研究项目的基础。</font><font id="159"><a class="reference internal" href="http://www.nltk.org/book/ch00.html#tab-modules">VIII.1</a> 列出了NLTK 的一些最重要的模块。</font></p>
+<p class="caption"><font id="160"><span class="caption-label">表 VIII.1</span>：</font></p>
+<p><font id="161">语言处理任务与相应NLTK 模块以及功能描述</font></p>
+<p></p>
+<table border="1" class="docutils" id="tab-modules"><thead valign="bottom"><tr><th class="head"><font id="162">语言处理任务</font></th>
+<th class="head"><font id="163">NLTK 模块</font></th>
+<th class="head"><font id="164">功能</font></th>
+</tr>
+</thead>
+<tbody valign="top"><tr><td><font id="165">访问语料库</font></td>
+<td><font id="166">corpus</font></td>
+<td><font id="167">语料库与词典的标准化接口</font></td>
+</tr>
+<tr><td><font id="168">字符串处理</font></td>
+<td><font id="169">tokenize, stem</font></td>
+<td><font id="170">分词，分句，提取主干</font></td>
+</tr>
+<tr><td><font id="171">搭配的发现</font></td>
+<td><font id="172">collocations</font></td>
+<td><font id="173">t-检验，卡方，点互信息PMI</font></td>
+</tr>
+<tr><td><font id="174">词性标注</font></td>
+<td><font id="175">tag</font></td>
+<td><font id="176">n-gram, backoff, Brill, HMM, TnT</font></td>
+</tr>
+<tr><td><font id="177">机器学习</font></td>
+<td><font id="178">classify, cluster, tbl</font></td>
+<td><font id="179">决策树，最大熵，贝叶斯，EM，k-means</font></td>
+</tr>
+<tr><td><font id="180">分块</font></td>
+<td><font id="181">chunk</font></td>
+<td><font id="182">正则表达式，n-gram，命名实体</font></td>
+</tr>
+<tr><td><font id="183">解析</font></td>
+<td><font id="184">parse, ccg</font></td>
+<td><font id="185">图表，基于特征，一致性，概率，依赖</font></td>
+</tr>
+<tr><td><font id="186">语义解释</font></td>
+<td><font id="187">sem, inference</font></td>
+<td><font id="188">λ演算，一阶逻辑，模型检验</font></td>
+</tr>
+<tr><td><font id="189">指标评测</font></td>
+<td><font id="190">metrics</font></td>
+<td><font id="191">精度，召回率，协议系数</font></td>
+</tr>
+<tr><td><font id="192">概率和估计</font></td>
+<td><font id="193">probability</font></td>
+<td><font id="194">频率分布，平滑概率分布</font></td>
+</tr>
+<tr><td><font id="195">应用</font></td>
+<td><font id="196">app, chat</font></td>
+<td><font id="197">图形化的语料库检索工具，分析器，WordNet 查看器，聊天机器人</font></td>
+</tr>
+<tr><td><font id="198">语言学领域的工作</font></td>
+<td><font id="199">toolbox</font></td>
+<td><font id="200">处理SIL 工具箱格式的数据</font></td>
+</tr>
+</tbody>
+</table>
+<p><font id="201">NLTK 设计中的四个主要目标：</font></p>
+<table class="docutils field-list" frame="void" rules="none"><tbody valign="top"><tr class="field"><th class="field-name"><font id="202">简单︰</font></th>
+<td class="field-body"><font id="203">提供一个直观的框架和大量构建模块，使用户获取NLP 知识而不必陷入像标注语言数据那样繁琐的事务中</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="204">一致︰</font></th>
+<td class="field-body"><font id="205">提供一个具有一致的接口和数据结构的，并且方法名称容易被猜到的统一的框架</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="206">可扩展︰</font></th>
+<td class="field-body"><font id="207">提供一种结构，新的软件模块包括同一个任务中的不同的实现和相互冲突的方法都可以方便添加进来</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="208">模块化︰</font></th>
+<td class="field-body"><font id="209">提供的组件可以独立使用而无需理解工具包的其他部分</font></td>
+</tr>
+</tbody>
+</table>
+<p><font id="210">对比上述目标，我们有意回避了工具包三个非需求行的但可能有用的特征。</font><font id="211">首先，虽然工具包提供了广泛的工具，但它不是面面俱全的；它是一个工具包而不是一个系统，它将会随着NLP 领域一起演化。</font><font id="212">第二，虽然这个工具包的效率足以支持实际的任务，但它运行时的性能还没有高度优化；这种优化往往涉及更复杂的算法或使用C 或C++等较低一级的编程语言来实现。</font><font id="213">这将影响工具包的可读性且更难以安装。</font><font id="214">第三，我们试图避开巧妙的编程技巧，因为我们相信清楚直白的实现比巧妙却可读性差的方法好。</font></p>
+</div>
+<div class="section" id="for-instructors"><h2 class="sigil_not_in_toc"><font id="215">教师请看</font></h2>
+<p><font id="216">自然语言处理一般是在高年级本科生或研究生层次开设的为期一个学期的课程。</font><font id="217">很多教师都发现，在如此短的时间里涵盖理论和实践两个方面是十分困难的。</font><font id="218">有些课程注重理论而排挤实践练习，剥夺了学生编写程序自动处理语言带来的挑战和兴奋感。</font><font id="219">另一些课程仅仅教授语言学编程而不包含任何重要的NLP 内容。</font><font id="220">最初开发NLTK 就是为了解决这个问题，使在一个学期里同时教授大量理论和实践成为可能，无论学生事先有没有编程经验。</font></p>
+<p><font id="221">算法和数据结构在所有NLP 教学大纲中都十分重要。</font><font id="222">它们本身可能非常枯燥，而NLTK 提供的交互式图形用户界面能一步一步看到算法过程，使它们变得鲜活。</font><font id="223">大多数NLTK 组件都有一个无需用户输入任何数据就能执行有趣的任务的示范性例子。</font><font id="224">学习本书的一个有效的方法就是交互式重现书中的例子，把它们输入到Python 会话控制台，观察它们做了些什么，修改它们去探索试验或理论问题。</font></p>
+<p><font id="225">本书包含了数百个练习，可作为学生作业的基础。</font><font id="226">最简单的练习涉及用指定的方式修改已有的程序片段来回答一个具体的问题。</font><font id="227">另一个极端，NLTK 为研究生水平的研究项目提供了一个灵活的框架，包括所有的基本数据结构和算法的标准实现，几十个广泛使用的数据集（语料库）的接口，以及一个灵活可扩展的体系结构。</font><font id="228">NLTK 网站上还有其他资源支持教学中使用NLTK。</font></p>
+<p><font id="229">我们相信本书是唯一为学生提供在学习编程的环境中学习NLP 的综合性框架。</font><font id="230">各个章节和练习通过NLTK 紧密耦合，并将各章材料分割开，为学生（即使是那些以前没有编程经验的学生）提供一个实用的NLP 的入门指南。</font><font id="231">学完这些材料后，学生将准备好尝试一本更加深层次的教科书，例如<em>《语音和语言处理》</em>，作者是Jurafsky 和Martin (Prentice Hall 出版社，2008 年)。</font></p>
+<p><font id="232">本书介绍编程概念的顺序与众不同，以一个重要的数据类型字符串列表开始，然后介绍重要的控制结构如推导和条件式等。</font><font id="233">这些概念允许我们在一开始就做一些有用的语言处理。</font><font id="234">有了这样做的冲动，我们回过头来系统的介绍一些基础概念，如字符串，循环，文件等。</font><font id="235">这样的方法同更传统的方法达到了同样的效果而不必要求读者自己已经对编程感兴趣。</font></p>
+<p><font id="236"><a class="reference internal" href="http://www.nltk.org/book/ch00.html#tab-course-plans">IX.1</a> 列出了两个课程计划表。</font><font id="237">第一个适用于文科，第二个适用于理工科。</font><font id="238">其他的课程计划应该涵盖前5 章，然后把剩余的时间投入单独的领域，例如：文本分类（第6、7 章）、文法（第8、9 章）、语义（第10 章）或者语言数据管理（第11 章）。</font></p>
+<p class="caption"><font id="239"><span class="caption-label">表 IX.1</span>：</font></p>
+<p><font id="240">课程计划建议；每一章近似的课时数</font></p>
+<p></p>
+<table border="1" class="docutils" id="tab-course-plans"><thead valign="bottom"><tr><th class="head"><font id="241">章节</font></th>
+<th class="head"><font id="242">文科</font></th>
+<th class="head"><font id="243">理工科</font></th>
+</tr>
+</thead>
+<tbody valign="top"><tr><td><font id="244">第1章 语言处理与Python</font></td>
+<td><font id="245">2-4</font></td>
+<td><font id="246">2</font></td>
+</tr>
+<tr><td><font id="247">第2章 获得文本语料和词汇资源</font></td>
+<td><font id="248">2-4</font></td>
+<td><font id="249">2</font></td>
+</tr>
+<tr><td><font id="250">第3章 处理原始文本</font></td>
+<td><font id="251">2-4</font></td>
+<td><font id="252">2</font></td>
+</tr>
+<tr><td><font id="253">第4章 编写结构化程序</font></td>
+<td><font id="254">2-4</font></td>
+<td><font id="255">1-2</font></td>
+</tr>
+<tr><td><font id="256">第5章 分类和标注单词</font></td>
+<td><font id="257">2-4</font></td>
+<td><font id="258">2-4</font></td>
+</tr>
+<tr><td><font id="259">第6章 学习本文分类</font></td>
+<td><font id="260">0-2</font></td>
+<td><font id="261">2-4</font></td>
+</tr>
+<tr><td><font id="262">第7章 从文本提取信息</font></td>
+<td><font id="263">2</font></td>
+<td><font id="264">2-4</font></td>
+</tr>
+<tr><td><font id="265">第8章 分析句子结构</font></td>
+<td><font id="266">2-4</font></td>
+<td><font id="267">2-4</font></td>
+</tr>
+<tr><td><font id="268">第9章 构建基于特征的文法</font></td>
+<td><font id="269">2-4</font></td>
+<td><font id="270">1-4</font></td>
+</tr>
+<tr><td><font id="271">第10章 分析句子的含义</font></td>
+<td><font id="272">1-2</font></td>
+<td><font id="273">1-4</font></td>
+</tr>
+<tr><td><font id="274">第11章 语言学数据管理</font></td>
+<td><font id="275">1-2</font></td>
+<td><font id="276">1-4</font></td>
+</tr>
+<tr><td><font id="277">总计</font></td>
+<td><font id="278">18-36</font></td>
+<td><font id="279">18-36</font></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="conventions-used-in-this-book"><h2 class="sigil_not_in_toc"><font id="280">本书使用的约定</font></h2>
+<p><font id="281">本书使用以下印刷约定：</font></p>
+<p><font id="282"><span class="termdef">粗体</span> -- 表示新的术语。</font></p>
+<p><font id="283"><em>斜体</em> -- 用在段落中表示语言学例子、文本的名称和URL，文件名和后缀名也用斜体。</font></p>
+<p><font id="284"><tt class="doctest"><span class="pre">等宽字体</span></tt> -- 用来表示程序清单，用在段落中表示变量、函数名、语句或关键字等程序元素；也用来表示程序名。</font></p>
+<p><font id="285"><tt class="doctest"><span class="pre">等宽粗体</span></tt> -- 表示应该由用户输入的命令或其他文本。</font></p>
+<p><font id="286"><tt class="doctest"><span class="pre">等宽斜体</span></tt> -- 表示应由用户提供的值或上下文决定的值来代替文本中的值；也在程序代码例子中表示元变量。</font></p>
+<div class="note"><p class="first admonition-title"><font id="287">注</font></p>
+<p class="last"><font id="288">此图标表示提示、建议或一般性注意事项。</font></p>
+</div>
+<div class="caution"><p class="first admonition-title"><font id="289">警告！</font></p>
+<p class="last"><font id="290">此图标表示警告或重要提醒。</font></p>
+</div>
+</div>
+<div class="section" id="using-code-examples"><h2 class="sigil_not_in_toc"><font id="291">使用例子代码</font></h2>
+<p><font id="292">本书是为了帮你完成你的工作的。</font><font id="293">。一般情况下，你都可以在你的程序或文档中使用本书中的代码。</font><font id="294">不需要得到我们获得允许，除非你要大量的复制代码。</font><font id="295">例如，编写的程序用到书中几段代码不需要许可。</font><font id="296">销售和分发O'Reilly 书籍中包含的例子的CD-ROM 需要获得许可。</font><font id="297">援引本书和书中的例子来回答问题不需要许可。</font><font id="298">大量的将本书中的例子纳入你的产品文档将需要获得许可。</font></p>
+<p><font id="299">我们希望但不是一定要求被参考文献引用。</font><font id="300">一个引用通常包括标题，作者，出版者和ISBN。</font><font id="301">例如：Python 自然语言处理，Steven Bird，Ewan Klein 和Edward Loper。</font><font id="302">O'Reilly Media, 978-0-596-51649-9. 如果你觉得你使用本书的例子代码超出了上面列举的一般用途或许可，随时通过<em>permissions@oreilly.com</em> 联系我们。</font></p>
+</div>
+<div class="section" id="acknowledgments"><h2 class="sigil_not_in_toc"><font id="303">致谢</font></h2>
+<p><font id="304">作者感激为本书早期手稿提供反馈意见的人，他们是：Doug Arnold, Michaela Atterer, Greg Aumann, Kenneth Beesley, Steven Bethard, Ondrej Bojar, Chris Cieri, Robin Cooper, Grev Corbett, James Curran, Dan Garrette, Jean Mark Gawron, Doug Hellmann, Nitin Indurkhya, Mark Liberman, Peter Ljunglöf, Stefan Müller, Robin Munn, Joel Nothman, Adam Przepiorkowski, Brandon Rhodes, Stuart Robinson, Jussi Salmela, Kyle Schlansker, Rob Speer 和Richard Sproat。</font><font id="305">感谢许许多多的学生和同事，他们关于课堂材料的意见演化成本书的这些章节，其中包括巴西，印度和美国的NLP 与语言学暑期学校的参加者。</font><font id="306">没有<tt class="doctest"><span class="pre">nltk-dev</span></tt> 开发社区的成员们的努力这本书也不会存在，他们为建设和壮大NLTK 无私奉献他们的时间和专业知识，他们的名字都记录在NLTK 网站上。</font></p>
+<p><font id="307">非常感谢美国国家科学基金会、语言数据联盟、Edward Clarence Dyason 奖学金、宾州大学、爱丁堡大学和墨尔本大学对我们在本书相关的工作上的支持。</font></p>
+<p><font id="308">感谢Julie Steele、Abby Fox、Loranah Dimant 以及其他O'Reilly 团队成员，他们组织大量NLP 和Python 社区成员全面审阅我们的手稿，很高兴的为满足我们的需要定制O'Reilly 的生成工具。感谢他们一丝不苟的审稿工作。</font></p>
+<p><font id="309">在准备Python 3 修订版的过程中，感谢Michael Korobov 领导将NLTK 移植到Python 3，以及Antoine Trux 对第一版细致的反馈意见。</font></p>
+<p><font id="310">最后，我们对我们的合作伙伴欠了巨额的感情债，他们是Mimo和Jee。</font><font id="311">我们希望我们的孩子 —— Andrew, Alison、Kirsten、Leonie 和Maaike —— 能从这些页面中感受到我们对语言和计算的热情。</font></p>
+</div>
+<div class="section" id="about-the-authors"><h2 class="sigil_not_in_toc"><font id="312">关于作者</font></h2>
+<p><font id="313"><strong>Steven Bird</strong> 是在墨尔本大学计算机科学与软件工程系副教授和美国宾夕法尼亚大学的语言数据联盟的高级研究助理。</font><font id="314">他于1990 年在爱丁堡大学完成计算音韵学博士学位，由Ewan Klein 指导。</font><font id="315">后来到喀麦隆开展夏季语言学研究所主持下的Grassfields 班图语语言实地调查。</font><font id="316">最近，他作为语言数据联盟副主任花了几年时间领导研发队伍，创建已标注文本的大型数据库的模型和工具。</font><font id="317">在墨尔本大学，他建立了一个语言技术研究组，并在各级本科计算机科学课程任教。</font><font id="318">2009 年，史蒂芬成为计算语言学学会主席。</font></p>
+<p><font id="319"><strong>Ewan Klein</strong>是英国爱丁堡大学信息学院语言技术教授。</font><font id="320">于1978 年在剑桥大学完成形式语义学博士学位。</font><font id="321">在苏塞克斯和纽卡斯尔大学工作多年后，参加了在爱丁堡的教学岗位。</font><font id="322">他于1993 年参与了爱丁堡语言科技集团的建立，并一直与之密切联系。</font><font id="323">从2000 到2002，他离开大学作为圣克拉拉的埃迪法公司的总部在爱丁堡的自然语言的研究小组的研发经理，负责处理口语对话。</font><font id="324">Ewan 是计算语言学协会欧洲分会（European Chapter of the Association for Computational Linguistics）前任主席，并且是人类语言技术（ELSNET）欧洲卓越网络的创始成员和协调员。</font></p>
+<p><font id="325"><strong>Edward Loper</strong> 最近完成了宾夕法尼亚大学自然语言处理的机器学习博士学位。</font><font id="326">Edward 是Steven 在2000 年秋季计算语言学研究生课程的学生，也是教师助手和NLTK 开发的成员。</font><font id="327">除了NLTK，他帮助开发了用于文档化和测试Python 软件的两个包：<tt class="doctest"><span class="pre">epydoc</span></tt> 和<tt class="doctest"><span class="pre">doctest</span></tt>。</font></p>
+</div>
+<div class="section" id="royalties"><h2 class="sigil_not_in_toc"><font id="328">版税</font></h2>
+<p><font id="329">出售这本书的版税将被用来支持自然语言工具包的发展。</font></p>
+<div class="figure"><font id="330"><img alt="Images/authors.png" src="Images/d87676460c87d0516fb382b929c07302.jpg" style="width: 515.0px; height: 240.0px;"/> <p class="caption"><span class="caption-label">图XIV.1</span>：Edward Loper, Ewan Klein 和Steven Bird, 斯坦福大学, 2007 年 7月</p></font></div>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="331">关于本文档...</font></p>
+<p><font id="332">针对NLTK 3.0 作出更新。</font><font id="333">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="334">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="335">本文档构建于2015 年 7 月 1 日 星期三 12:30:05 AEST</font></p>
+</div>
+</div>
+</div>
+</body>
+</html>

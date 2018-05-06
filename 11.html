@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="managing-linguistic-data"><h1 class="title"><font id="1">11. </font><font id="2">语言学数据管理</font></h1>
+<p><font id="3">已标注的语言数据的结构化集合在NLP的大部分领域都是至关重要的，但是，我们使用它们仍然面临着许多障碍。</font><font id="4">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="5">我们如何设计一种新的语言资源，并确保它的覆盖面、平衡以及支持广泛用途的文档？</font></li>
+<li><font id="6">现有数据对某些分析工具格式不兼容，我们如何才能将其转换成合适的格式？</font></li>
+<li><font id="7">有什么好的方法来记录我们已经创建的资源的存在，让其他人可以很容易地找到它？</font></li>
+</ol>
+<p><font id="8">一路上，我们将研究当前语料库的设计、创建一个语料库的典型工作流程，及语料库的生命周期。</font><font id="9">与在其他章节中一样，会有语言数据管理实际实验的很多例子，包括在语言学现场教学课程、实验室的工作和网络爬取中收集的数据。</font></p>
+<div class="section" id="corpus-structure-a-case-study"><h2 class="sigil_not_in_toc"><font id="10">1 语料库结构：一个案例研究</font></h2>
+<p><font id="11">TIMIT语料库是第一个广泛发布的已标注语音数据库，它有一个特别清晰的组织结构。</font><font id="12">TIMIT由一个包括克萨斯仪器公司和麻省理工学院的财团开发，它也由此得名。</font><font id="13">它被设计用来为声学-语音知识的获取提供数据，并支持自动语音识别系统的开发和评估。</font></p>
+<div class="section" id="the-structure-of-timit"><h2 class="sigil_not_in_toc"><font id="14">1.1 TIMIT的结构</font></h2>
+<p><font id="15">与布朗语料库显示文章风格和来源的平衡选集一样，TIMIT包括方言、说话者和材料的平衡选集。</font><font id="16">对8个方言区中的每一种方言，具有一定年龄范围和教育背景的50个男性和女性的说话者每人读10个精心挑选的句子。</font><font id="17">设计中有两句话是所有说话者都读的，带来方言的变化：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>phonetic = nltk.corpus.timit.phones(<span class="pysrc-string">'dr1-fvmh0/sa1'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>phonetic
+<span class="pysrc-output">['h#', 'sh', 'iy', 'hv', 'ae', 'dcl', 'y', 'ix', 'dcl', 'd', 'aa', 'kcl',</span>
+<span class="pysrc-output">'s', 'ux', 'tcl', 'en', 'gcl', 'g', 'r', 'iy', 's', 'iy', 'w', 'aa',</span>
+<span class="pysrc-output">'sh', 'epi', 'w', 'aa', 'dx', 'ax', 'q', 'ao', 'l', 'y', 'ih', 'ax', 'h#']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.timit.word_times(<span class="pysrc-string">'dr1-fvmh0/sa1'</span>)
+<span class="pysrc-output">[('she', 7812, 10610), ('had', 10610, 14496), ('your', 14496, 15791),</span>
+<span class="pysrc-output">('dark', 15791, 20720), ('suit', 20720, 25647), ('in', 25647, 26906),</span>
+<span class="pysrc-output">('greasy', 26906, 32668), ('wash', 32668, 37890), ('water', 38531, 42417),</span>
+<span class="pysrc-output">('all', 43091, 46052), ('year', 46052, 50522)]</span></pre>
+<p><font id="35">除了这种文本数据，TIMIT还包括一个词典，提供每一个词的可与一个特定的话语比较的规范的发音：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>timitdict = nltk.corpus.timit.transcription_dict()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>timitdict[<span class="pysrc-string">'greasy'</span>] + timitdict[<span class="pysrc-string">'wash'</span>] + timitdict[<span class="pysrc-string">'water'</span>]
+<span class="pysrc-output">['g', 'r', 'iy1', 's', 'iy', 'w', 'ao1', 'sh', 'w', 'ao1', 't', 'axr']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>phonetic[17:30]
+<span class="pysrc-output">['g', 'r', 'iy', 's', 'iy', 'w', 'aa', 'sh', 'epi', 'w', 'aa', 'dx', 'ax']</span></pre>
+<p><font id="36">这给了我们一点印象：语音处理系统在处理或识别这种特殊的方言（新英格兰）的语音中必须做什么。</font><font id="37">最后，TIMIT包括说话人的人口学统计，允许细粒度的研究声音、社会和性别特征。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.timit.spkrinfo(<span class="pysrc-string">'dr1-fvmh0'</span>)
+<span class="pysrc-output">SpeakerInfo(id='VMH0', sex='F', dr='1', use='TRN', recdate='03/11/86',</span>
+<span class="pysrc-output">birthdate='01/08/60', ht='5\'05"', race='WHT', edu='BS',</span>
+<span class="pysrc-output">comments='BEST NEW ENGLAND ACCENT SO FAR')</span></pre>
+</div>
+<div class="section" id="notable-design-features"><h2 class="sigil_not_in_toc"><font id="38">1.2 主要设计特点</font></h2>
+<p><font id="39">TIMIT演示了语料库设计中的几个主要特点。</font><font id="40">首先，语料库包含语音和字形两个标注层。</font><font id="41">一般情况下，文字或语音语料库可能在多个不同的语言学层次标注，包括形态、句法和段落层次。</font><font id="42">此外，即使在给定的层次仍然有不同的标注策略，甚至标注者之间也会有分歧，因此我们要表示多个版本。</font><font id="43">TIMIT的第二个特点是：它在多个维度的变化与方言地区和二元音覆盖范围之间取得平衡。</font><font id="44">人口学统计的加入带来了许多更独立的变量，这可能有助于解释数据中的变化，便于以后出于在建立语料库时没有想到的目的使用语料库，例如社会语言学。</font><font id="45">第三个特点是：将原始语言学事件作为录音来捕捉和作为标注来捕捉之间有明显的区分。</font><font id="46">两者一致表示文本语料库正确，原始文本通常有被认为是不可改变的作品的外部来源。</font><font id="47">那个作品的任何包含人的判断的转换——即使如分词一样简单——也是后来的修订版，因此以尽可能接近原始的形式保留源材料是十分重要的。</font></p>
+<div class="figure" id="fig-timit-structure"><img alt="Images/timit-structure.png" src="Images/953f4a408c97594449de5ca84c294719.jpg" style="width: 566.4px; height: 435.0px;"/><p class="caption"><font id="48"><span class="caption-label">图 1.2</span>：发布的TIMIT语料库的结构：CD-ROM包含文档、顶层的训练和测试目录；训练和测试目录都有8 子目录，每个方言区一个；这些目录又包含更多子目录，每个说话者一个；列出的目录是女性说话者<tt class="doctest"><span class="pre">aks0</span></tt>的目录的内容，显示10个<tt class="doctest"><span class="pre">wav</span></tt>文件配以一个录音文本文件、一个录音文本词对齐文件和一个音标文件。</font></p>
+</div>
+<p><font id="49">TIMIT的第四个特点是语料库的层次结构。</font><font id="50">每个句子4个文件，500个说话者每人10个句子，有20,000个文件。</font><font id="51">这些被组织成一个树状结构，示意图如<a class="reference internal" href="./ch11.html#fig-timit-structure">1.2</a>所示。</font><font id="52">在顶层分成训练集和测试集，用于开发和评估统计模型。</font></p>
+<p><font id="53">最后，请注意虽然TIMIT是语音语料库，它的录音文本和相关数据只是文本，可以使用程序处理了，就像任何其他的文本语料库那样。</font><font id="54">因此，许多在这本书中所描述的计算方法都适用。</font><font id="55">此外，注意TIMIT语料库包含的所有数据类型分为词汇和文字两个基本类别，我们将在下面讨论。</font><font id="56">说话者人口学统计数据只不过是词汇数据类型的另一个实例。</font></p>
+<p><font id="57">当我们考虑到文字和记录结构是计算机科学中关注数据管理的两个子领域首要内容，即全文检索领域和数据库领域，这最后的观察就不太令人惊讶了。</font><font id="58">语言数据管理的一个显着特点是往往将这两种数据类型放在一起，可以利用这两个领域的成果和技术。</font></p>
+</div>
+<div class="section" id="fundamental-data-types"><h2 class="sigil_not_in_toc"><font id="59">1.3 基本数据类型</font></h2>
+<div class="figure" id="fig-datatypes"><img alt="Images/datatypes.png" src="Images/13361de430cd983e689417c547330bbc.jpg" style="width: 625.8px; height: 535.5px;"/><p class="caption"><font id="60"><span class="caption-label">图 1.3</span>：基本语言数据类型——词汇和文本：它们的多样性中，词汇具有记录结构，而已标注文本具有时间组织。</font></p>
+</div>
+<p><font id="61">不考虑它的复杂性，TIMIT语料库只包含两种基本数据类型，词典和文本。</font><font id="62">正如我们在<a class="reference external" href="./ch02.html#chap-corpora">2.</a>中所看到的，大多数词典资源都可以使用记录结构表示，即</font><font id="63">一个关键字加一个或多个字段，如<a class="reference internal" href="./ch11.html#fig-datatypes">1.3</a>所示。</font><font id="64">词典资源可能是一个传统字典或比较词表，如下所示。</font><font id="65">它也可以是一个短语词典，其中的关键字是一个短语而不是一个词。</font><font id="66">词典还包括记录结构化的数据，我们可以通过对应主题的非关键字字段来查找条目。</font><font id="67">我们也可以构造特殊的表格（称为范例）来进行对比和说明系统性的变化，<a class="reference internal" href="./ch11.html#fig-datatypes">1.3</a>显示了三个动词。</font><font id="68">TIMIT的说话者表也是一种词典资源。</font></p>
+<p><font id="69">在最抽象的层面上，文本是一个真实的或虚构的讲话事件的表示，该事件的时间过程也在文本本身存在。</font><font id="70">一个文本可以是一个小单位，如一个词或句子，也可以是一个完整的叙述或对话。</font><font id="71">它可能会有标注如词性标记、形态分析、话语结构等。</font><font id="72">正如我们在IOB 标注（<a class="reference external" href="./ch07.html#chap-chunk">7.</a>）中所看到的</font><font id="73">可以使用单个词的标记表示更高层次的成分。</font><font id="74">因此，<a class="reference internal" href="./ch11.html#fig-datatypes">1.3</a>所示的文本的抽象就足够了。</font></p>
+<p><font id="75">不考虑单独的语料库的复杂性和特质，最基本的，它们是带有记录结构化数据的文本集合。</font><font id="76">语料库的内容往往偏重于这些类型中的一种或多种。</font><font id="77">例如：布朗语料库包含500个文本文件，但我们仍然可以使用表将这些文件与15种不同风格关联。</font><font id="78">在事情的另一面，WordNet包含117659个同义词集记录，也包含许多例子句子（小文本）来说明词的用法。</font><font id="79">TIMIT处在中间，含有大量的独立的文本和词汇类型的材料。</font></p>
+</div>
+</div>
+<div class="section" id="the-life-cycle-of-a-corpus"><h2 class="sigil_not_in_toc"><font id="80">2 语料库生命周期</font></h2>
+<p><font id="81">语料库并不是从天而降的，需要精心的准备和许多人长时期的输入。</font><font id="82">原始数据需要进行收集、清理、记录并以系统化的结构存储。</font><font id="83">标注可分为各种层次，一些需要语言的形态或句法的专门知识。</font><font id="84">要在这个阶段成功取决于建立一个高效的工作流程，包括适当的工具和格式转换器。</font><font id="85">质量控制程序可以将寻找标注中的不一致落实到位，确保尽最大可能在标注者之间达成一致。</font><font id="86">由于任务的规模和复杂性，大型语料库可能需要几年的准备，包括几十或上百人多年的努力。</font><font id="87">在本节中，我们简要地回顾语料库生命周期的各个阶段。</font></p>
+<div class="section" id="three-corpus-creation-scenarios"><h2 class="sigil_not_in_toc"><font id="88">2.1 语料库创建的三种方案</font></h2>
+<p><font id="89">语料库的一种类型是设计在创作者的探索过程中逐步展现。</font><font id="90">这是典型的传统“领域语言学”模式，即来自会话的材料在它被收集的时候就被分析，明天的想法往往基于今天的分析中产生的问题。</font><font id="91">。在随后几年的研究中产生的语料不断被使用，并可能用作不确定的档案资源。</font><font id="92">计算机化明显有利于这种类型的工作，以广受欢迎的程序Shoebox为例，它作为Toolbox重新发布，现在已有超过二十年的历史（见<a class="reference external" href="./ch02.html#sec-lexical-resources">4</a>）。</font><font id="93">其他的软件工具，甚至是简单的文字处理器和电子表格，通常也可用于采集数据。</font><font id="94">在下一节，我们将着眼于如何从这些来源提取数据。</font></p>
+<p><font id="95">另一种语料库创建方案是典型的实验研究，其中一些精心设计的材料被从一定范围的人类受试者中收集，然后进行分析来评估一个假设或开发一种技术。</font><font id="96">此类数据库在实验室或公司内被共享和重用已很常见，经常被更广泛的发布。</font><font id="97">这种类型的语料库是“共同任务”的科研管理方法的基础，这在过去的二十年已成为政府资助的语言技术研究项目。</font><font id="98">在前面的章节中，我们已经遇到很多这样的语料库；我们将看到如何编写Python程序实践这些语料库发布前必要的一些任务。</font></p>
+<p><font id="99">最后，还有努力为一个特定的语言收集“参考语料”，如<em>美国国家语料库</em>（ANC）和<em>英国国家语料库</em>（BNC）。</font><font id="100">这里的目标已经成为产生各种形式、风格和语言的使用的一个全面的记录。</font><font id="101">除了规模庞大的挑战，还严重依赖自动标注工具和后期编辑共同修复错误。</font><font id="102">然而，我们可以编写程序来查找和修复错误，还可以分析语料库是否平衡。</font></p>
+</div>
+<div class="section" id="quality-control"><h2 class="sigil_not_in_toc"><font id="103">2.2 质量控制</font></h2>
+<p><font id="104">自动和手动的数据准备的好的工具是必不可少的。</font><font id="105">然而，一个高质量的语料库的建立很大程度取决于文档、培训和工作流程等平凡的东西。</font><font id="106">标注指南确定任务并记录标记约定。</font><font id="107">它们可能会定期更新以覆盖不同的情况，同时制定实现更一致的标注的新规则。</font><font id="108">在此过程中标注者需要接受训练，包括指南中没有的情况的解决方法。</font><font id="109">需要建立工作流程，尽可能与支持软件一起，跟踪哪些文件已被初始化、标注、验证、手动检查等等。</font><font id="110">可能有多层标注，由不同的专家提供。</font><font id="111">不确定或不一致的情况可能需要裁决。</font></p>
+<p><font id="112">大的标注任务需要多个标注者，由此产生一致性的问题。</font><font id="113">一组标注者如何能一致的处理呢？</font><font id="114">我们可以通过将一部分独立的原始材料由两个人分别标注，很容易地测量标注的一致性。</font><font id="115">这可以揭示指南中或标注任务的不同功能的不足。</font><font id="116">在对质量要求较高的情况下，整个语料库可以标注两次，由专家裁决不一致的地方。</font></p>
+<p><font id="117">报告标注者之间对语料库达成的一致性被认为是最佳实践（如</font><font id="118">通过两次标注10%的语料库）。</font><font id="119">这个分数作为一个有用的在此语料库上训练的所有自动化系统的期望性能的上限。</font></p>
+<div class="caution"><p class="first admonition-title"><font id="120">小心！</font></p>
+<p class="last"><font id="121">应谨慎解释标注者之间一致性得分，因为标注任务的难度差异巨大。</font><font id="122">例如，90％的一致性得分对于词性标注是可怕的得分，但对语义角色标注是可以预期的得分。</font></p>
+</div>
+<p><font id="123"><span class="termdef">Kappa</span>系数K测量两个人判断类别和修正预期的期望一致性的一致性。</font><font id="124">例如，假设要标注一个项目，四种编码选项可能性相同。</font><font id="125">这种情况下，两个人随机编码预计有25％可能达成一致。</font><font id="126">因此，25％一致性将表示为k = 0，相应的较好水平的一致性将依比例决定。</font><font id="127">对于一个50％的一致性，我们将得到k = 0.333，因为50是从25到100之间距离的三分之一。</font><font id="128">还有许多其他一致性测量方法；详情请参阅<tt class="doctest"><span class="pre">help(nltk.metrics.agreement)</span></tt>。</font></p>
+<div class="figure" id="fig-windowdiff"><img alt="Images/windowdiff.png" src="Images/58a1097522dc6fbe24eddd96cfd6cbc9.jpg" style="width: 399.75px; height: 100.5px;"/><p class="caption"><font id="129"><span class="caption-label">图 2.1</span>：一个序列的三种分割：小矩形代表字、词、句，总之，任何可能被分为语言单位的序列；S<sub>1</sub>和S<sub>2</sub>是接近一致的，两者都与S<sub>3</sub>显著不同。</font></p>
+</div>
+<p><font id="130">我们还可以测量语言输入的两个独立分割的一致性，例如</font><font id="131">分词、句子分割、命名实体识别。</font><font id="132">在<a class="reference internal" href="./ch11.html#fig-windowdiff">2.1</a>中，我们看到三种可能的由标注者（或程序）产生的项目序列的分割。</font><font id="133">虽然没有一个完全一致，S<sub>1</sub>和S<sub>2</sub>是接近一致的，我们想要一个合适的测量。</font><font id="134">Windowdiff是评估两个分割一致性的一个简单的算法，通过在数据上移动一个滑动窗口计算近似差错的部分得分。</font><font id="135">如果我们将词符预处理成0和1的序列，当词符后面跟着边界符号时记录下来，我们就可以用字符串表示分割，应用windowdiff 打分器。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>s1 = <span class="pysrc-string">"00000010000000001000000"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>s2 = <span class="pysrc-string">"00000001000000010000000"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>s3 = <span class="pysrc-string">"00010000000000000001000"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.windowdiff(s1, s1, 3)
+<span class="pysrc-output">0.0</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.windowdiff(s1, s2, 3)
+<span class="pysrc-output">0.190...</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.windowdiff(s2, s3, 3)
+<span class="pysrc-output">0.571...</span></pre>
+<p><font id="136">上面的例子中，窗口大小为3。</font><font id="137">Windowdiff计算在一对字符串上滑动这个窗口。</font><font id="138">在每个位置它计算两个字符串在这个窗口内的边界的总数，然后计算差异。</font><font id="139">最后累加这些差异。</font><font id="140">我们可以增加或缩小窗口的大小来控制测量的敏感度。</font></p>
+</div>
+<div class="section" id="curation-vs-evolution"><h2 class="sigil_not_in_toc"><font id="141">2.3 维护与演变</font></h2>
+<p><font id="142">随着大型语料库的发布，研究人员立足于均衡的从为完全不同的目的而创建的语料库中派生出的子集进行调查的可能性越来越大。</font><font id="143">例如，Switchboard 数据库，最初是为识别说话人的研究而收集的，已被用作语音识别、单词发音、口吃、句法、语调和段落结构研究的基础。</font><font id="144">重用语言语料库的动机包括希望节省时间和精力，希望在别人可以复制的材料上工作，有时希望研究语言行为的更加自然的形式。</font><font id="145">为这样的研究选择子集的过程本身可视为一个不平凡的贡献。</font></p>
+<p><font id="146">除了选择语料库的适当的子集，这个新的工作可能包括重新格式化文本文件（如</font><font id="147">转换为XML），重命名文件，重新为文本分词，选择数据的一个子集来充实等等。</font><font id="148">多个研究小组可以独立的做这项工作，如<a class="reference internal" href="./ch11.html#fig-evolution">2.2</a>所示。</font><font id="149">在以后的日子，应该有人想要组合不同的版本的源数据，这项任务可能会非常繁重。</font></p>
+<div class="figure" id="fig-evolution"><img alt="Images/evolution.png" src="Images/e33fb540f11c5ea9a07441be8a407d43.jpg" style="width: 780.12px; height: 222.12px;"/><p class="caption"><font id="150"><span class="caption-label">图 2.2</span>：语料库随着时间的推移而演变：语料库发布后，研究小组将独立的使用它，选择和丰富不同的部分；然后研究努力整合单独的标注，面临校准注释的艰巨的挑战。</font></p>
+</div>
+<p><font id="151">由于缺乏有关派生的版本如何创建的，哪个版本才是最新的等记录，使用派生的语料库的任务变得更加困难。</font></p>
+<p><font id="152">这种混乱情况的改进方法是集中维护语料库，专家委员会定期修订和扩充它，考虑第三方的意见，不时发布的新版本。</font><font id="153">出版字典和国家语料库可能以这种方式集中维护。</font><font id="154">然而，对于大多数的语料库，这种模式是完全不切实际的。</font></p>
+<p><font id="155">原始语料库的出版的一个中间过程是要有一个能识别其中任何一部分的规范。</font><font id="156">每个句子、树、或词条都有一个全局的唯一标识符，每个词符、节点或字段（分别）都有一个相对偏移。</font><font id="157">标注，包括分割，可以使用规范的标识符（一个被称为<span class="termdef">对峙注释</span>的方法）引用源材料。</font><font id="158">这样，新的标注可以与源材料独立分布，同一来源的多个独立标注可以对比和更新而不影响源材料。</font></p>
+<p><font id="159">如果语料库出版提供了多个版本，版本号或日期可以是识别规范的一部分。</font><font id="160">整个语料的版本标识符之间的对应表，将使任何对峙的注释更容易被更新。</font></p>
+<div class="caution"><p class="first admonition-title"><font id="161">小心！</font></p>
+<p class="last"><font id="162">有时一个更新的语料包含对一直在外部标注的基本材料的修正。</font><font id="163">词符可能会被分拆或合并，成分可能已被重新排列。</font><font id="164">新老标识符之间可能不会一一对应。</font><font id="165">使对峙标注打破新版本的这些组件比默默允许其标识符指向不正确的位置要好。</font></p>
+</div>
+</div>
+</div>
+<div class="section" id="acquiring-data"><h2 class="sigil_not_in_toc"><font id="166">3 数据采集</font></h2>
+<div class="section" id="obtaining-data-from-the-web"><h2 class="sigil_not_in_toc"><font id="167">3.1 从网上获取数据</font></h2>
+<p><font id="168">网络是语言分析的一个丰富的数据源。</font><font id="169">我们已经讨论了访问单个文件，如RSS 订阅、搜索引擎的结果（见<a class="reference external" href="./ch03.html#sec-accessing-text">3.1</a>）的方法。</font><font id="170">然而，在某些情况下，我们要获得大量的Web文本。</font></p>
+<p><font id="171">最简单的方法是获得出版的网页文本的文集。</font><font id="172">Web语料库ACL特别兴趣组（SIGWAC）在<tt class="doctest"><span class="pre">http://www.sigwac.org.uk/</span></tt>维护一个资源列表。</font><font id="173">使用定义好的Web 语料库的优点是它们有文档、稳定并允许重复性实验。</font></p>
+<p><font id="174">如果所需的内容在一个特定的网站，有许多实用程序能捕获网站的所有可访问内容，如<em>GNU Wget</em> <tt class="doctest"><span class="pre">http://www.gnu.org/software/wget/</span></tt>。</font><font id="175">For maximal flexibility and control, a web crawler can be used, such as <em>Heritrix</em> <tt class="doctest"><span class="pre">http://crawler.archive.org/</span></tt>. </font><font id="176">为了最大的灵活性和可控制，可以使用网络爬虫如<a class="reference external" href="./bibliography.html#croft2009" id="id1">(Croft, Metzler, &amp; Strohman, 2009)</a>。</font><font id="177">例如：如果我们要编译双语文本集合，对应两种语言的文档对，爬虫需要检测站点的结构以提取文件之间的对应关系，它需要按照捕获的对应方式组织下载的页面。</font><font id="178">写你自己的网页爬虫可能使很有诱惑力的，但也有很多陷阱需要克服，如检测MIME类型、转换相对地址为绝对URL、避免被困在循环链接结构、处理网络延迟、避免使站点超载或被禁止访问该网站等。</font></p>
+</div>
+<div class="section" id="obtaining-data-from-word-processor-files"><h2 class="sigil_not_in_toc"><font id="179">3.2 从字处理器文件获取数据</font></h2>
+<p><font id="180">文字处理软件通常用来在具有有限的可计算基础设施的项目中手工编制文本和词汇。</font><font id="181">这些项目往往提供数据录入模板，通过字处理软件并不能保证数据结构正确。</font><font id="182">例如，每个文本可能需要有一个标题和日期。</font><font id="183">同样，每个词条可能有一些必须的字段。</font><font id="184">随着数据规模和复杂性的增长，用于维持其一致性的时间的比重也增大。</font></p>
+<p><font id="185">我们怎样才能提取这些文件的内容，使我们能够在外部程序中操作？</font><font id="186">此外，我们如何才能验证这些文件的内容，以帮助作者创造结构良好的数据，在原始的创作过程中最大限度提高数据的质量？</font></p>
+<p><font id="187">考虑一个字典，其中的每个条目都有一个词性字段，从一个20个可能值的集合选取，在发音字段显示，以11号黑体字呈现。</font><font id="188">传统的文字处理器没有能够验证所有的词性字段已正确输入和显示的搜索函数或宏。</font><font id="189">这个任务需要彻底的手动检查。</font><font id="190">如果字处理器允许保存文档为一种非专有的格式，如text、HTML或XML，有时我们可以写程序自动做这个检查。</font></p>
+<p><font id="191">思考下面的一个词条的片段：“sleep [sli:p] <strong>v.i.</strong></font><font id="192"><em>condition of body and mind...</em>"。</font><font id="193">我们可以在MSWord中输入这些词，然后“另存为网页”，然后检查生成的HTML文件：</font></p>
+<pre class="literal-block">&lt;p class=MsoNormal&gt;sleep
+  &lt;span style='mso-spacerun:yes'&gt; &lt;/span&gt;
+  [&lt;span class=SpellE&gt;sli:p&lt;/span&gt;]
+  &lt;span style='mso-spacerun:yes'&gt; &lt;/span&gt;
+  &lt;b&gt;&lt;span style='font-size:11.0pt'&gt;v.i.&lt;/span&gt;&lt;/b&gt;
+  &lt;span style='mso-spacerun:yes'&gt; &lt;/span&gt;
+  &lt;i&gt;a condition of body and mind ...&lt;o:p&gt;&lt;/o:p&gt;&lt;/i&gt;
+&lt;/p&gt;
+</pre>
+<p><font id="199">这个简单的程序只是冰山一角。</font><font id="200">我们可以开发复杂的工具来检查字处理器文件的一致性，并报告错误，使字典的维护者可以<em>使用原来的文字处理器</em>纠正的原始文件。</font></p>
+<p><font id="201">只要我们知道数据的正确格式，就可以编写其他程序将数据转换成不同格式。</font><font id="202"><a class="reference internal" href="./ch11.html#code-html2csv">3.1</a>中的程序使用<tt class="doctest"><span class="pre">nltk.clean_html()</span></tt>剥离HTML标记，提取词和它们的发音，以“逗号分隔值”（CSV）格式生成输出。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> bs4 <span class="pysrc-keyword">import</span> BeautifulSoup
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">lexical_data</span>(html_file, encoding=<span class="pysrc-string">"utf-8"</span>):
+    SEP = <span class="pysrc-string">'_ENTRY'</span>
+    html = open(html_file, encoding=encoding).read()
+    html = re.sub(r<span class="pysrc-string">'&lt;p'</span>, SEP + <span class="pysrc-string">'&lt;p'</span>, html)
+    text = BeautifulSoup(html).get_text()
+    text = <span class="pysrc-string">' '</span>.join(text.split())
+    <span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> text.split(SEP):
+        <span class="pysrc-keyword">if</span> entry.count(<span class="pysrc-string">' '</span>) &gt; 2:
+            yield entry.split(<span class="pysrc-string">' '</span>, 3)</pre>
+<dl class="docutils"><dt><font id="204">with gzip.open(fn+".gz","wb") as f_out:</font></dt>
+<dd><font id="205">f_out.write(bytes(s, 'UTF-8'))</font></dd>
+</dl>
+<div class="note"><p class="first admonition-title"><font id="206">注意</font></p>
+<p class="last"><font id="207">更多HTML复杂的处理可以使用<tt class="doctest"><span class="pre">http://www.crummy.com/software/BeautifulSoup/</span></tt>上的<em>Beautiful Soup</em>的包。</font></p>
+</div>
+
+<div class="section" id="obtaining-data-from-spreadsheets-and-databases"><h2 class="sigil_not_in_toc"><font id="208">3.3 从电子表格和数据库中获取数据</font></h2>
+<p><font id="209">电子表格通常用于获取词表或范式。</font><font id="210">例如，一个比较词表可以用电子表格创建，用一排表示每个同源组，每种语言一列（见</font><font id="211"><tt class="doctest"><span class="pre">nltk.corpus.swadesh</span></tt>和<tt class="doctest"><span class="pre">www.rosettaproject.org</span></tt>）。</font><font id="212">大多数电子表格软件可以将数据导出为CSV格式。</font><font id="213">正如我们将在下面看到的，使用<tt class="doctest"><span class="pre">csv</span></tt>模块Python程序可以很容易的访问它们。</font></p>
+<p><font id="214">有时词典存储在一个完全成熟的关系数据库。</font><font id="215">经过适当的标准化，这些数据库可以确保数据的有效性。</font><font id="216">例如，我们可以要求所有词性都来自指定的词汇，通过声明词性字段为<em>枚举类型</em>或用一个外键引用一个单独的词性表。</font><font id="217">然而，关系模型需要提前定义好的数据（模式）结构，这与高度探索性的构造语言数据的主导方法相违背。</font><font id="218">被认为是强制性的和独特的字段往往需要是可选的、可重复。</font><font id="219">只有当数据类型提前全都知道时关系数据库才是适用的，如果不是，或者几乎所有的属性都是可选的或重复的，关系的做法就行不通了。</font></p>
+<p><font id="220">然而，当我们的目标只是简单的从数据库中提取内容时，完全可以将表格（或SQL查询结果）转换成CSV格式，并加载到我们的程序中。</font><font id="221">我们的程序可能会执行不太容易用SQL表示的语言学目的的查询，如</font><font id="222"><em>select all words that appear in example sentences for which no dictionary entry is provided</em>。</font><font id="223">对于这个任务，我们需要从记录中提取足够的信息，使它连同词条和例句能被唯一的识别。</font><font id="224">让我们假设现在这个信息是在一个CSV文件<tt class="doctest"><span class="pre">dict.csv</span></tt>中：</font></p>
+<pre class="literal-block">"sleep","sli:p","v.i","a condition of body and mind ..."
+"walk","wo:k","v.intr","progress by lifting and setting down each foot ..."
+"wake","weik","intrans","cease to sleep"
+</pre>
+<p><font id="226">然后，这些信息将可以指导正在进行的工作来丰富词汇和更新关系数据库的内容。</font></p>
+</div>
+<div class="section" id="converting-data-formats"><h2 class="sigil_not_in_toc"><font id="227">3.4 转换数据格式</font></h2>
+<p><font id="228">已标注语言数据很少以最方便的格式保存，往往需要进行各种格式转换。</font><font id="229">字符编码之间的转换已经讨论过（见<a class="reference external" href="./ch03.html#sec-unicode">3.3</a>）。</font><font id="230">在这里，我们专注于数据结构。</font></p>
+<p><font id="231">最简单的情况，输入和输出格式是同构的。</font><font id="232">例如，我们可能要将词汇数据从Toolbox格式转换为XML，可以直接一次一个的转换词条（<a class="reference internal" href="./ch11.html#sec-working-with-xml">4</a>）。</font><font id="233">数据结构反映在所需的程序的结构中：一个<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环，每次循环处理一个词条。</font></p>
+<p><font id="234">另一种常见的情况，输出是输入的摘要形式，如一个倒置的文件索引。</font><font id="235">有必要在内存中建立索引结构（见<a class="reference external" href="./ch04.html#code-search-documents">4.8</a>），然后把它以所需的格式写入一个文件。</font><font id="236">下面的例子构造一个索引，映射字典定义的词汇到相应的每个词条<a class="reference internal" href="./ch11.html#map-word-lexeme"><span id="ref-map-word-lexeme"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></span></a>的语意<a class="reference internal" href="./ch11.html#lexical-entry"><span id="ref-lexical-entry"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></span></a>，已经对定义文本分词<a class="reference internal" href="./ch11.html#definition-text"><span id="ref-definition-text"><img alt="[3]" class="callout" src="Images/13f25b9eba42f74ad969a74cee78551e.jpg"/></span></a>，并丢弃短词<a class="reference internal" href="./ch11.html#short-words"><span id="ref-short-words"><img alt="[4]" class="callout" src="Images/92cc2e7821d464cfbaaf651a360cd413.jpg"/></span></a>。</font><font id="237">一旦该索引建成，我们打开一个文件，然后遍历索引项，以所需的格式输出行<a class="reference internal" href="./ch11.html#required-format"><span id="ref-required-format"><img alt="[5]" class="callout" src="Images/63a8e4c47e813ba9630363f9b203a19a.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>idx = nltk.Index((defn_word, lexeme) <a href="./ch11.html#ref-map-word-lexeme"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></a>
+<span class="pysrc-more">... </span>                 <span class="pysrc-keyword">for</span> (lexeme, defn) <span class="pysrc-keyword">in</span> pairs <a href="./ch11.html#ref-lexical-entry"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></a>
+<span class="pysrc-more">... </span>                 <span class="pysrc-keyword">for</span> defn_word <span class="pysrc-keyword">in</span> nltk.word_tokenize(defn) <a href="./ch11.html#ref-definition-text"><img alt="[3]" class="callout" src="Images/13f25b9eba42f74ad969a74cee78551e.jpg"/></a>
+<span class="pysrc-more">... </span>                 <span class="pysrc-keyword">if</span> len(defn_word) &gt; 3) <a href="./ch11.html#ref-short-words"><img alt="[4]" class="callout" src="Images/92cc2e7821d464cfbaaf651a360cd413.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>with open(<span class="pysrc-string">"dict.idx"</span>, <span class="pysrc-string">"w"</span>) <span class="pysrc-keyword">as</span> idx_file:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> sorted(idx):
+<span class="pysrc-more">... </span>        idx_words = <span class="pysrc-string">', '</span>.join(idx[word])
+<span class="pysrc-more">... </span>        idx_line = <span class="pysrc-string">"{}: {}"</span>.format(word, idx_words) <a href="./ch11.html#ref-required-format"><img alt="[5]" class="callout" src="Images/63a8e4c47e813ba9630363f9b203a19a.jpg"/></a>
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(idx_line, file=idx_file)</pre>
+<p><font id="238">由此产生的文件<tt class="doctest"><span class="pre">dict.idx</span></tt>包含下面的行。</font><font id="239">（如果有更大的字典，我们希望找到每个索引条目中列出的多个语意）。</font></p>
+<pre class="literal-block">body: sleep
+cease: wake
+condition: sleep
+down: walk
+each: walk
+foot: walk
+lifting: walk
+mind: sleep
+progress: walk
+setting: walk
+sleep: wake
+</pre>
+<div class="section" id="deciding-which-layers-of-annotation-to-include"><h2 class="sigil_not_in_toc"><font id="248">3.5 决定要包含的标注层</font></h2>
+<p><font id="249">发布的语料库中所包含的信息的丰富性差别很大。</font><font id="250">语料库最低限度通常会包含至少一个声音或字形符号的序列。</font><font id="251">事情的另一面，一个语料库可以包含大量的信息，如句法结构、形态、韵律、每个句子的语义、加上段落关系或对话行为的标注。</font><font id="252">标注的这些额外的层可能正是有人执行一个特定的数据分析任务所需要的。</font><font id="253">例如，如果我们可以搜索特定的句法结构，找到一个给定的语言模式就更容易；如果每个词都标注了意义，为语言模式归类就更容易。</font><font id="254">这里提供一些常用的标注层：</font></p>
+<ul class="simple"><li><font id="255">分词：文本的书写形式不能明确地识别它的词符。</font><font id="256">分词和规范化的版本作为常规的正式版本的补充可能是一个非常方便的资源。</font></li>
+<li><font id="257">断句：正如我们在<a class="reference external" href="./ch03.html#chap-words">3</a>中看到的，断句比它看上去的似乎更加困难。</font><font id="258">因此，一些语料库使用明确的标注来断句。</font></li>
+<li><font id="259">分段：段和其他结构元素（标题，章节等）</font><font id="260">可能会明确注明。</font></li>
+<li><font id="261">词性：文档中的每个单词的词类。</font></li>
+<li><font id="262">句法结构：一个树状结构，显示一个句子的组成结构。</font></li>
+<li><font id="263">浅层语义：命名实体和共指标注，语义角色标签。</font></li>
+<li><font id="264">对话与段落：对话行为标记，修辞结构</font></li>
+</ul>
+<p><font id="265">不幸的是，现有的语料库之间在如何表示标注上并没有多少一致性。</font><font id="266">然而，两个大类的标注表示应加以区别。</font><font id="267"><span class="termdef">内联标注</span>通过插入带有标注信息的特殊符号或控制序列修改原始文档。</font><font id="268">例如，为文档标注词性时，字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">"fly"</span></span></tt>可能被替换为字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">"fly/NN"</span></span></tt>来表示词<em>fly</em>在文中是名词。</font><font id="269">相比之下，<span class="termdef">对峙标注</span>不修改原始文档，而是创建一个新的文档，通过使用指针引用原始文档来增加标注信息。</font><font id="270">例如，这个新的文档可能包含字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">"&lt;token id=8 pos='NN'/&gt;"</span></span></tt>，表示8号词符是一个名词。</font><font id="271">（我们希望可以确保的分词本身不会变化，因为它会导致默默损坏这种引用。）</font></p>
+</div>
+<div class="section" id="standards-and-tools"><h2 class="sigil_not_in_toc"><font id="272">3.6 标准和工具</font></h2>
+<p><font id="273">一个用途广泛的语料库需要支持广泛的格式。</font><font id="274">然而，NLP研究的前沿需要各种新定义的没有得到广泛支持的标注。</font><font id="275">一般情况下，并没有广泛使用的适当的创作、发布和使用语言数据的工具。</font><font id="276">大多数项目都必须制定它们自己的一套工具，供内部使用，这对缺乏必要的资源的其他人没有任何帮助。</font><font id="277">此外，我们还没有一个可以胜任的普遍接受的标准来表示语料库的结构和内容。</font><font id="278">没有这样的标准，就不可能有通用的工具——同时，没有可用的工具，适当的标准也不太可能被开发、使用和接受。</font></p>
+<p><font id="279">针对这种情况的一个反应就是开拓未来开发一种通用的能充分表现捕获多种标注类型（见<a class="reference internal" href="./ch11.html#sec-further-reading-data">8</a>的例子）的格式。</font><font id="280">NLP的挑战是编写程序处理这种格式的泛化。</font><font id="281">例如，如果编程任务涉及树数据，文件格式允许任意有向图，那么必须验证输入数据检查树的属性如根、连通性、无环。</font><font id="282">如果输入文件包含其他层的标注，该程序将需要知道数据加载时如何忽略它们，将树数据保存到文件时不能否定或抹杀这些层。</font></p>
+<p><font id="283">另一种反应一直是写一个一次性的脚本来操纵语料格式；这样的脚本将许多NLP研究人员的文件夹弄得乱七八糟。</font><font id="284">在语料格式解析工作应该只进行一次（每编程语言）的前提下，NLTK中的语料库阅读器是更系统的方法。</font></p>
+<div class="figure" id="fig-three-layer-arch"><img alt="Images/three-layer-arch.png" src="Images/102675fd70e434164536c75bf7f8f043.jpg" style="width: 538.8px; height: 241.5px;"/><p class="caption"><font id="285"><span class="caption-label">图 3.2</span>：通用格式对比通用接口</font></p>
+</div>
+<p><font id="286">不是集中在一种共同的格式，我们认为更有希望开发一种共同的接口（参见</font><font id="287"><tt class="doctest"><span class="pre">nltk.corpus</span></tt>）。</font><font id="288">思考NLP中的一个重要的语料类型treebanks的情况。</font><font id="289">将短语结构树存储在一个文件中的方法很多。</font><font id="290">我们可以使用嵌套的括号、或嵌套的XML元素、或每行带有一个(child-id,parent-id)对的依赖符号、或一个XML版本的依赖符号等。</font><font id="291">然而，每种情况中的逻辑结构几乎是相同的。</font><font id="292">很容易设计一种共同的接口，使应用程序员编写代码使用如<tt class="doctest"><span class="pre">children()</span></tt>、<tt class="doctest"><span class="pre">leaves()</span></tt>、<tt class="doctest"><span class="pre">depth()</span></tt>等方法来访问树数据。</font><font id="293">注意这种做法来自计算机科学中已经接受的做法，即</font><font id="294">即抽象数据类型、面向对象设计、三层结构（<a class="reference internal" href="./ch11.html#fig-three-layer-arch">3.2</a>）。</font><font id="295">其中的最后一个——来自关系数据库领域——允许终端用户应用程序使用通用的模型（“关系模型”）和通用的语言（SQL）抽象出文件存储的特质，并允许新的文件系统技术的出现，而不会干扰到终端用户的应用。</font><font id="296">以同样的方式，一个通用的语料库接口将应用程序从数据格式隔离。</font></p>
+<p><font id="297">在此背景下，创建和发布一个新的语料库时，尽可能使用现有广泛使用的格式是权宜之计。</font><font id="298">如果这样不可能，语料库可以带有一些软件——如<tt class="doctest"><span class="pre">nltk.corpus</span></tt>模块——支持现有的接口方法。</font></p>
+</div>
+<div class="section" id="special-considerations-when-working-with-endangered-languages"><h2 class="sigil_not_in_toc"><font id="299">3.7 处理濒危语言时特别注意事项</font></h2>
+<p><font id="300">语言对科学和艺术的重要性体现在文化宝库包含在语言中。</font><font id="301">世界上大约7000 种人类语言中的每一个都是丰富的，在它独特的方面，在它口述的历史和创造的传说，在它的文法结构和它的变化的词汇和它们含义中的细微差别。</font><font id="302">受威胁残余文化中的词能够区分具有科学家未知的治疗用途的植物亚种。</font><font id="303">当人们互相接触，每个人都为之前的语言提供一个独特的窗口，语言随着时间的推移而变化。</font><font id="304">世界许多地方，小的语言变化从一个镇都另一个镇，累加起来在一个半小时的车程的空间中成为一种完全不同的语言。</font><font id="305">对于其惊人的复杂性和多样性，人类语言犹如丰富多彩的挂毯随着时间和空间而伸展。</font></p>
+<p><font id="306">然而，世界上大多数语言面临灭绝。</font><font id="307">对此，许多语言学家都在努力工作，记录语言，构建这个世界语言遗产的重要方面的丰富记录。</font><font id="308">在NLP的领域能为这方面的努力提供什么帮助吗？</font><font id="309">开发标注器、分析器、命名实体识别等不是最优先的，通常没有足够的数据来开发这样的工具。</font><font id="310">相反，最经常提出的是需要更好的工具来收集和维护数据，特别是文本和词汇。</font></p>
+<p><font id="311">从表面看，开始收集濒危语言的文本应该是一件简单的事情。</font><font id="312">即使我们忽略了棘手的问题，如谁拥有文本，文本中包含的文化知识有关敏感性，转录仍然有很多明显的实际问题。</font><font id="313">大多数语言缺乏标准的书写形式。</font><font id="314">当一种语言没有文学传统时，拼写和标点符号的约定也没有得到很好的建立。</font><font id="315">因此，通常的做法是与文本收集一道创建一个词典，当在文本中出现新词时不断更新词典。</font><font id="316">可以使用文字处理器（用于文本）和电子表格（用于词典）来做这项工作。</font><font id="317">更妙的是，SIL的自由语言软件Toolbox和Fieldworks对文本和词汇的创建集成提供了很好的支持。</font></p>
+<p><font id="318">当濒危语言的说话者学会自己输入文本时，一个共同的障碍就是对正确的拼写的极度关注。</font><font id="319">有一个词典大大有助于这一进程，但我们需要让查找的方法不要假设有人能确定任意一个词的引文形式。</font><font id="320">这个问题对具有复杂形态的包括前缀的语言可能是很急迫的。</font><font id="321">这种情况下，使用语义范畴标注词项，并允许通过语义范畴或注释查找是十分有益的。</font></p>
+<p><font id="322">允许通过相似的发音查找词项也是很有益的。</font><font id="323">下面是如何做到这一点的一个简单的演示。</font><font id="324">第一步是确定易混淆的字母序列，映射复杂的版本到更简单的版本。</font><font id="325">我们还可以注意到，辅音群中字母的相对顺序是拼写错误的一个来源，所以我们将辅音字母顺序规范化。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>mappings = [(<span class="pysrc-string">'ph'</span>, <span class="pysrc-string">'f'</span>), (<span class="pysrc-string">'ght'</span>, <span class="pysrc-string">'t'</span>), (<span class="pysrc-string">'^kn'</span>, <span class="pysrc-string">'n'</span>), (<span class="pysrc-string">'qu'</span>, <span class="pysrc-string">'kw'</span>),
+<span class="pysrc-more">... </span>            (<span class="pysrc-string">'[aeiou]+'</span>, <span class="pysrc-string">'a'</span>), (r<span class="pysrc-string">'(.)\1'</span>, r<span class="pysrc-string">'\1'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">signature</span>(word):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> patt, repl <span class="pysrc-keyword">in</span> mappings:
+<span class="pysrc-more">... </span>        word = re.sub(patt, repl, word)
+<span class="pysrc-more">... </span>    pieces = re.findall(<span class="pysrc-string">'[^aeiou]+'</span>, word)
+<span class="pysrc-more">... </span>    return <span class="pysrc-string">''</span>.join(char <span class="pysrc-keyword">for</span> piece <span class="pysrc-keyword">in</span> pieces <span class="pysrc-keyword">for</span> char <span class="pysrc-keyword">in</span> sorted(piece))[:8]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>signature(<span class="pysrc-string">'illefent'</span>)
+<span class="pysrc-output">'lfnt'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>signature(<span class="pysrc-string">'ebsekwieous'</span>)
+<span class="pysrc-output">'bskws'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>signature(<span class="pysrc-string">'nuculerr'</span>)
+<span class="pysrc-output">'nclr'</span></pre>
+<p><font id="326">下一步，我们对词典中的所有词汇创建从特征到词汇的映射。</font><font id="327">我们可以用这为一个给定的输入词找到候选的修正（但我们必须先计算这个词的特征）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>signatures = nltk.Index((signature(w), w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> nltk.corpus.words.words())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>signatures[signature(<span class="pysrc-string">'nuculerr'</span>)]
+<span class="pysrc-output">['anicular', 'inocular', 'nucellar', 'nuclear', 'unicolor', 'uniocular', 'unocular']</span></pre>
+<p><font id="328">最后，我们应该按照与原词相似程度对结果排序。</font><font id="329">通过函数<tt class="doctest"><span class="pre">rank()</span></tt>完成。</font><font id="330">唯一剩下的函数提供给用户一个简单的接口：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">rank</span>(word, wordlist):
+<span class="pysrc-more">... </span>    ranked = sorted((nltk.edit_distance(word, w), w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> wordlist)
+<span class="pysrc-more">... </span>    return [word <span class="pysrc-keyword">for</span> (_, word) <span class="pysrc-keyword">in</span> ranked]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">fuzzy_spell</span>(word):
+<span class="pysrc-more">... </span>    sig = signature(word)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> sig <span class="pysrc-keyword">in</span> signatures:
+<span class="pysrc-more">... </span>        return rank(word, signatures[sig])
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        return []
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fuzzy_spell(<span class="pysrc-string">'illefent'</span>)
+<span class="pysrc-output">['olefiant', 'elephant', 'oliphant', 'elephanta']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fuzzy_spell(<span class="pysrc-string">'ebsekwieous'</span>)
+<span class="pysrc-output">['obsequious']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fuzzy_spell(<span class="pysrc-string">'nucular'</span>)
+<span class="pysrc-output">['anicular', 'inocular', 'nucellar', 'nuclear', 'unocular', 'uniocular', 'unicolor']</span></pre>
+<p><font id="331">这仅仅是一个演示，其中一个简单的程序就可以方便的访问语言书写系统可能不规范或语言的使用者可能拼写的不是很好的上下文中的词汇数据。</font><font id="332">其他简单的NLP在这个领域的应用包括：建立索引以方便对数据的访问，从文本中拾取词汇表，构建词典时定位词语用法的例子，在知之甚少的数据中检测普遍或特殊模式，并在创建的数据上使用各种语言的软件工具执行专门的验证。</font><font id="333">我们将在<a class="reference internal" href="./ch11.html#sec-working-with-toolbox-data">5</a>返回到其中的最后一个。</font></p>
+</div>
+</div>
+<div class="section" id="working-with-xml"><h2 class="sigil_not_in_toc"><font id="334">4 使用XML</font></h2>
+<p><font id="335">可扩展标记语言（XML）为设计特定领域的标记语言提供了一个框架。</font><font id="336">它有时被用于表示已标注的文本和词汇资源。</font><font id="337">不同于HTML的标签是预定义的，XML允许我们组建自己的标签。</font><font id="338">不同于数据库，XML允许我们创建的数据而不必事先指定其结构，它允许我们有可选的、可重复的元素。</font><font id="339">在本节中，我们简要回顾一下XML的一些与表示语言数据有关的特征，并说明如何使用Python程序访问XML文件中存储的数据。</font></p>
+<div class="section" id="using-xml-for-linguistic-structures"><h2 class="sigil_not_in_toc"><font id="340">4.1 语言结构中使用XML</font></h2>
+<p><font id="341">由于其灵活性和可扩展性，XML是表示语言结构的自然选择。</font><font id="342">下面是一个简单的词汇条目的例子。</font></p>
+<p></p>
+<pre class="literal-block">&lt;entry&gt;
+  &lt;headword&gt;whale&lt;/headword&gt;
+  &lt;pos&gt;noun&lt;/pos&gt;
+  &lt;gloss&gt;any of the larger cetacean mammals having a streamlined
+    body and breathing through a blowhole on the head&lt;/gloss&gt;
+&lt;/entry&gt;
+</pre>
+<div class="section" id="the-role-of-xml"><h2 class="sigil_not_in_toc"><font id="367">4.2 XML的作用</font></h2>
+<p><font id="368">我们可以用XML来表示许多种语言信息。</font><font id="369">然而，灵活性是要付出代价的。</font><font id="370">每次我们增加复杂性，如允许一个元素是可选的或重复的，我们对所有访问这些数据的程序都要做出更多的工作。</font><font id="371">我们也使它更难以检查数据的有效性，或使用一种XML查询语言来查询数据。</font></p>
+<p><font id="372">因此，使用XML来表示语言结构并不能神奇地解决数据建模问题。</font><font id="373">我们仍然需要解决如何结构化数据，然后用一个模式定义结构，并编写程序读取和写入格式，以及把它转换为其他格式。</font><font id="374">同样，我们仍然需要遵循一些有关数据规范化的标准原则。</font><font id="375">这是明智的，可以避免相同信息的重复复制，所以当只有一个副本变化时，不会导致数据不一致。</font><font id="376">例如，交叉引用表示为<tt class="doctest"><span class="pre">&lt;xref&gt;headword&lt;/xref&gt;</span></tt>将重复存储一些其他词条的核心词，如果在其他位置的字符串的副本被修改，链接就会被打断。</font><font id="377">信息类型之间存在的依赖关系需要建模，使我们不能创建没有根的元素。</font><font id="378">例如，如果sense的定义不能作为词条独立存在，那么<tt class="doctest"><span class="pre">sense</span></tt>就要嵌套在<tt class="doctest"><span class="pre">entry</span></tt>元素中。</font><font id="379">多对多关系需要从层次结构中抽象出来。</font><font id="380">例如，如果一个word可以有很多对应的senses，一个sense可以有几个对应的words，而words和senses都必须作为(word, sense)对的列表分别枚举。</font><font id="381">这种复杂的结构甚至可以分割成三个独立的XML文件。</font></p>
+<p><font id="382">正如我们看到的，虽然XML提供了一个格式方便和用途广泛的工具，但它不是能解决一切问题的灵丹妙药。</font></p>
+</div>
+<div class="section" id="the-elementtree-interface"><h2 class="sigil_not_in_toc"><font id="383">4.3 ElementTree接口</font></h2>
+<p><font id="384">Python的ElementTree模块提供了一种方便的方式访问存储在XML文件中的数据。</font><font id="385">ElementTree是Python 标准库（自从Python 2.5）的一部分，也作为NLTK 的一部分提供，以防你在使用Python 2.4。</font></p>
+<p><font id="386">我们将使用XML格式的莎士比亚戏剧集来说明ElementTree的使用方法。</font><font id="387">让我们加载XML文件并检查原始数据，首先在文件的顶部<a class="reference internal" href="./ch11.html#top-of-file"><span id="ref-top-of-file"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></span></a>，在那里我们看到一些XML头和一个名为<tt class="doctest"><span class="pre">play.dtd</span></tt>的模式，接着是<span class="termdef">根元素</span> <tt class="doctest"><span class="pre">PLAY</span></tt>。</font><font id="388">我们从Act 1<a class="reference internal" href="./ch11.html#start-act-one"><span id="ref-start-act-one"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></span></a>再次获得数据。</font><font id="389">（输出中省略了一些空白行。）</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant_file = nltk.data.find(<span class="pysrc-string">'corpora/shakespeare/merchant.xml'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>raw = open(merchant_file).read()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(raw[:163]) <a href="./ch11.html#ref-top-of-file"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></a>
+<span class="pysrc-output">&lt;?xml version="1.0"?&gt;</span>
+<span class="pysrc-output">&lt;?xml-stylesheet type="text/css" href="shakes.css"?&gt;</span>
+<span class="pysrc-output">&lt;!-- &lt;!DOCTYPE PLAY SYSTEM "play.dtd"&gt; --&gt;</span>
+<span class="pysrc-output">&lt;PLAY&gt;</span>
+<span class="pysrc-output">&lt;TITLE&gt;The Merchant of Venice&lt;/TITLE&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(raw[1789:2006]) <a href="./ch11.html#ref-start-act-one"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></a>
+<span class="pysrc-output">&lt;TITLE&gt;ACT I&lt;/TITLE&gt;</span>
+<span class="pysrc-output">&lt;SCENE&gt;&lt;TITLE&gt;SCENE I.  Venice. A street.&lt;/TITLE&gt;</span>
+<span class="pysrc-output">&lt;STAGEDIR&gt;Enter ANTONIO, SALARINO, and SALANIO&lt;/STAGEDIR&gt;</span>
+<span class="pysrc-output">&lt;SPEECH&gt;</span>
+<span class="pysrc-output">&lt;SPEAKER&gt;ANTONIO&lt;/SPEAKER&gt;</span>
+<span class="pysrc-output">&lt;LINE&gt;In sooth, I know not why I am so sad:&lt;/LINE&gt;</span></pre>
+<p><font id="390">我们刚刚访问了作为一个字符串的XML数据。</font><font id="391">正如我们看到的，在Act 1开始处的字符串包含XML标记title、scene、stage directions等。</font></p>
+<p><font id="392">下一步是作为结构化的XML数据使用<tt class="doctest"><span class="pre">ElementTree</span></tt>处理文件的内容。</font><font id="393">我们正在处理一个文件（一个多行字符串），并建立一棵树，所以方法的名称是<tt class="doctest"><span class="pre">parse</span></tt> <a class="reference internal" href="./ch11.html#xml-parse"><span id="ref-xml-parse"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></span></a>并不奇怪。</font><font id="394">变量<tt class="doctest"><span class="pre">merchant</span></tt>包含一个XML元素<tt class="doctest"><span class="pre">PLAY</span></tt> <a class="reference internal" href="./ch11.html#element-play"><span id="ref-element-play"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></span></a>。</font><font id="395">此元素有内部结构；我们可以使用一个索引来得到它的第一个孩子，一个<tt class="doctest"><span class="pre">TITLE</span></tt>元素<a class="reference internal" href="./ch11.html#element-title"><span id="ref-element-title"><img alt="[3]" class="callout" src="Images/13f25b9eba42f74ad969a74cee78551e.jpg"/></span></a>。</font><font id="396">我们还可以看到该元素的文本内容：戏剧的标题<a class="reference internal" href="./ch11.html#element-text"><span id="ref-element-text"><img alt="[4]" class="callout" src="Images/92cc2e7821d464cfbaaf651a360cd413.jpg"/></span></a>。</font><font id="397">要得到所有的子元素的列表，我们使用<tt class="doctest"><span class="pre">getchildren()</span></tt>方法<a class="reference internal" href="./ch11.html#getchildren-method"><span id="ref-getchildren-method"><img alt="[5]" class="callout" src="Images/63a8e4c47e813ba9630363f9b203a19a.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> xml.etree.ElementTree <span class="pysrc-keyword">import</span> ElementTree
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant = ElementTree().parse(merchant_file) <a href="./ch11.html#ref-xml-parse"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant
+<span class="pysrc-output">&lt;Element 'PLAY' at 0x10ac43d18&gt; # [_element-play]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[0]
+<span class="pysrc-output">&lt;Element 'TITLE' at 0x10ac43c28&gt; # [_element-title]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[0].text
+<span class="pysrc-output">'The Merchant of Venice' # [_element-text]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant.getchildren() <a href="./ch11.html#ref-getchildren-method"><img alt="[5]" class="callout" src="Images/63a8e4c47e813ba9630363f9b203a19a.jpg"/></a>
+<span class="pysrc-output">[&lt;Element 'TITLE' at 0x10ac43c28&gt;, &lt;Element 'PERSONAE' at 0x10ac43bd8&gt;,</span>
+<span class="pysrc-output">&lt;Element 'SCNDESCR' at 0x10b067f98&gt;, &lt;Element 'PLAYSUBT' at 0x10af37048&gt;,</span>
+<span class="pysrc-output">&lt;Element 'ACT' at 0x10af37098&gt;, &lt;Element 'ACT' at 0x10b936368&gt;,</span>
+<span class="pysrc-output">&lt;Element 'ACT' at 0x10b934b88&gt;, &lt;Element 'ACT' at 0x10cfd8188&gt;,</span>
+<span class="pysrc-output">&lt;Element 'ACT' at 0x10cfadb38&gt;]</span></pre>
+<p><font id="398">这部戏剧由标题、角色、一个场景的描述、字幕和五幕组成。</font><font id="399">每一幕都有一个标题和一些场景，每个场景由台词组成，台词由行组成，有四个层次嵌套的结构。</font><font id="400">让我们深入到第四幕：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][0].text
+<span class="pysrc-output">'ACT IV'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1]
+<span class="pysrc-output">&lt;Element 'SCENE' at 0x10cfd8228&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][0].text
+<span class="pysrc-output">'SCENE I.  Venice. A court of justice.'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][54]
+<span class="pysrc-output">&lt;Element 'SPEECH' at 0x10cfb02c8&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][54][0]
+<span class="pysrc-output">&lt;Element 'SPEAKER' at 0x10cfb0318&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][54][0].text
+<span class="pysrc-output">'PORTIA'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][54][1]
+<span class="pysrc-output">&lt;Element 'LINE' at 0x10cfb0368&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>merchant[-2][1][54][1].text
+<span class="pysrc-output">"The quality of mercy is not strain'd,"</span></pre>
+<div class="note"><p class="first admonition-title"><font id="401">注意</font></p>
+<p class="last"><font id="402"><strong>轮到你来：</strong>对语料库中包含的其他莎士比亚戏剧，如<span class="emphasis">《罗密欧与朱丽叶》</span>或<span class="emphasis">《麦克白》</span>，重复上述的一些方法；方法列表请参阅<tt class="doctest"><span class="pre">nltk.corpus.shakespeare.fileids()</span></tt>。</font></p>
+</div>
+<p><font id="403">虽然我们可以通过这种方式访问整个树，使用特定名称查找子元素会更加方便。</font><font id="404">回想一下顶层的元素有几种类型。</font><font id="405">我们可以使用<tt class="doctest"><span class="pre">merchant.findall(<span class="pysrc-string">'ACT'</span>)</span></tt>遍历我们感兴趣的类型（如幕）。</font><font id="406">下面是一个做这种特定标记在每一个级别的嵌套搜索的例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> i, act <span class="pysrc-keyword">in</span> enumerate(merchant.findall(<span class="pysrc-string">'ACT'</span>)):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> j, scene <span class="pysrc-keyword">in</span> enumerate(act.findall(<span class="pysrc-string">'SCENE'</span>)):
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">for</span> k, speech <span class="pysrc-keyword">in</span> enumerate(scene.findall(<span class="pysrc-string">'SPEECH'</span>)):
+<span class="pysrc-more">... </span>            <span class="pysrc-keyword">for</span> line <span class="pysrc-keyword">in</span> speech.findall(<span class="pysrc-string">'LINE'</span>):
+<span class="pysrc-more">... </span>                <span class="pysrc-keyword">if</span> <span class="pysrc-string">'music'</span> <span class="pysrc-keyword">in</span> str(line.text):
+<span class="pysrc-more">... </span>                    <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"Act %d Scene %d Speech %d: %s"</span> % (i+1, j+1, k+1, line.text))
+<span class="pysrc-output">Act 3 Scene 2 Speech 9: Let music sound while he doth make his choice;</span>
+<span class="pysrc-output">Act 3 Scene 2 Speech 9: Fading in music: that the comparison</span>
+<span class="pysrc-output">Act 3 Scene 2 Speech 9: And what is music then? Then music is</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 23: And bring your music forth into the air.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 23: Here will we sit and let the sounds of music</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 23: And draw her home with music.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 24: I am never merry when I hear sweet music.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 25: Or any air of music touch their ears,</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 25: By the sweet power of music: therefore the poet</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 25: But music for the time doth change his nature.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 25: The man that hath no music in himself,</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 25: Let no such man be trusted. Mark the music.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 29: It is your music, madam, of the house.</span>
+<span class="pysrc-output">Act 5 Scene 1 Speech 32: No better a musician than the wren.</span></pre>
+<p><font id="407">不是沿着层次结构向下遍历每一级，我们可以寻找特定的嵌入的元素。</font><font id="408">例如，让我们来看看演员的顺序。</font><font id="409">我们可以使用频率分布看看谁最能说：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> Counter
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>speaker_seq = [s.text <span class="pysrc-keyword">for</span> s <span class="pysrc-keyword">in</span> merchant.findall(<span class="pysrc-string">'ACT/SCENE/SPEECH/SPEAKER'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>speaker_freq = Counter(speaker_seq)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>top5 = speaker_freq.most_common(5)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>top5
+<span class="pysrc-output">[('PORTIA', 117), ('SHYLOCK', 79), ('BASSANIO', 73),</span>
+<span class="pysrc-output">('GRATIANO', 48), ('LORENZO', 47)]</span></pre>
+<p><font id="410">我们也可以查看对话中谁跟着谁的模式。</font><font id="411">由于有23个演员，我们需要首先使用<a class="reference external" href="./ch05.html#sec-dictionaries">3</a>中描述的方法将“词汇”减少到可处理的大小。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> defaultdict
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>abbreviate = defaultdict(<span class="pysrc-keyword">lambda</span>: <span class="pysrc-string">'OTH'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> speaker, _ <span class="pysrc-keyword">in</span> top5:
+<span class="pysrc-more">... </span>    abbreviate[speaker] = speaker[:4]
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>speaker_seq2 = [abbreviate[speaker] <span class="pysrc-keyword">for</span> speaker <span class="pysrc-keyword">in</span> speaker_seq]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(nltk.bigrams(speaker_seq2))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.tabulate()
+<span class="pysrc-output">     ANTO BASS GRAT  OTH PORT SHYL</span>
+<span class="pysrc-output">ANTO    0   11    4   11    9   12</span>
+<span class="pysrc-output">BASS   10    0   11   10   26   16</span>
+<span class="pysrc-output">GRAT    6    8    0   19    9    5</span>
+<span class="pysrc-output"> OTH    8   16   18  153   52   25</span>
+<span class="pysrc-output">PORT    7   23   13   53    0   21</span>
+<span class="pysrc-output">SHYL   15   15    2   26   21    0</span></pre>
+<p><font id="412">忽略153的条目，因为是前五位角色（标记为<tt class="doctest"><span class="pre">OTH</span></tt>）之间相互对话，最大的值表示Othello和Portia的相互对话最多。</font></p>
+</div>
+<div class="section" id="using-elementtree-for-accessing-toolbox-data"><h2 class="sigil_not_in_toc"><font id="413">4.4 使用ElementTree访问Toolbox数据</font></h2>
+<p><font id="414">在<a class="reference external" href="./ch02.html#sec-lexical-resources">4</a>中，我们看到了一个访问Toolbox数据的简单的接口，Toolbox数据是语言学家用来管理数据的一种流行和行之有效的格式。</font><font id="415">这一节中，我们将讨论以Toolbox软件所不支持的方式操纵Toolbox数据的各种技术。</font><font id="416">我们讨论的方法也可以应用到其他记录结构化数据，不必管实际的文件格式。</font></p>
+<p><font id="417">我们可以用<tt class="doctest"><span class="pre">toolbox.xml()</span></tt>方法来访问Toolbox文件，将它加载到一个<tt class="doctest"><span class="pre">elementtree</span></tt>对象中。</font><font id="418">此文件包含一个巴布亚新几内亚罗托卡特语的词典。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> toolbox
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon = toolbox.xml(<span class="pysrc-string">'rotokas.dic'</span>)</pre>
+<p><font id="419">有两种方法可以访问lexicon对象的内容：通过索引和通过路径。</font><font id="420">索引使用熟悉的语法；<tt class="doctest"><span class="pre">lexicon[3]</span></tt>返回3号条目（实际上是从0算起的第4 个条目）；<tt class="doctest"><span class="pre">lexicon[3][0]</span></tt>返回它的第一个字段：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon[3][0]
+<span class="pysrc-output">&lt;Element 'lx' at 0x10b2f6958&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon[3][0].tag
+<span class="pysrc-output">'lx'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon[3][0].text
+<span class="pysrc-output">'kaa'</span></pre>
+<p><font id="421">第二种方式访问lexicon对象的内容是使用路径。</font><font id="422">lexicon是一系列<tt class="doctest"><span class="pre">record</span></tt>对象，其中每个都包含一系列字段对象，如<tt class="doctest"><span class="pre">lx</span></tt>和<tt class="doctest"><span class="pre">ps</span></tt>。</font><font id="423">使用路径<tt class="doctest"><span class="pre">record/lx</span></tt>，我们可以很方便地解决所有的语意。</font><font id="424">这里，我们使用<tt class="doctest"><span class="pre">findall()</span></tt>函数来搜索路径<tt class="doctest"><span class="pre">record/lx</span></tt>的所有匹配，并且访问该元素的文本内容，将其规范化为小写。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[lexeme.text.lower() <span class="pysrc-keyword">for</span> lexeme <span class="pysrc-keyword">in</span> lexicon.findall(<span class="pysrc-string">'record/lx'</span>)]
+<span class="pysrc-output">['kaa', 'kaa', 'kaa', 'kaakaaro', 'kaakaaviko', 'kaakaavo', 'kaakaoko',</span>
+<span class="pysrc-output">'kaakasi', 'kaakau', 'kaakauko', 'kaakito', 'kaakuupato', ..., 'kuvuto']</span></pre>
+<p><font id="425">让我们查看XML格式的Toolbox数据。</font><font id="426"><tt class="doctest"><span class="pre">ElementTree</span></tt>的<tt class="doctest"><span class="pre">write()</span></tt>方法需要一个文件对象。</font><font id="427">我们通常使用Python内置的<tt class="doctest"><span class="pre">open()</span></tt>函数创建。</font><font id="428">为了屏幕上显示输出，我们可以使用一个特殊的预定义的文件对象称为<tt class="doctest"><span class="pre">stdout</span></tt> <a class="reference internal" href="./ch11.html#sys-stdout"><span id="ref-sys-stdout"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></span></a> （标准输出），在Python的<tt class="doctest"><span class="pre">sys</span></tt>模块中定义的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> sys
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.util <span class="pysrc-keyword">import</span> elementtree_indent
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> xml.etree.ElementTree <span class="pysrc-keyword">import</span> ElementTree
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>elementtree_indent(lexicon)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tree = ElementTree(lexicon[3])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tree.write(sys.stdout, encoding=<span class="pysrc-string">'unicode'</span>) <a href="./ch11.html#ref-sys-stdout"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></a>
+<span class="pysrc-output">&lt;record&gt;</span>
+<span class="pysrc-output">  &lt;lx&gt;kaa&lt;/lx&gt;</span>
+<span class="pysrc-output">  &lt;ps&gt;N&lt;/ps&gt;</span>
+<span class="pysrc-output">  &lt;pt&gt;MASC&lt;/pt&gt;</span>
+<span class="pysrc-output">  &lt;cl&gt;isi&lt;/cl&gt;</span>
+<span class="pysrc-output">  &lt;ge&gt;cooking banana&lt;/ge&gt;</span>
+<span class="pysrc-output">  &lt;tkp&gt;banana bilong kukim&lt;/tkp&gt;</span>
+<span class="pysrc-output">  &lt;pt&gt;itoo&lt;/pt&gt;</span>
+<span class="pysrc-output">  &lt;sf&gt;FLORA&lt;/sf&gt;</span>
+<span class="pysrc-output">  &lt;dt&gt;12/Aug/2005&lt;/dt&gt;</span>
+<span class="pysrc-output">  &lt;ex&gt;Taeavi iria kaa isi kovopaueva kaparapasia.&lt;/ex&gt;</span>
+<span class="pysrc-output">  &lt;xp&gt;Taeavi i bin planim gaden banana bilong kukim tasol long paia.&lt;/xp&gt;</span>
+<span class="pysrc-output">  &lt;xe&gt;Taeavi planted banana in order to cook it.&lt;/xe&gt;</span>
+<span class="pysrc-output">&lt;/record&gt;</span></pre>
+</div>
+<div class="section" id="formatting-entries"><h2 class="sigil_not_in_toc"><font id="429">4.5 格式化条目</font></h2>
+<p><font id="430">我们可以使用在前一节看到的同样的想法生成HTML表格而不是纯文本。</font><font id="431">这对于将Toolbox词汇发布到网络上非常有用。</font><font id="432">它产生HTML元素<tt class="doctest"><span class="pre">&lt;table&gt;</span></tt>，<tt class="doctest"><span class="pre">&lt;tr&gt;</span></tt>（表格的行）和<tt class="doctest"><span class="pre">&lt;td&gt;</span></tt>（表格数据）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>html = <span class="pysrc-string">"&lt;table&gt;\n"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> lexicon[70:80]:
+<span class="pysrc-more">... </span>    lx = entry.findtext(<span class="pysrc-string">'lx'</span>)
+<span class="pysrc-more">... </span>    ps = entry.findtext(<span class="pysrc-string">'ps'</span>)
+<span class="pysrc-more">... </span>    ge = entry.findtext(<span class="pysrc-string">'ge'</span>)
+<span class="pysrc-more">... </span>    html += <span class="pysrc-string">"  &lt;tr&gt;&lt;td&gt;%s&lt;/td&gt;&lt;td&gt;%s&lt;/td&gt;&lt;td&gt;%s&lt;/td&gt;&lt;/tr&gt;\n"</span> % (lx, ps, ge)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>html += <span class="pysrc-string">"&lt;/table&gt;"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(html)
+<span class="pysrc-output">&lt;table&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakae&lt;/td&gt;&lt;td&gt;???&lt;/td&gt;&lt;td&gt;small&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakae&lt;/td&gt;&lt;td&gt;CLASS&lt;/td&gt;&lt;td&gt;child&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakaevira&lt;/td&gt;&lt;td&gt;ADV&lt;/td&gt;&lt;td&gt;small-like&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakapikoa&lt;/td&gt;&lt;td&gt;???&lt;/td&gt;&lt;td&gt;small&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakapikoto&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;newborn baby&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakapu&lt;/td&gt;&lt;td&gt;V&lt;/td&gt;&lt;td&gt;place in sling for purpose of carrying&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakapua&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;sling for lifting&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakara&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;arm band&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;Kakarapaia&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;village name&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">  &lt;tr&gt;&lt;td&gt;kakarau&lt;/td&gt;&lt;td&gt;N&lt;/td&gt;&lt;td&gt;frog&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="pysrc-output">&lt;/table&gt;</span></pre>
+</div>
+
+<div class="section" id="working-with-toolbox-data"><h2 class="sigil_not_in_toc"><font id="433">5 使用Toolbox数据</font></h2>
+<p><font id="434">鉴于Toolbox在语言学家中十分流行，我们将讨论一些使用Toolbox数据的进一步的方法。</font><font id="435">很多在前面的章节讲过的方法，如计数、建立频率分布、为同现制表，这些都可以应用到Toolbox条目的内容上。</font><font id="436">例如，我们可以为每个条目计算字段的平均个数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> toolbox
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon = toolbox.xml(<span class="pysrc-string">'rotokas.dic'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sum(len(entry) <span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> lexicon) / len(lexicon)
+<span class="pysrc-output">13.635...</span></pre>
+<p><font id="437">在本节中我们将讨论记录语言学的背景下出现的都不被Toolbox软件支持的两个任务。</font></p>
+<div class="section" id="adding-a-field-to-each-entry"><h2 class="sigil_not_in_toc"><font id="438">5.1 为每个条目添加一个字段</font></h2>
+<p><font id="439">添加一个自动从现有字段派生出的新的字段往往是方便的。</font><font id="440">这些字段经常使搜索和分析更加便捷。</font><font id="441">例如，在<a class="reference internal" href="./ch11.html#code-add-cv-field">5.1</a>中我们定义了一个函数<tt class="doctest"><span class="pre">cv()</span></tt>，将辅音和元音的字符串映射到相应的CV序列，即</font><font id="442"><tt class="doctest"><span class="pre">kakapua</span></tt>将映射到<tt class="doctest"><span class="pre">CVCVCVV</span></tt>。</font><font id="443">这种映射有四个步骤。</font><font id="444">首先，将字符串转换为小写，然后将所有非字母字符<tt class="doctest"><span class="pre">[^a-z]</span></tt>用下划线代替。</font><font id="445">下一步，将所有元音替换为<tt class="doctest"><span class="pre">V</span></tt>。最后，所有不是<tt class="doctest"><span class="pre">V</span></tt>或下划线的必定是一个辅音，所以我们将它替换为<tt class="doctest"><span class="pre">C</span></tt>。现在，我们可以扫描词汇，在每个<tt class="doctest"><span class="pre">lx</span></tt>字段后面添加一个新的<tt class="doctest"><span class="pre">cv</span></tt>字段。</font><font id="446"><a class="reference internal" href="./ch11.html#code-add-cv-field">5.1</a>显示了它对一个特定条目上做的内容；注意输出的最后一行表示新的<tt class="doctest"><span class="pre">cv</span></tt>字段。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> xml.etree.ElementTree <span class="pysrc-keyword">import</span> SubElement
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">cv</span>(s):
+    s = s.lower()
+    s = re.sub(r<span class="pysrc-string">'[^a-z]'</span>,     r<span class="pysrc-string">'_'</span>, s)
+    s = re.sub(r<span class="pysrc-string">'[aeiou]'</span>,    r<span class="pysrc-string">'V'</span>, s)
+    s = re.sub(r<span class="pysrc-string">'[^V_]'</span>,      r<span class="pysrc-string">'C'</span>, s)
+    return (s)
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">add_cv_field</span>(entry):
+    <span class="pysrc-keyword">for</span> field <span class="pysrc-keyword">in</span> entry:
+        <span class="pysrc-keyword">if</span> field.tag == <span class="pysrc-string">'lx'</span>:
+            cv_field = SubElement(entry, <span class="pysrc-string">'cv'</span>)
+            cv_field.text = cv(field.text)</pre>
+<div class="note"><p class="first admonition-title"><font id="448">注意</font></p>
+<p class="last"><font id="449">如果一个Toolbox文件正在不断更新，code-add-cv-field中的程序将需要多次运行。</font><font id="450">可以修改<tt class="doctest"><span class="pre">add_cv_field()</span></tt>来修改现有条目的内容。</font><font id="451">使用这样的程序为数据分析创建一个附加的文件比替换手工维护的源文件要安全。</font></p>
+</div>
+
+<div class="section" id="validating-a-toolbox-lexicon"><h2 class="sigil_not_in_toc"><font id="452">5.2 验证Toolbox词汇</font></h2>
+<p><font id="453">Toolbox格式的许多词汇不符合任何特定的模式。</font><font id="454">有些条目可能包括额外的字段，或以一种新的方式排序现有字段。</font><font id="455">手动检查成千上万的词汇条目是不可行的。</font><font id="456">我们可以在<tt class="doctest"><span class="pre">Counter</span></tt>的帮助下很容易地找出频率异常的字段序列：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> Counter
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>field_sequences = Counter(<span class="pysrc-string">':'</span>.join(field.tag <span class="pysrc-keyword">for</span> field <span class="pysrc-keyword">in</span> entry) <span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> lexicon)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>field_sequences.most_common()
+<span class="pysrc-output">[('lx:ps:pt:ge:tkp:dt:ex:xp:xe', 41), ('lx:rt:ps:pt:ge:tkp:dt:ex:xp:xe', 37),</span>
+<span class="pysrc-output">('lx:rt:ps:pt:ge:tkp:dt:ex:xp:xe:ex:xp:xe', 27), ('lx:ps:pt:ge:tkp:nt:dt:ex:xp:xe', 20), ...]</span></pre>
+<p><font id="457">检查完高频字段序列后，我们可以设计一个词汇条目的上下文无关语法。</font><font id="458">在<a class="reference internal" href="./ch11.html#code-toolbox-validation">5.2</a>中的语法使用我们在<a class="reference external" href="./ch08.html#chap-parse">8.</a>看到的CFG格式。</font><font id="459">这样的语法模型隐含Toolbox条目的嵌套结构，建立一个树状结构，树的叶子是单独的字段名。</font><font id="460">最后，我们遍历条目并报告它们与语法的一致性，如<a class="reference internal" href="./ch11.html#code-toolbox-validation">5.2</a>所示。</font><font id="461">那些被语法接受的在前面加一个<tt class="doctest"><span class="pre"><span class="pysrc-string">'+'</span></span></tt> <a class="reference internal" href="./ch11.html#accepted-entries"><span id="ref-accepted-entries"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></span></a>，那些被语法拒绝的在前面加一个<tt class="doctest"><span class="pre"><span class="pysrc-string">'-'</span></span></tt> <a class="reference internal" href="./ch11.html#rejected-entries"><span id="ref-rejected-entries"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></span></a>。</font><font id="462">在开发这样一个文法的过程中，它可以帮助过滤掉一些标签<a class="reference internal" href="./ch11.html#ignored-tags"><span id="ref-ignored-tags"><img alt="[3]" class="callout" src="Images/13f25b9eba42f74ad969a74cee78551e.jpg"/></span></a>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar = nltk.CFG.fromstring(<span class="pysrc-string">'''</span>
+<span class="pysrc-string">  S -&gt; Head PS Glosses Comment Date Sem_Field Examples</span>
+<span class="pysrc-string">  Head -&gt; Lexeme Root</span>
+<span class="pysrc-string">  Lexeme -&gt; "lx"</span>
+<span class="pysrc-string">  Root -&gt; "rt" |</span>
+<span class="pysrc-string">  PS -&gt; "ps"</span>
+<span class="pysrc-string">  Glosses -&gt; Gloss Glosses |</span>
+<span class="pysrc-string">  Gloss -&gt; "ge" | "tkp" | "eng"</span>
+<span class="pysrc-string">  Date -&gt; "dt"</span>
+<span class="pysrc-string">  Sem_Field -&gt; "sf"</span>
+<span class="pysrc-string">  Examples -&gt; Example Ex_Pidgin Ex_English Examples |</span>
+<span class="pysrc-string">  Example -&gt; "ex"</span>
+<span class="pysrc-string">  Ex_Pidgin -&gt; "xp"</span>
+<span class="pysrc-string">  Ex_English -&gt; "xe"</span>
+<span class="pysrc-string">  Comment -&gt; "cmt" | "nt" |</span>
+<span class="pysrc-string">  '''</span>)
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">validate_lexicon</span>(grammar, lexicon, ignored_tags):
+    rd_parser = nltk.RecursiveDescentParser(grammar)
+    <span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> lexicon:
+        marker_list = [field.tag <span class="pysrc-keyword">for</span> field <span class="pysrc-keyword">in</span> entry <span class="pysrc-keyword">if</span> field.tag <span class="pysrc-keyword">not</span> <span class="pysrc-keyword">in</span> ignored_tags]
+        <span class="pysrc-keyword">if</span> list(rd_parser.parse(marker_list)):
+            <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"+"</span>, <span class="pysrc-string">':'</span>.join(marker_list)) <a href="./ch11.html#ref-accepted-entries"><img alt="[1]" class="callout" src="Images/346344c2e5a627acfdddf948fb69cb1d.jpg"/></a>
+        <span class="pysrc-keyword">else</span>:
+            <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"-"</span>, <span class="pysrc-string">':'</span>.join(marker_list)) <a href="./ch11.html#ref-rejected-entries"><img alt="[2]" class="callout" src="Images/f9e1ba3246770e3ecb24f813f33f2075.jpg"/></a></pre>
+<p><font id="464">另一种方法是用一个词块分析器（<a class="reference external" href="./ch07.html#chap-chunk">7.</a></font><font id="465">），因为它能识别局部结构并报告已确定的局部结构，会更加有效。</font><font id="466">在<a class="reference internal" href="./ch11.html#code-chunk-toolbox">5.3</a>中我们为词汇条目建立一个词块语法，然后解析每个条目。</font><font id="467">这个程序的输出的一个示例如<a class="reference internal" href="./ch11.html#fig-iu-mien">5.4</a>所示。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar = r<span class="pysrc-string">"""</span>
+<span class="pysrc-string">      lexfunc: {&lt;lf&gt;(&lt;lv&gt;&lt;ln|le&gt;*)*}</span>
+<span class="pysrc-string">      example: {&lt;rf|xv&gt;&lt;xn|xe&gt;*}</span>
+<span class="pysrc-string">      sense:   {&lt;sn&gt;&lt;ps&gt;&lt;pn|gv|dv|gn|gp|dn|rn|ge|de|re&gt;*&lt;example&gt;*&lt;lexfunc&gt;*}</span>
+<span class="pysrc-string">      record:   {&lt;lx&gt;&lt;hm&gt;&lt;sense&gt;+&lt;dt&gt;}</span>
+<span class="pysrc-string">    """</span></pre>
+<div class="figure" id="fig-iu-mien"><img alt="Images/iu-mien.png" src="Images/17af2b7a4de652abd5c2c71a94cc1c7b.jpg" style="width: 537.5px; height: 429.0px;"/><p class="caption"><font id="469"><span class="caption-label">图 5.4</span>：一个词条的XML表示，对Toolbox记录的词块分析的结果</font></p>
+</div>
+
+
+<div class="section" id="describing-language-resources-using-olac-metadata"><h2 class="sigil_not_in_toc"><font id="470">6 使用OLAC元数据描述语言资源</font></h2>
+<p><font id="471">NLP社区的成员的一个共同需要是发现具有很高精度和召回率的语言资源。</font><font id="472">数字图书馆社区目前已开发的解决方案包括元数据聚集。</font></p>
+<div class="section" id="what-is-metadata"><h2 class="sigil_not_in_toc"><font id="473">6.1 什么是元数据？</font></h2>
+<p><font id="474">元数据最简单的定义是“关于数据的结构化数据”。</font><font id="475">元数据是对象或资源的描述信息，无论是物理的还是电子的。</font><font id="476">而术语“元数据”本身是相对较新的，只要收集的信息被组织起来，元数据下面隐含的意义却一直在被使用。</font><font id="477">图书馆目录是一种行之有效的元数据类型；它们已经作为资源管理和发现工具有几十年了。</font><font id="478">元数据可以由“手工”产生也可以使用软件自动生成。</font></p>
+<p><font id="479">都柏林核心元数据倡议于1995 年开始开发在网络上进行资源发现的约定。</font><font id="480">都柏林核心元数据元素表示一个广泛的、跨学科一致的元素核心集合，这些元素核心集合有可能对资源发现有广泛作用。</font><font id="481">都柏林核心由15个元数据元素组成，其中每个元素都是可选的和可重复的，它们是：标题，创建者，主题，描述，发布者，参与者，日期，类型，格式，标识符，来源，语言，关系，覆盖范围和版权。</font><font id="482">此元数据集可以用来描述数字或传统的格式中存放的资源。</font></p>
+<p><font id="483">开放档案倡议（OAI）提供了一个跨越数字化的学术资料库的共同框架，不考虑资源的类型，包括文档，资料，软件，录音，实物制品，数码代替品等等。</font><font id="484">每个库由一个网络访问服务器提供归档项目的公共访问。</font><font id="485">每个项目都有一个唯一的标识符，并与都柏林核心元数据记录（也可以是其他格式的记录）关联。</font><font id="486">OAI为元数据搜索服务定义了一个协议来“收获”资源库的内容。</font></p>
+</div>
+<div class="section" id="olac-open-language-archives-community"><h2 class="sigil_not_in_toc"><font id="487">6.2 OLAC：开放语言档案社区</font></h2>
+<p><font id="488">开放语言档案社区（OLAC）是正在创建的一个世界性语言资源的虚拟图书馆的机构和个人的国际伙伴关系：（i）制订目前最好的关于语言资源的数字归档实施的共识，（ii ）开发存储和访问这些资源的互操作信息库和服务的网络。</font><font id="489">OLAC在网上的主页是<tt class="doctest"><span class="pre">http://www.language-archives.org/</span></tt>。</font></p>
+<p><font id="490">OLAC元数据是描述语言资源的标准。</font><font id="491">通过限制某些元数据元素的值为使用受控词表中的术语，确保跨库描述的统一性。</font><font id="492">OLAC元数据可用于描述物理和数字格式的数据和工具。</font><font id="493">OLAC元数据扩展了都柏林核心元数据集（一个描述所有类型的资源被广泛接受的标准）。</font><font id="494">对这个核心集，OLAC添加了语言资源的基本属性，如主题语言和语言类型。</font><font id="495">下面是一个完整的OLAC记录的例子：</font></p>
+<pre class="literal-block">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;olac:olac xmlns:olac="http://www.language-archives.org/OLAC/1.1/"
+           xmlns="http://purl.org/dc/elements/1.1/"
+           xmlns:dcterms="http://purl.org/dc/terms/"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://www.language-archives.org/OLAC/1.1/
+                http://www.language-archives.org/OLAC/1.1/olac.xsd"&gt;
+  &lt;title&gt;A grammar of Kayardild. With comparative notes on Tangkic.&lt;/title&gt;
+  &lt;creator&gt;Evans, Nicholas D.&lt;/creator&gt;
+  &lt;subject&gt;Kayardild grammar&lt;/subject&gt;
+  &lt;subject xsi:type="olac:language" olac:code="gyd"&gt;Kayardild&lt;/subject&gt;
+  &lt;language xsi:type="olac:language" olac:code="en"&gt;English&lt;/language&gt;
+  &lt;description&gt;Kayardild Grammar (ISBN 3110127954)&lt;/description&gt;
+  &lt;publisher&gt;Berlin - Mouton de Gruyter&lt;/publisher&gt;
+  &lt;contributor xsi:type="olac:role" olac:code="author"&gt;Nicholas Evans&lt;/contributor&gt;
+  &lt;format&gt;hardcover, 837 pages&lt;/format&gt;
+  &lt;relation&gt;related to ISBN 0646119966&lt;/relation&gt;
+  &lt;coverage&gt;Australia&lt;/coverage&gt;
+  &lt;type xsi:type="olac:linguistic-type" olac:code="language_description"/&gt;
+  &lt;type xsi:type="dcterms:DCMIType"&gt;Text&lt;/type&gt;
+&lt;/olac:olac&gt;
+</pre>
+<div class="section" id="disseminating-language-resources"><h2 class="sigil_not_in_toc"><font id="511">6.3 传播语言资源</font></h2>
+<p><font id="512">语言数据财团存放<span class="termdef">NLTK数据存储库</span>，一个开发的归档，社区成员可以上传语料库和保存好的模型。</font><font id="513">这些资源可以使用NLTK的下载工具方便地访问。</font></p>
+</div>
+</div>
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="514">7 小结</font></h2>
+<ul class="simple"><li><font id="515">大多数语料库中基本数据类型是已标注的文本和词汇。</font><font id="516">文本有时间结构，而词汇有记录结构。</font></li>
+<li><font id="517">语料库的生命周期，包括数据收集、标注、质量控制以及发布。</font><font id="518">发布后生命周期仍然继续，因为语料库会在研究过程中被修改和丰富。</font></li>
+<li><font id="519">语料库开发包括捕捉语言使用的代表性的样本与使用任何一个来源或文体都有足够的材料之间的平衡；增加变量的维度通常由于资源的限制而不可行。</font></li>
+<li><font id="520">XML提供了一种有用的语言数据的存储和交换格式，但解决普遍存在的数据建模问题没有捷径。</font></li>
+<li><font id="521">Toolbox 格式被广泛使用在语言记录项目中；我们可以编写程序来支持Toolbox文件的维护，将它们转换成XML。</font></li>
+<li><font id="522">开放语言档案社区（OLAC）提供了一个用于记录和发现语言资源的基础设施。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="523">8 深入阅读</font></h2>
+<p><font id="524">本章的附加材料发布在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>，包括网络上免费提供的资源的链接。</font></p>
+<p><font id="525">语言学语料库的首要来源是<em>语言数据联盟</em>和<em>欧洲语言资源局</em>，两者都有广泛的在线目录。</font><font id="526">本书中提到的主要语料库的细节也有介绍：美国国家语料库<a class="reference external" href="./bibliography.html#reppen2005anc" id="id2">(Reppen, Ide, &amp; Suderman, 2005)</a>、英国国家语料库<a class="reference external" href="./bibliography.html#bnc1999" id="id3">({BNC}, 1999)</a>，Thesaurus Linguae Graecae<a class="reference external" href="./bibliography.html#tlg1999" id="id4">({TLG}, 1999)</a>、儿童语言数据交换系统 (CHILDES) <a class="reference external" href="./bibliography.html#macwhinney1995childes" id="id5">(MacWhinney, 1995)</a>和TIMIT<a class="reference external" href="./bibliography.html#garofolo1986timit" id="id6">(S., Lamel, &amp; William, 1986)</a>。</font></p>
+<p><font id="527">计算语言学协会定期组织研讨会发布论文集，它的两个特别兴趣组：SIGWAC和SIGANN；前者推动使用网络作为语料，发起去除HTML标记的CLEANEVAL 任务；后者鼓励对语言注解的互操作性的努力。</font></p>
+<p><font id="528"><a class="reference external" href="./bibliography.html#buseman1996shoebox" id="id7">(Buseman, Buseman, &amp; Early, 1996)</a>提供Toolbox数据格式的全部细节，最新的发布可以从<tt class="doctest"><span class="pre">http://www.sil.org/computing/toolbox/</span></tt>免费下载。</font><font id="529">构建一个Toolbox词典的过程指南参见<tt class="doctest"><span class="pre">http://www.sil.org/computing/ddp/</span></tt>。</font><font id="530">我们在Toolbox上努力的更多的例子记录在<a class="reference external" href="./bibliography.html#bird1999nels" id="id8">(Tamanji, Hirotani, &amp; Hall, 1999)</a>和<a class="reference external" href="./bibliography.html#robinson2007toolbox" id="id9">(Robinson, Aumann, &amp; Bird, 2007)</a>。</font><font id="531"><a class="reference external" href="./bibliography.html#bird2003portability" id="id10">(Bird &amp; Simons, 2003)</a>调查了语言数据管理的几十个其他工具。</font><font id="532">也请参阅关于文化遗产数据的语言技术的LaTeCH研讨会的论文集。</font></p>
+<p><font id="533">有很多优秀的XML资源（如</font><font id="534"><tt class="doctest"><span class="pre">http://zvon.org/</span></tt>）和编写Python程序处理XML的资源。</font><font id="535">许多编辑器都有XML模式。</font><font id="536">XML格式的词汇信息包括OLIF<tt class="doctest"><span class="pre">http://www.olif.net/</span></tt>和LIFT<tt class="doctest"><span class="pre">http://code.google.com/p/lift-standard/</span></tt>。</font></p>
+<p><font id="537">对于语言标注软件的调查，见<tt class="doctest"><span class="pre">http://www.ldc.upenn.edu/annotation/</span></tt>的<em>语言标注页</em>。</font><font id="538">对峙注解最初的提出是<a class="reference external" href="./bibliography.html#thompson1997standoff" id="id11">(Thompson &amp; McKelvie, 1997)</a>。</font><font id="539">语言标注的一个抽象的数据模型称为“标注图”在<a class="reference external" href="./bibliography.html#bird2001annotation" id="id12">(Bird &amp; Liberman, 2001)</a>提出。</font><font id="540">语言描述的一个通用本体（GOLD）记录在<tt class="doctest"><span class="pre">http://www.linguistics-ontology.org/</span></tt>中。</font></p>
+<p><font id="541">有关规划和建设语料库的指导，请参阅<a class="reference external" href="./bibliography.html#meyer2002" id="id13">(Meyer, 2002)</a>和<a class="reference external" href="./bibliography.html#farghaly2003" id="id14">(Farghaly, 2003)</a> 。关于标注者之间一致性得分的方法的更多细节，见<a class="reference external" href="./bibliography.html#artsteinpoesio2008" id="id15">(Artstein &amp; Poesio, 2008)</a>和<a class="reference external" href="./bibliography.html#pevzner2002windowdiff" id="id16">(Pevzner &amp; Hearst, 2002)</a>。</font></p>
+<p><font id="542">Rotokas数据由Stuart Robinson 提供，勉方言数据由Greg Aumann提供。</font></p>
+<p><font id="543">有关开放语言档案社区的更多信息，请访问<tt class="doctest"><span class="pre">http://www.language-archives.org/</span></tt>，或参见<a class="reference external" href="./bibliography.html#simonsbird2003llc" id="id17">(Simons &amp; Bird, 2003)</a>。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="544">9 练习</font></h2>
+<ol class="arabic"><li><p class="first"><font id="545">◑ 在<a class="reference internal" href="./ch11.html#code-add-cv-field">5.1</a>中新字段出现在条目底部。</font><font id="546">修改这个程序使它就在<tt class="doctest"><span class="pre">lx</span></tt>字段后面插入新的子元素。</font><font id="547">（提示：使用<tt class="doctest"><span class="pre">Element(<span class="pysrc-string">'cv'</span>)</span></tt>创建新的<tt class="doctest"><span class="pre">cv</span></tt>字段，分配给它一个文本值，然后使用父元素的<tt class="doctest"><span class="pre">insert()</span></tt>方法。）</font></p></li>
+<li><p class="first"><font id="548">◑ 编写一个函数，从一个词汇条目删除指定的字段。</font><font id="549">（我们可以在把数据给别人之前用它做些清洁，如</font><font id="550">删除包含无关或不确定的内容的字段。）</font></p></li>
+<li><p class="first"><font id="551">◑ 写一个程序，扫描一个HTML字典文件，找出具有非法词性字段的条目，并报告每个条目的<em>核心词</em>。</font></p></li>
+<li><p class="first"><font id="552">◑ 写一个程序，找出所有出现少于10次的词性（<tt class="doctest"><span class="pre">ps</span></tt>字段）。</font><font id="553">或许有打字错误？</font></p></li>
+<li><p class="first"><font id="554">◑ We saw a method for discovering cases of whole-word reduplication. </font><font id="555">Write a function to find words that may contain partial reduplication. </font><font id="556">Use the <tt class="doctest"><span class="pre">re.search()</span></tt> method, and the following regular expression: <tt class="doctest"><span class="pre">(..+)\1</span></tt></font></p></li>
+<li><p class="first"><font id="557">◑ 我们看到一个增加<tt class="doctest"><span class="pre">cv</span></tt>字段的方法。</font><font id="558">一件有趣的问题是当有人修改的<tt class="doctest"><span class="pre">lx</span></tt>字段的内容时，保持这个字段始终最新。</font><font id="559">为这个程序写一个版本，添加<tt class="doctest"><span class="pre">cv</span></tt>字段，取代所有现有的<tt class="doctest"><span class="pre">cv</span></tt>字段。</font></p></li>
+<li><p class="first"><font id="560">◑ 写一个函数，添加一个新的字段<tt class="doctest"><span class="pre">syl</span></tt>，计数一个词中的音节数。</font></p></li>
+<li><p class="first"><font id="561">◑ 写一个函数，显示一个词位的完整条目。</font><font id="562">当词位拼写错误时，它应该显示拼写最相似的词位的条目。</font></p></li>
+<li><p class="first"><font id="563">◑ 写一个函数，从一个词典中找出最频繁的连续字段对（如</font><font id="564"><tt class="doctest"><span class="pre">ps</span></tt>后面往往是<tt class="doctest"><span class="pre">pt</span></tt>）。</font><font id="565">（这可以帮助我们发现一些词条的结构。）</font></p></li>
+<li><p class="first"><font id="566">◑ 使用办公软件创建一个电子表格，每行包含一个词条，包括一个中心词，词性和注释。</font><font id="567">以CSV格式保存电子表格。</font><font id="568">写Python代码来读取CSV文件并以Toolbox格式输出，使用<tt class="doctest"><span class="pre">lx</span></tt>表示中心词，<tt class="doctest"><span class="pre">ps</span></tt>表示词性，<tt class="doctest"><span class="pre">gl</span></tt>表示注释。</font></p></li>
+<li><p class="first"><font id="569">◑ 在<tt class="doctest"><span class="pre">nltk.Index</span></tt>帮助下，索引莎士比亚的戏剧中的词。</font><font id="570">产生的数据结构允许按单个词查找，如<span class="example">music</span>，返回演出、场景和台词的引用的列表，<tt class="doctest"><span class="pre">[(3, 2, 9), (5, 1, 23), ...]</span></tt>的形式，其中<tt class="doctest"><span class="pre">(3, 2, 9)</span></tt>表示第3场演出场景2台词9。</font></p></li>
+<li><p class="first"><font id="571">◑ 构建一个条件频率分布记录<span class="emphasis">《威尼斯商人》</span>中每段台词的词长，以角色名字为条件，如</font><font id="572"><tt class="doctest"><span class="pre">cfd[<span class="pysrc-string">'PORTIA'</span>][12]</span></tt>会给我们Portia的12个词的台词的数目。</font></p></li>
+<li><p class="first"><font id="573">★ 获取CSV 格式的比较词表，写一个程序，输出相互之间至少有三个编辑距离的同源词。</font></p></li>
+<li><p class="first"><font id="574">★ 建立一个出现在例句的词位的索引。</font><font id="575">假设对于一个给定条目的词位是<em>w</em>。然后为这个条目添加一个单独的交叉引用字段<tt class="doctest"><span class="pre">xrf</span></tt>，引用其它有例句包含<em>w</em>的条目的中心词。对所有条目做这个，结果保存为Toolbox格式文件。</font></p></li>
+<li><p class="first"><font id="576">◑ 写一个递归函数将任意树转换为对应的XML，其中非终结符不能表示成XML元素，叶子表示文本内容，如</font><font id="577">:</font></p><pre class="literal-block">&lt;S&gt;
+  &lt;NP type="SBJ"&gt;
+    &lt;NP&gt;
+      &lt;NNP&gt;Pierre&lt;/NNP&gt;
+      &lt;NNP&gt;Vinken&lt;/NNP&gt;
+    &lt;/NP&gt;
+    &lt;COMMA&gt;,&lt;/COMMA&gt;
+</pre>
+</li>
+</ol>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

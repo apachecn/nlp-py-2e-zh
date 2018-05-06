@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="analyzing-the-meaning-of-sentences"><h1 class="title"><font id="1">10. </font><font id="2">分析句子的意思</font></h1>
+<p><font id="3">我们已经看到利用计算机的能力来处理大规模文本是多么有用。</font><font id="4">现在我们已经有了分析器和基于特征的语法，我们能否做一些类似分析句子的意思这样有用的事情？</font><font id="5">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="6">我们如何能表示自然语言的意思，使计算机能够处理这些表示？</font></li>
+<li><font id="7">我们怎样才能将意思表示与无限的句子集合关联？</font></li>
+<li><font id="8">我们怎样才能使用程序来连接句子的意思表示到知识的存储？</font></li>
+</ol>
+<p><font id="9">一路上，我们将学习一些逻辑语义领域的形式化技术，看看如何用它们来查询存储了世间真知的数据库。</font></p>
+<div class="section" id="natural-language-understanding"><h2 class="sigil_not_in_toc"><font id="10">1 自然语言理解</font></h2>
+<div class="section" id="querying-a-database"><h2 class="sigil_not_in_toc"><font id="11">1.1 查询数据库</font></h2>
+<p><font id="12">假设有一个程序，让我们输入一个自然语言问题，返回给我们正确的答案：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.data.show_cfg(<span class="pysrc-string">'grammars/book_grammars/sql0.fcfg'</span>)
+<span class="pysrc-output">% start S</span>
+<span class="pysrc-output">S[SEM=(?np + WHERE + ?vp)] -&gt; NP[SEM=?np] VP[SEM=?vp]</span>
+<span class="pysrc-output">VP[SEM=(?v + ?pp)] -&gt; IV[SEM=?v] PP[SEM=?pp]</span>
+<span class="pysrc-output">VP[SEM=(?v + ?ap)] -&gt; IV[SEM=?v] AP[SEM=?ap]</span>
+<span class="pysrc-output">NP[SEM=(?det + ?n)] -&gt; Det[SEM=?det] N[SEM=?n]</span>
+<span class="pysrc-output">PP[SEM=(?p + ?np)] -&gt; P[SEM=?p] NP[SEM=?np]</span>
+<span class="pysrc-output">AP[SEM=?pp] -&gt; A[SEM=?a] PP[SEM=?pp]</span>
+<span class="pysrc-output">NP[SEM='Country="greece"'] -&gt; 'Greece'</span>
+<span class="pysrc-output">NP[SEM='Country="china"'] -&gt; 'China'</span>
+<span class="pysrc-output">Det[SEM='SELECT'] -&gt; 'Which' | 'What'</span>
+<span class="pysrc-output">N[SEM='City FROM city_table'] -&gt; 'cities'</span>
+<span class="pysrc-output">IV[SEM=''] -&gt; 'are'</span>
+<span class="pysrc-output">A[SEM=''] -&gt; 'located'</span>
+<span class="pysrc-output">P[SEM=''] -&gt; 'in'</span></pre>
+<p><font id="60">这使我们能够分析SQL查询：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk <span class="pysrc-keyword">import</span> load_parser
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/sql0.fcfg'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>query = <span class="pysrc-string">'What cities are located in China'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>trees = list(cp.parse(query.split()))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>answer = trees[0].label()[<span class="pysrc-string">'SEM'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>answer = [s <span class="pysrc-keyword">for</span> s <span class="pysrc-keyword">in</span> answer <span class="pysrc-keyword">if</span> s]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>q = <span class="pysrc-string">' '</span>.join(answer)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(q)
+<span class="pysrc-output">SELECT City FROM city_table WHERE Country="china"</span></pre>
+<div class="note"><p class="first admonition-title"><font id="61">注意</font></p>
+<p class="last"><font id="62"><strong>轮到你来：</strong>设置跟踪为最大，运行分析器，即<tt class="doctest"><span class="pre">cp = load_parser(<span class="pysrc-string">'grammars/book_grammars/sql0.fcfg'</span>, trace=3)</span></tt>，研究当边被完整的加入到图表中时，如何建立<tt class="doctest"><span class="pre">sem</span></tt>的值。</font></p>
+</div>
+<p><font id="63">最后，我们在数据库<tt class="doctest"><span class="pre">city.db</span></tt>上执行查询，检索出一些结果：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.sem <span class="pysrc-keyword">import</span> chat80
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>rows = chat80.sql_query(<span class="pysrc-string">'corpora/city_database/city.db'</span>, q)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> r <span class="pysrc-keyword">in</span> rows: <span class="pysrc-keyword">print</span>(r[0], end=<span class="pysrc-string">" "</span>) <a href="./ch10.html#ref-tuple-val"><img alt="[1]" class="callout" src="Images/ab3d4c917ad3461f18759719a288afa5.jpg"/></a>
+<span class="pysrc-output">canton chungking dairen harbin kowloon mukden peking shanghai sian tientsin</span></pre>
+<p><font id="64">由于每行<tt class="doctest"><span class="pre">r</span></tt>是一个单元素的元组，我们输出元组的成员，而不是元组本身<a class="reference internal" href="./ch10.html#tuple-val"><span id="ref-tuple-val"><img alt="[1]" class="callout" src="Images/ab3d4c917ad3461f18759719a288afa5.jpg"/></span></a>。</font></p>
+<p><font id="65">总结一下，我们已经定义了一个任务：计算机对自然语言查询做出反应，返回有用的数据。</font><font id="66">我们通过将英语的一个小的子集翻译成SQL来实现这个任务们可以说，我们的NLTK代码已经“理解”SQL，只要Python 能够对数据库执行SQL 查询，通过扩展，它也“理解”如<span class="example">What cities are located in China</span>这样的查询。</font><font id="67">这相当于自然语言理解的例子能够从荷兰语翻译成英语。</font><font id="68">假设你是一个英语为母语的人，已经开始学习荷兰语。</font><font id="69">你的老师问你是否理解<a class="reference internal" href="./ch10.html#ex-sem1">(3)</a>的意思：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.boolean_ops()
+<span class="pysrc-output">negation            -</span>
+<span class="pysrc-output">conjunction         &amp;</span>
+<span class="pysrc-output">disjunction         |</span>
+<span class="pysrc-output">implication         -&gt;</span>
+<span class="pysrc-output">equivalence         &lt;-&gt;</span></pre>
+<p><font id="183">从命题符号和布尔运算符，我们可以建立命题逻辑的<span class="termdef">规范公式</span>（或简称公式）的无限集合。</font><font id="184">首先，每个命题字母是一个公式。</font><font id="185">然后，如果φ是一个公式，那么<tt class="doctest"><span class="pre">-</span></tt>φ也是一个公式。</font><font id="186">如果φ和ψ是公式，那么<tt class="doctest"><span class="pre">(</span></tt>φ <tt class="doctest"><span class="pre">&amp;</span></tt> ψ<tt class="doctest"><span class="pre">)</span></tt> <tt class="doctest"><span class="pre">(</span></tt>φ <tt class="doctest"><span class="pre">|</span></tt> ψ<tt class="doctest"><span class="pre">)</span></tt> <tt class="doctest"><span class="pre">(</span></tt>φ <tt class="doctest"><span class="pre">-&gt;</span></tt> ψ<tt class="doctest"><span class="pre">)</span></tt> <tt class="doctest"><span class="pre">(</span></tt>φ <tt class="doctest"><span class="pre">&lt;-&gt;</span></tt> ψ<tt class="doctest"><span class="pre">)</span></tt>也是公式。</font></p>
+<p><font id="187"><a class="reference internal" href="./ch10.html#tab-boolean-tcs">2.1</a>指定了包含这些运算符的公式为真的条件。</font><font id="188">和以前一样，我们使用φ和ψ作为句子中的变量，<span class="example">iff</span>作为<span class="example">if and only if</span>（当且仅当）的缩写。</font></p>
+<p class="caption"><font id="189"><span class="caption-label">表 2.1</span>：</font></p>
+<p><font id="190">命题逻辑的布尔运算符的真值条件。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr(<span class="pysrc-string">'-(P &amp; Q)'</span>)
+<span class="pysrc-output">&lt;NegatedExpression -(P &amp; Q)&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr(<span class="pysrc-string">'P &amp; Q'</span>)
+<span class="pysrc-output">&lt;AndExpression (P &amp; Q)&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr(<span class="pysrc-string">'P | (R -&gt; Q)'</span>)
+<span class="pysrc-output">&lt;OrExpression (P | (R -&gt; Q))&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr(<span class="pysrc-string">'P &lt;-&gt; -- P'</span>)
+<span class="pysrc-output">&lt;IffExpression (P &lt;-&gt; --P)&gt;</span></pre>
+<p><font id="217">从计算的角度来看，逻辑给了我们进行推理的一个重要工具。</font><font id="218">假设你表达Freedonia is not to the north of Sylvania，而你给出理由Sylvania is to the north of Freedonia。</font><font id="219">在这种情况下，你已经给出了一个<span class="termdef">论证</span>。</font><font id="220">句子<span class="example">Sylvania is to the north of Freedonia</span>是论证的<span class="termdef">假设</span>，而<span class="example">Freedonia is not to the north of Sylvania</span>是<span class="termdef">结论</span>。</font><font id="221">从假设一步一步推到结论，被称为<span class="termdef">推理</span>。</font><font id="222">通俗地说，就是我们以在结论前面写<span class="example">therefore</span>这样的格式写一个论证。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lp = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>SnF = read_expr(<span class="pysrc-string">'SnF'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>NotFnS = read_expr(<span class="pysrc-string">'-FnS'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>R = read_expr(<span class="pysrc-string">'SnF -&gt; -FnS'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>prover = nltk.Prover9()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>prover.prove(NotFnS, [SnF, R])
+<span class="pysrc-output">True</span></pre>
+<p><font id="249">这里有另一种方式可以看到结论如何得出。</font><font id="250"><tt class="doctest"><span class="pre">SnF -&gt; -FnS</span></tt>在语义上等价于<tt class="doctest"><span class="pre">-SnF | -FnS</span></tt>，其中 "<tt class="doctest"><span class="pre">|</span></tt>"是对应于<span class="example">or</span>的二元运算符。</font><font id="251">在一般情况下，φ<tt class="doctest"><span class="pre">|</span></tt>ψ在条件<em>s</em>中为真，要么φ在<em>s</em>中为真，要么ψ在<em>s</em>中为真。现在，假设<tt class="doctest"><span class="pre">SnF</span></tt>和<tt class="doctest"><span class="pre">-SnF | -FnS</span></tt>都在<em>s</em>中为真。如果<tt class="doctest"><span class="pre">SnF</span></tt>为真，那么<tt class="doctest"><span class="pre">-SnF</span></tt>不可能也为真；经典逻辑的一个基本假设是：一个句子在一种情况下不能同时为真和为假。</font><font id="252">因此，<tt class="doctest"><span class="pre">-FnS</span></tt>必须为真。</font></p>
+<p><font id="253">回想一下，我们解释相对于一个模型的一种逻辑语言的句子，它们是这个世界的一个非常简化的版本。</font><font id="254">一个命题逻辑的模型需要为每个可能的公式分配值<tt class="doctest"><span class="pre">True</span></tt>或<tt class="doctest"><span class="pre">False</span></tt>。</font><font id="255">我们一步步的来做这个：首先，为每个命题符号分配一个值，然后确定布尔运算符的含义（即<a class="reference internal" href="./ch10.html#tab-boolean-tcs">2.1</a>）和运用它们到这些公式的组件的值，来计算复杂的公式的值。</font><font id="256"><tt class="doctest"><span class="pre">估值</span></tt>是从逻辑的基本符号映射到它们的值。</font><font id="257">下面是一个例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>val = nltk.Valuation([(<span class="pysrc-string">'P'</span>, True), (<span class="pysrc-string">'Q'</span>, True), (<span class="pysrc-string">'R'</span>, False)])</pre>
+<p><font id="258">我们使用一个配对的链表初始化一个<tt class="doctest"><span class="pre">估值</span></tt>，每个配对由一个语义符号和一个语义值组成。</font><font id="259">所产生的对象基本上只是一个字典，映射逻辑符号（作为字符串处理）为适当的值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>val[<span class="pysrc-string">'P'</span>]
+<span class="pysrc-output">True</span></pre>
+<p><font id="260">正如我们稍后将看到的，我们的模型需要稍微更加复杂些，以便处理将在下一节中讨论的更复杂的逻辑形式；暂时的，在下面的声明中先忽略参数<tt class="doctest"><span class="pre">dom</span></tt>和<tt class="doctest"><span class="pre">g</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dom = set()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g = nltk.Assignment(dom)</pre>
+<p><font id="261">现在，让我们用<tt class="doctest"><span class="pre">val</span></tt>初始化模型<tt class="doctest"><span class="pre">m</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m = nltk.Model(dom, val)</pre>
+<p><font id="262">每一个模型都有一个<tt class="doctest"><span class="pre">evaluate()</span></tt>方法，可以确定逻辑表达式，如命题逻辑的公式，的语义值；当然，这些值取决于最初我们分配给命题符号如<tt class="doctest"><span class="pre">P</span></tt>，<tt class="doctest"><span class="pre">Q</span></tt>和<tt class="doctest"><span class="pre">R</span></tt>的真值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(m.evaluate(<span class="pysrc-string">'(P &amp; Q)'</span>, g))
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(m.evaluate(<span class="pysrc-string">'-(P &amp; Q)'</span>, g))
+<span class="pysrc-output">False</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(m.evaluate(<span class="pysrc-string">'(P &amp; R)'</span>, g))
+<span class="pysrc-output">False</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(m.evaluate(<span class="pysrc-string">'(P | R)'</span>, g))
+<span class="pysrc-output">True</span></pre>
+<div class="note"><p class="first admonition-title"><font id="263">注意</font></p>
+<p class="last"><font id="264"><strong>轮到你来：</strong>做实验为不同的命题逻辑公式估值。</font><font id="265">模型是否给出你所期望的值？</font></p>
+</div>
+<p><font id="266">到目前为止，我们已经将我们的英文句子翻译成命题逻辑。</font><font id="267">因为我们只限于用字母如<tt class="doctest"><span class="pre">P</span></tt>和<tt class="doctest"><span class="pre">Q</span></tt>表示原子句子，不能深入其内部结构。</font><font id="268">实际上，我们说将原子句子分成主语、宾语和谓词并没有语义上的好处。</font><font id="269">然而，这似乎是错误的：如果我们想形式化如<a class="reference internal" href="./ch10.html#ex-proplog8">(9)</a>这样的论证，就必须要能“看到里面”基本的句子。</font><font id="270">因此，我们将超越命题逻辑到一个更有表现力的东西，也就是一阶逻辑。</font><font id="271">这正是我们下一节要讲的。</font></p>
+</div>
+<div class="section" id="first-order-logic"><h2 class="sigil_not_in_toc"><font id="272">3 一阶逻辑</font></h2>
+<p><font id="273">本章的剩余部分，我们将通过翻译自然语言表达式为一阶逻辑来表示它们的意思。</font><font id="274">并不是所有的自然语言语义都可以用一阶逻辑表示。</font><font id="275">但它是计算语义的一个不错的选择，因为它具有足够的表现力来表达语义的很多方面，而且另一方面，有出色的现成系统可用于开展一阶逻辑自动推理。</font></p>
+<p><font id="276">下一步我们将描述如何构造一阶逻辑公式，然后是这样的公式如何用来评估模型。</font></p>
+<div class="section" id="syntax"><h2 class="sigil_not_in_toc"><font id="277">3.1 句法</font></h2>
+<p><font id="278">一阶逻辑保留所有命题逻辑的布尔运算符。</font><font id="279">但它增加了一些重要的新机制。</font><font id="280">首先，命题被分析成谓词和参数，这将我们与自然语言的结构的距离拉近了一步。</font><font id="281">一阶逻辑的标准构造规则承认以下<span class="termdef">术语</span>：独立变量和独立常量、带不同数量的参数的<span class="termdef">谓词</span>。</font><font id="282">例如，<span class="example">Angus walks</span>可以被形式化为<span class="mathit">walk(angus)</span>，<span class="example">Angus sees Bertie</span>可以被形式化为<span class="mathit">see(angus, bertie)</span>。</font><font id="283">我们称<span class="mathit">walk</span>为<span class="termdef">一元谓词</span>，<span class="mathit">see</span>为<span class="termdef">二元谓词</span>。</font><font id="284">作为谓词使用的符号不具有内在的含义，虽然很难记住这一点。</font><font id="285">回到我们前面的一个例子，<a class="reference internal" href="./ch10.html#ex-predlog11">(13a)</a>和<a class="reference internal" href="./ch10.html#ex-predlog12">(13b)</a>之间没有<span class="emphasis">逻辑</span>区别。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr = read_expr(<span class="pysrc-string">'walk(angus)'</span>, type_check=True)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.argument
+<span class="pysrc-output">&lt;ConstantExpression angus&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.argument.type
+<span class="pysrc-output">e</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.function
+<span class="pysrc-output">&lt;ConstantExpression walk&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.function.type
+<span class="pysrc-output">&lt;e,?&gt;</span></pre>
+<p><font id="303">为什么我们在这个例子的结尾看到<tt class="doctest"><span class="pre">&lt;e,?&gt;</span></tt>呢？</font><font id="304">虽然类型检查器会尝试推断出尽可能多的类型，在这种情况下，它并没有能够推断出<tt class="doctest"><span class="pre">walk</span></tt>的类型，所以其结果的类型是未知的。</font><font id="305">虽然我们期望<tt class="doctest"><span class="pre">walk</span></tt>的类型是<tt class="doctest"><span class="pre">&lt;e, t&gt;</span></tt>，迄今为止类型检查器知道的，在这个上下文中可能是一些其他类型，如<tt class="doctest"><span class="pre">&lt;e, e&gt;</span></tt>或<tt class="doctest"><span class="pre">&lt;e, &lt;e, t&gt;</span></tt>。</font><font id="306">要帮助类型检查器，我们需要指定一个<span class="termdef">信号</span>，作为一个字典来实施，明确的与非逻辑常量类型关联：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sig = {<span class="pysrc-string">'walk'</span>: <span class="pysrc-string">'&lt;e, t&gt;'</span>}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr = read_expr(<span class="pysrc-string">'walk(angus)'</span>, signature=sig)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.function.type
+<span class="pysrc-output">e</span></pre>
+<p><font id="307">一种二元谓词具有类型〈<span class="mathit">e</span>, 〈<span class="mathit">e</span>, <span class="mathit">t</span>〉〉。</font><font id="308">虽然这是先组合类型<span class="mathit">e</span>的一个参数成一个一元谓词的类型，我们可以用二元谓词的两个参数直接组合来表示二元谓词。</font><font id="309">例如，在<cite>Angus sees Cyril</cite>的翻译中谓词<span class="math">see</span>会与它的参数结合得到结果<span class="math">see(angus, cyril)</span>。</font></p>
+<p><font id="310">在一阶逻辑中，谓词的参数也可以是独立变量，如<span class="math">x</span>，<span class="math">y</span>和<span class="math">z</span>。</font><font id="311">在NLTK中，我们采用的惯例：<em>e</em>类型的变量都是小写。</font><font id="312">独立变量类似于人称代词，如<span class="example">he</span>，<span class="example">she</span>和<span class="example">it</span> ，其中我们为了弄清楚它们的含义需要知道它们使用的上下文。</font></p>
+<p><font id="313">解释<a class="reference internal" href="./ch10.html#ex-predlog2">(14)</a>中的代名词的方法之一是指向上下文中相关的个体。</font></p>
+<p></p>
+<pre class="literal-block">((exists x. dog(x)) -&gt; bark(x))
+</pre>
+</div>
+<div class="section" id="first-order-theorem-proving"><h2 class="sigil_not_in_toc"><font id="377">3.2 一阶定理证明</font></h2>
+<p><font id="378">回顾一下我们较早前在<a class="reference internal" href="./ch10.html#ex-north">(10)</a>中提出的<span class="example">to the north of</span>上的限制：</font></p>
+<p></p>
+<pre class="literal-block">all x. all y.(north_of(x, y) -&gt; -north_of(y, x))
+</pre>
+<p><font id="389">令人高兴的是，定理证明器证明我们的论证是有效的。</font><font id="390">相反，它得出结论：不能从我们的假设推到出<tt class="doctest"><span class="pre">north_of(f, s)</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>FnS = read_expr(<span class="pysrc-string">'north_of(f, s)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>prover.prove(FnS, [SnF, R])
+<span class="pysrc-output">False</span></pre>
+</div>
+<div class="section" id="summarizing-the-language-of-first-order-logic"><h2 class="sigil_not_in_toc"><font id="391">3.3 一阶逻辑语言总结</font></h2>
+<p><font id="392">我们将借此机会重新表述前面的命题逻辑的语法规则，并添加量词的形式化规则；所有这些一起组成一阶逻辑的句法。</font><font id="393">此外，我们会明确相关表达式的类型。</font><font id="394">我们将采取约定：〈<span class="mathit">e</span><sup>n</sup>, <span class="mathit">t</span>〉一种由<span class="mathit">n</span>个类型为<span class="mathit">e</span>的参数组成产生一个类型为<span class="mathit">t</span>的表达式的谓词的类型。在这种情况下，我们说<span class="mathit">n</span>是谓词的<span class="termdef">元数</span>。</font></p>
+<font id="412"> <blockquote> <ol class="lowerroman simple"> <li>If <span class="math">P</span> is a predicate of type 〈<span class="mathit">e</span><sup>n</sup>, <span class="mathit">t</span>〉, and α<sub>1</sub>, ... α<sub>n</sub> are terms of type <span class="mathit">e</span>, then <span class="math">P</span>(α<sub>1</sub>, ... α<sub>n</sub>) is of type <span class="mathit">t</span>.</li>
+ <li>If α and β are both of type <span class="mathit">e</span>, then (α = β) and (α != β) are of type <span class="mathit">t</span>.</li>
+ <li>If φ is of type <span class="mathit">t</span>, then so is <tt class="doctest"><span class="pre">-</span></tt>φ.</li>
+ <li>If φ and ψ are of type <span class="mathit">t</span>, then so are (φ <tt class="doctest"><span class="pre">&amp;</span></tt> ψ), (φ <tt class="doctest"><span class="pre">|</span></tt> ψ), (φ <tt class="doctest"><span class="pre">-&gt;</span></tt> ψ) and (φ <tt class="doctest"><span class="pre">&lt;-&gt;</span></tt> ψ).</li>
+ <li>If φ is of type <span class="mathit">t</span>, and <span class="math">x</span> is a variable of type <span class="mathit">e</span>, then <tt class="doctest"><span class="pre">exists x.</span></tt>φ and <tt class="doctest"><span class="pre">all x.</span></tt>φ are of type <span class="mathit">t</span>.</li>
+ </ol>
+ </blockquote></font><p><font id="395"><a class="reference internal" href="./ch10.html#tab-nltk-logic">3.1</a>总结了<tt class="doctest"><span class="pre">logic</span></tt>模块的新的逻辑常量，以及<tt class="doctest"><span class="pre">Expression</span></tt>模块的两个方法。</font></p>
+<p class="caption"><font id="396"><span class="caption-label">表 3.1</span>：</font></p>
+<p><font id="397">一阶逻辑所需的新的逻辑关系和运算符总结，以及<tt class="doctest"><span class="pre">Expression</span></tt>类的两个有用的方法。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dom = {<span class="pysrc-string">'b'</span>, <span class="pysrc-string">'o'</span>, <span class="pysrc-string">'c'</span>}</pre>
+<p><font id="430">我们使用工具函数<tt class="doctest"><span class="pre">Valuation.fromstring()</span></tt>将 <span class="mathit">symbol</span> <tt class="doctest"><span class="pre">=&gt;</span></tt> <span class="mathit">value</span>形式的字符串序列转换成一个<tt class="doctest"><span class="pre">Valuation</span></tt>对象。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>v = <span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">bertie =&gt; b</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">olive =&gt; o</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">cyril =&gt; c</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">boy =&gt; {b}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">girl =&gt; {o}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">dog =&gt; {c}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">walk =&gt; {o, c}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">see =&gt; {(b, o), (c, b), (o, c)}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>val = nltk.Valuation.fromstring(v)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(val)
+<span class="pysrc-output">{'bertie': 'b',</span>
+<span class="pysrc-output"> 'boy': {('b',)},</span>
+<span class="pysrc-output"> 'cyril': 'c',</span>
+<span class="pysrc-output"> 'dog': {('c',)},</span>
+<span class="pysrc-output"> 'girl': {('o',)},</span>
+<span class="pysrc-output"> 'olive': 'o',</span>
+<span class="pysrc-output"> 'see': {('o', 'c'), ('c', 'b'), ('b', 'o')},</span>
+<span class="pysrc-output"> 'walk': {('c',), ('o',)}}</span></pre>
+<p><font id="431">根据这一估值，<tt class="doctest"><span class="pre">see</span></tt>的值是一个元组的集合，包含Bertie看到Olive、Cyril 看到Bertie和Olive看到Cyril。</font></p>
+<div class="note"><p class="first admonition-title"><font id="432">注意</font></p>
+<p class="last"><font id="433"><strong>轮到你来：</strong>模仿<a class="reference internal" href="./ch10.html#fig-model-kids">1.2</a>绘制一个图，描述域<tt class="doctest"><span class="pre">m</span></tt>和相应的每个一元谓词的集合。</font></p>
+</div>
+<p><font id="434">你可能已经注意到，我们的一元谓词（即<tt class="doctest"><span class="pre">boy</span></tt>，<tt class="doctest"><span class="pre">girl</span></tt>，<tt class="doctest"><span class="pre">dog</span></tt>）也是以单个元组的集合而不是个体的集合出现的。</font><font id="435">这使我们能够方便的统一处理任何元数的关系。</font><font id="436">一个形式为<span class="math">P</span>(τ<sub>1</sub>, ... τ<sub>n</sub>)的谓词，其中<span class="math">P</span>是<span class="math">n</span>元的，为真的条件是对应于(τ<sub>1</sub>, ... τ<sub>n</sub>) 的值的元组属于<span class="math">P</span>的值的元组的集合。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>(<span class="pysrc-string">'o'</span>, <span class="pysrc-string">'c'</span>) <span class="pysrc-keyword">in</span> val[<span class="pysrc-string">'see'</span>]
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>(<span class="pysrc-string">'b'</span>,) <span class="pysrc-keyword">in</span> val[<span class="pysrc-string">'boy'</span>]
+<span class="pysrc-output">True</span></pre>
+</div>
+<div class="section" id="individual-variables-and-assignments"><h2 class="sigil_not_in_toc"><font id="438">3.5 独立变量和赋值</font></h2>
+<p><font id="439">在我们的模型，上下文的使用对应的是为变量<span class="termdef">赋值</span>。</font><font id="440">这是一个从独立变量到域中实体的映射。</font><font id="441">赋值使用构造函数<tt class="doctest"><span class="pre">Assignment</span></tt>，它也以论述的模型的域为参数。</font><font id="442">我们无需实际输入任何绑定，但如果我们要这样做，它们是以(<span class="mathit">变量</span>,<span class="mathit">值</span>)的形式来绑定，类似于我们前面看到的估值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>g = nltk.Assignment(dom, [(<span class="pysrc-string">'x'</span>, <span class="pysrc-string">'o'</span>), (<span class="pysrc-string">'y'</span>, <span class="pysrc-string">'c'</span>)])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g
+<span class="pysrc-output">{'y': 'c', 'x': 'o'}</span></pre>
+<p><font id="443">此外，还可以使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span>()</span></tt>查看赋值，使用与逻辑教科书中经常出现的符号类似的符号：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(g)
+<span class="pysrc-output">g[c/y][o/x]</span></pre>
+<p><font id="444">现在让我们看看如何为一阶逻辑的原子公式估值。</font><font id="445">首先，我们创建了一个模型，然后调用<tt class="doctest"><span class="pre">evaluate()</span></tt>方法来计算真值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m = nltk.Model(dom, val)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'see(olive, y)'</span>, g)
+<span class="pysrc-output">True</span></pre>
+<p><font id="446">这里发生了什么？</font><font id="447">我们正在为一个公式估值，类似于我们前面的例子<tt class="doctest"><span class="pre">see(olive, cyril)</span></tt>。</font><font id="448">然而，当解释函数遇到变量<tt class="doctest"><span class="pre">y</span></tt>时，不是检查<tt class="doctest"><span class="pre">val</span></tt>中的值，它在变量赋值<tt class="doctest"><span class="pre">g</span></tt>中查询这个变量的值：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>g[<span class="pysrc-string">'y'</span>]
+<span class="pysrc-output">'c'</span></pre>
+<p><font id="449">由于我们已经知道<tt class="doctest"><span class="pre">o</span></tt>和<tt class="doctest"><span class="pre">c</span></tt>在<span class="mathit">see</span>关系中表示的含义，所以<tt class="doctest"><span class="pre">True</span></tt>值是我们所期望的。</font><font id="450">在这种情况下，我们可以说赋值<tt class="doctest"><span class="pre">g</span></tt><span class="termdef">满足</span>公式<tt class="doctest"><span class="pre">see(olive, y)</span></tt>。</font><font id="451">相比之下，下面的公式相对<tt class="doctest"><span class="pre">g</span></tt>的评估结果为<tt class="doctest"><span class="pre">False</span></tt>（检查为什么会是你看到的这样）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'see(y, x)'</span>, g)
+<span class="pysrc-output">False</span></pre>
+<p><font id="452">在我们的方法中（虽然不是标准的一阶逻辑），变量赋值是<span class="emphasis">部分</span>的。</font><font id="453">例如，<tt class="doctest"><span class="pre">g</span></tt>中除了<tt class="doctest"><span class="pre">x</span></tt>和<tt class="doctest"><span class="pre">y</span></tt>没有其它变量。</font><font id="454">方法<tt class="doctest"><span class="pre">purge()</span></tt>清除一个赋值中所有的绑定。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>g.purge()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g
+<span class="pysrc-output">{}</span></pre>
+<p><font id="455">如果我们现在尝试为公式，如<tt class="doctest"><span class="pre">see(olive, y)</span></tt>，相对于<tt class="doctest"><span class="pre">g</span></tt>估值，就像试图解释一个包含一个<span class="example">him</span>的句子，我们不知道<span class="example">him</span>指什么。</font><font id="456">在这种情况下，估值函数未能提供一个真值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'see(olive, y)'</span>, g)
+<span class="pysrc-output">'Undefined'</span></pre>
+<p><font id="457">由于我们的模型已经包含了解释布尔运算的规则，任意复杂的公式都可以组合和评估。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'see(bertie, olive) &amp; boy(bertie) &amp; -walk(bertie)'</span>, g)
+<span class="pysrc-output">True</span></pre>
+<p><font id="458">确定模型中公式的真假的一般过程称为<span class="termdef">模型检查</span>。</font></p>
+</div>
+<div class="section" id="quantification"><h2 class="sigil_not_in_toc"><font id="459">3.6 量化</font></h2>
+<p><font id="460">现代逻辑的关键特征之一就是变量满足的概念可以用来解释量化的公式。</font><font id="461">让我们用<a class="reference internal" href="./ch10.html#ex-exists1">(24)</a>作为一个例子。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'exists x.(girl(x) &amp; walk(x))'</span>, g)
+<span class="pysrc-output">True</span></pre>
+<p><font id="471">在这里<tt class="doctest"><span class="pre">evaluate()</span></tt><tt class="doctest"><span class="pre">True</span></tt>，因为<tt class="doctest"><span class="pre">dom</span></tt>中有某些<em>u</em>通过绑定<tt class="doctest"><span class="pre">x</span></tt>到<em>u</em>的赋值满足（<a class="reference internal" href="./ch10.html#ex-exists2">(25)</a> ）。</font><font id="472">事实上，<tt class="doctest"><span class="pre">o</span></tt>是这样一个<em>u</em>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'girl(x) &amp; walk(x)'</span>, g.add(<span class="pysrc-string">'x'</span>, <span class="pysrc-string">'o'</span>))
+<span class="pysrc-output">True</span></pre>
+<p><font id="473">NLTK中提供了一个有用的工具是<tt class="doctest"><span class="pre">satisfiers()</span></tt>方法。</font><font id="474">它返回满足开放公式的所有个体的集合。</font><font id="475">该方法的参数是一个已分析的公式、一个变量和一个赋值。</font><font id="476">下面是几个例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla1 = read_expr(<span class="pysrc-string">'girl(x) | boy(x)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m.satisfiers(fmla1, <span class="pysrc-string">'x'</span>, g)
+<span class="pysrc-output">{'b', 'o'}</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla2 = read_expr(<span class="pysrc-string">'girl(x) -&gt; walk(x)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m.satisfiers(fmla2, <span class="pysrc-string">'x'</span>, g)
+<span class="pysrc-output">{'c', 'b', 'o'}</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla3 = read_expr(<span class="pysrc-string">'walk(x) -&gt; girl(x)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m.satisfiers(fmla3, <span class="pysrc-string">'x'</span>, g)
+<span class="pysrc-output">{'b', 'o'}</span></pre>
+<p><font id="477">想一想为什么<tt class="doctest"><span class="pre">fmla2</span></tt>和<tt class="doctest"><span class="pre">fmla3</span></tt>是那样的值，这是非常有用。</font><font id="478"><tt class="doctest"><span class="pre">-&gt;</span></tt>的真值条件的意思是<tt class="doctest"><span class="pre">fmla2</span></tt>等价于<tt class="doctest"><span class="pre">-girl(x) | walk(x)</span></tt>，要么不是女孩要么没有步行的个体满足条件。</font><font id="479">因为<tt class="doctest"><span class="pre">b</span></tt>(Bertie)和<tt class="doctest"><span class="pre">c</span></tt>(Cyril)都不是女孩，根据模型<tt class="doctest"><span class="pre">m</span></tt>，它们都满足整个公式。</font><font id="480">当然<tt class="doctest"><span class="pre">o</span></tt>也满足公式，因为<tt class="doctest"><span class="pre">o</span></tt>两项都满足。</font><font id="481">现在，因为话题的域的每一个成员都满足<tt class="doctest"><span class="pre">fmla2</span></tt>，相应的全称量化公式也为真。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m.evaluate(<span class="pysrc-string">'all x.(girl(x) -&gt; walk(x))'</span>, g)
+<span class="pysrc-output">True</span></pre>
+<p><font id="482">换句话说，一个全称量化公式∀<span class="mathit">x.</span>φ关于<tt class="doctest"><span class="pre">g</span></tt>为真，只有对每一个<em>u</em>，φ关于<tt class="doctest"><span class="pre">g[u/x]</span></tt>为真。</font></p>
+<div class="note"><p class="first admonition-title"><font id="483">注意</font></p>
+<p class="last"><font id="484"><strong>轮到你来：</strong>先用笔和纸，然后用<tt class="doctest"><span class="pre">m.evaluate()</span></tt>，尝试弄清楚<tt class="doctest"><span class="pre">all x.(girl(x) &amp; walk(x))</span></tt>和<tt class="doctest"><span class="pre">exists x.(boy(x) -&gt; walk(x))</span></tt>的真值。</font><font id="485">确保你能理解为什么它们得到这些值。</font></p>
+</div>
+</div>
+<div class="section" id="quantifier-scope-ambiguity"><h2 class="sigil_not_in_toc"><font id="486">3.7 量词范围歧义</font></h2>
+<p><font id="487">当我们给一个句子的形式化表示<em>两</em>个量词时，会发生什么？</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>v2 = <span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">bruce =&gt; b</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">elspeth =&gt; e</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">julia =&gt; j</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">matthew =&gt; m</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">person =&gt; {b, e, j, m}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">admire =&gt; {(j, b), (b, b), (m, e), (e, m)}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>val2 = nltk.Valuation.fromstring(v2)</pre>
+<p><font id="507"><span class="mathit">admire</span>关系可以使用<a class="reference internal" href="./ch10.html#ex-admire-mapping">(28)</a>所示的映射图进行可视化。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dom2 = val2.domain
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m2 = nltk.Model(dom2, val2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g2 = nltk.Assignment(dom2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla4 = read_expr(<span class="pysrc-string">'(person(x) -&gt; exists y.(person(y) &amp; admire(x, y)))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m2.satisfiers(fmla4, <span class="pysrc-string">'x'</span>, g2)
+<span class="pysrc-output">{'e', 'b', 'm', 'j'}</span></pre>
+<p><font id="512">这表明<tt class="doctest"><span class="pre">fmla4</span></tt>包含域中每一个个体。</font><font id="513">相反，思考下面的公式<tt class="doctest"><span class="pre">fmla5</span></tt>；没有满足<tt class="doctest"><span class="pre">y</span></tt>的值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla5 = read_expr(<span class="pysrc-string">'(person(y) &amp; all x.(person(x) -&gt; admire(x, y)))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m2.satisfiers(fmla5, <span class="pysrc-string">'y'</span>, g2)
+<span class="pysrc-output">set()</span></pre>
+<p><font id="514">也就是说，没有大家都钦佩的人。</font><font id="515">看看另一个开放的公式<tt class="doctest"><span class="pre">fmla6</span></tt>，我们可以验证有一个人，即Bruce，它被Julia和Bruce都钦佩。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fmla6 = read_expr(<span class="pysrc-string">'(person(y) &amp; all x.((x = bruce | x = julia) -&gt; admire(x, y)))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m2.satisfiers(fmla6, <span class="pysrc-string">'y'</span>, g2)
+<span class="pysrc-output">{'b'}</span></pre>
+<div class="note"><p class="first admonition-title"><font id="516">注意</font></p>
+<p class="last"><font id="517"><strong>轮到你来：</strong>基于<tt class="doctest"><span class="pre">m2</span></tt>设计一个新的模型，使<a class="reference internal" href="./ch10.html#ex-scope2a">(27a)</a>在你的模型中为假；同样的，设计一个新的模型使<a class="reference internal" href="./ch10.html#ex-scope2b">(27b)</a>为真。</font></p>
+</div>
+</div>
+<div class="section" id="model-building"><h2 class="sigil_not_in_toc"><font id="518">3.8 模型的建立</font></h2>
+<p><font id="519">我们一直假设我们已经有了一个模型，并要检查模型中的一个句子的真值。</font><font id="520">相比之下，模型的建立是给定一些句子的集合，尝试创造一种新的模型。</font><font id="521">如果成功，那么我们知道集合是一致的，因为我们有模型的存在作为证据。</font></p>
+<p><font id="522">我们通过创建<tt class="doctest"><span class="pre">Mace()</span></tt>的一个实例并调用它的<tt class="doctest"><span class="pre">build_model()</span></tt>方法来调用Mace4模式产生器，与调用Prover9定理证明器类似的方法。</font><font id="523">一种选择是将我们的候选的句子集合作为假设，保留目标为未指定。</font><font id="524">下面的交互显示了<tt class="doctest"><span class="pre">[a, c1]</span></tt>和<tt class="doctest"><span class="pre">[a, c2]</span></tt>都是一致的列表，因为Mace成功的为它们都建立了一个模型，而<tt class="doctest"><span class="pre">[c1, c2]</span></tt>不一致。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>a3 = read_expr(<span class="pysrc-string">'exists x.(man(x) &amp; walks(x))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>c1 = read_expr(<span class="pysrc-string">'mortal(socrates)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>c2 = read_expr(<span class="pysrc-string">'-mortal(socrates)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mb = nltk.Mace(5)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(mb.build_model(None, [a3, c1]))
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(mb.build_model(None, [a3, c2]))
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(mb.build_model(None, [c1, c2]))
+<span class="pysrc-output">False</span></pre>
+<p><font id="525">我们也可以使用模型建立器作为定理证明器的辅助。</font><font id="526">假设我们正试图证明<tt class="doctest"><span class="pre">S</span></tt> ⊢ <tt class="doctest"><span class="pre">g</span></tt>，即</font><font id="527"><tt class="doctest"><span class="pre">g</span></tt>是假设<tt class="doctest"><span class="pre">S = [s1, s2, ..., sn]</span></tt>的逻辑派生。</font><font id="528">我们可以同样的输入提供给Mace4，模型建立器将尝试找出一个反例，就是要表明<tt class="doctest"><span class="pre">g</span></tt><em>不</em>遵循从<tt class="doctest"><span class="pre">S</span></tt>。因此，给定此输入，Mace4将尝试为假设<tt class="doctest"><span class="pre">S</span></tt>连同<tt class="doctest"><span class="pre">g</span></tt>的否定找到一个模型，即列表<tt class="doctest"><span class="pre">S' = [s1, s2, ..., sn, -g]</span></tt>。</font><font id="529">如果<tt class="doctest"><span class="pre">g</span></tt>从<tt class="doctest"><span class="pre">S</span></tt>不能证明出来，那么Mace4会返回一个反例，比Prover9更快的得出结论：无法找到所需的证明。</font><font id="530">相反，如果<tt class="doctest"><span class="pre">g</span></tt>从<tt class="doctest"><span class="pre">S</span></tt><span class="emphasis">是</span>可以证明出来，Mace4 可能要花很长时间不能成功地找到一个反例模型，最终会放弃。</font></p>
+<p><font id="531">让我们思考一个具体的方案。</font><font id="532">我们的假设是列表[<span class="example">There is a woman that every man loves</span>, <span class="example">Adam is a man</span>, <span class="example">Eve is a woman</span>]。</font><font id="533">我们的结论是<span class="example">Adam loves Eve</span>。</font><font id="534">Mace4能找到使假设为真而结论为假的模型吗？</font><font id="535">在下面的代码中，我们使用<tt class="doctest"><span class="pre">MaceCommand()</span></tt>检查已建立的模型。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>a4 = read_expr(<span class="pysrc-string">'exists y. (woman(y) &amp; all x. (man(x) -&gt; love(x,y)))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>a5 = read_expr(<span class="pysrc-string">'man(adam)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>a6 = read_expr(<span class="pysrc-string">'woman(eve)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g = read_expr(<span class="pysrc-string">'love(adam,eve)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mc = nltk.MaceCommand(g, assumptions=[a4, a5, a6])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mc.build_model()
+<span class="pysrc-output">True</span></pre>
+<p><font id="536">因此答案是肯定的：Mace4发现了一个反例模型，其中Adam爱某个女人而不是Eve。</font><font id="537">但是，让我们细看Mace4的模型，转换成我们用来估值的格式。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(mc.valuation)
+<span class="pysrc-output">{'C1': 'b',</span>
+<span class="pysrc-output"> 'adam': 'a',</span>
+<span class="pysrc-output"> 'eve': 'a',</span>
+<span class="pysrc-output"> 'love': {('a', 'b')},</span>
+<span class="pysrc-output"> 'man': {('a',)},</span>
+<span class="pysrc-output"> 'woman': {('a',), ('b',)}}</span></pre>
+<p><font id="538">这个估值的一般形式应是你熟悉的：它包含了一些单独的常量和谓词，每一个都有适当类型的值。</font><font id="539">可能令人费解的是<tt class="doctest"><span class="pre">C1</span></tt>。</font><font id="540">它是一个“Skolem 常量”，模型生成器作为存在量词的表示引入的。</font><font id="541">也就是说，模型生成器遇到<tt class="doctest"><span class="pre">a4</span></tt>里面的<tt class="doctest"><span class="pre">exists y</span></tt>，它知道，域中有某个个体<tt class="doctest"><span class="pre">b</span></tt>满足<tt class="doctest"><span class="pre">a4</span></tt>中的开放公式。</font><font id="542">然而，它不知道<tt class="doctest"><span class="pre">b</span></tt>是否也是它的输入中的某个地方的一个独立常量的标志，所以它为<tt class="doctest"><span class="pre">b</span></tt>凭空创造了一个新名字，即<tt class="doctest"><span class="pre">C1</span></tt>。</font><font id="543">现在，由于我们的假设中没有关于独立常量<tt class="doctest"><span class="pre">adam</span></tt>和<tt class="doctest"><span class="pre">eve</span></tt>的信息，模型生成器认为没有任何理由将它们当做表示不同的实体，于是它们都得到映射到<tt class="doctest"><span class="pre">a</span></tt>。</font><font id="544">此外，我们并没有指定<tt class="doctest"><span class="pre">man</span></tt>和<tt class="doctest"><span class="pre">woman</span></tt>表示不相交的集合，因此，模型生成器让它们相互重叠。</font><font id="545">这个演示非常明显的隐含了我们用来解释我们的情境的知识，而模型生成器对此一无所知。</font><font id="546">因此，让我们添加一个新的假设，使man和woman不相交。</font><font id="547">模型生成器仍然产生一个反例模型，但这次更符合我们直觉的有关情况：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>a7 = read_expr(<span class="pysrc-string">'all x. (man(x) -&gt; -woman(x))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g = read_expr(<span class="pysrc-string">'love(adam,eve)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mc = nltk.MaceCommand(g, assumptions=[a4, a5, a6, a7])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mc.build_model()
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(mc.valuation)
+<span class="pysrc-output">{'C1': 'c',</span>
+<span class="pysrc-output"> 'adam': 'a',</span>
+<span class="pysrc-output"> 'eve': 'b',</span>
+<span class="pysrc-output"> 'love': {('a', 'c')},</span>
+<span class="pysrc-output"> 'man': {('a',)},</span>
+<span class="pysrc-output"> 'woman': {('c',), ('b',)}}</span></pre>
+<p><font id="548">经再三考虑，我们可以看到我们的假设中没有说Eve是论域中唯一的女性，所以反例模型其实是可以接受的。</font><font id="549">如果想排除这种可能性，我们将不得不添加进一步的假设，如<tt class="doctest"><span class="pre">exists y. all x. (woman(x) -&gt; (x = y))</span></tt>以确保模型中只有一个女性。</font></p>
+</div>
+</div>
+<div class="section" id="the-semantics-of-english-sentences"><h2 class="sigil_not_in_toc"><font id="550">4 英语句子的语义</font></h2>
+<div class="section" id="compositional-semantics-in-feature-based-grammar"><h2 class="sigil_not_in_toc"><font id="551">4.1 基于特征的语法中的合成语义学</font></h2>
+<p><font id="552">在本章开头，我们简要说明了一种在句法分析的基础上建立语义表示的方法，使用在<a class="reference external" href="./ch09.html#chap-featgram">9.</a>开发的语法框架。</font><font id="553">这一次，不是构建一个SQL查询，我们将建立一个逻辑形式。</font><font id="554">我们设计这样的语法的指导思想之一是<span class="termdef">组合原则</span>。</font><font id="555">（也称为Frege原则；下面给出的公式参见<a class="reference external" href="./bibliography.html#partee1995lsc" id="id4">(Gleitman &amp; Liberman, 1995)</a> 。）</font></p>
+<p><font id="556"><strong>组合原则</strong>：整体的含义是部分的含义与它们的句法结合方式的函数。</font></p>
+<p><font id="557">我们将假设一个复杂的表达式的语义相关部分由句法分析理论给出。</font><font id="558">在本章中，我们将认为表达式已经用上下文无关语法分析过。</font><font id="559">然而，这不是组合原则的内容。</font></p>
+<p><font id="560">我们现在的目标是以一种可以与分析过程平滑对接的方式整合语义表达的构建。</font><font id="561"><a class="reference internal" href="./ch10.html#ex-sem3">(29)</a>说明了我们想建立的这种分析的第一个近似。</font></p>
+<p></p>
+<pre class="literal-block">VP[SEM=?v] -&gt; IV[SEM=?v]
+NP[SEM=&lt;cyril&gt;] -&gt; 'Cyril'
+IV[SEM=&lt;\x.bark(x)&gt;] -&gt; 'barks'
+</pre>
+<div class="section" id="the-lambda-calculus"><h2 class="sigil_not_in_toc"><font id="582">4.2 λ演算</font></h2>
+<p><font id="583">在<a class="reference external" href="./ch01.html#sec-computing-with-language-simple-statistics">3</a>中，我们指出数学集合符号对于制定我们想从文档中选择的词的属性<span class="math">P</span>很有用。</font><font id="584">我们用<a class="reference internal" href="./ch10.html#ex-set-comprehension-math2">(31)</a>说明这个，它是“所有<span class="math">w</span>的集合，其中<span class="math">w</span>是<span class="math">V</span>（词汇表）的元素且<span class="math">w</span>有属性<span class="math">P</span>”的表示。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr = read_expr(r<span class="pysrc-string">'\x.(walk(x) &amp; chew_gum(x))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>expr
+<span class="pysrc-output">&lt;LambdaExpression \x.(walk(x) &amp; chew_gum(x))&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>expr.free()
+<span class="pysrc-output">set()</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(read_expr(r<span class="pysrc-string">'\x.(walk(x) &amp; chew_gum(y))'</span>))
+<span class="pysrc-output">\x.(walk(x) &amp; chew_gum(y))</span></pre>
+<p><font id="610">我们对绑定表达式中的变量的结果有一个特殊的名字：<span class="termdef">λ-抽象</span>。</font><font id="611">当你第一次遇到λ-抽象时，很难对它们的意思得到一个直观的感觉。</font><font id="612"><a class="reference internal" href="./ch10.html#ex-walk-chewgum12">(33b)</a>的一对英语表示是“是一个<span class="math">x</span>，其中<span class="math">x</span>步行且<span class="math">x</span>嚼口香糖”或“具有步行和嚼口香糖的属性。”</font><font id="613">通常认为λ-抽象可以很好的表示动词短语（或无主语从句），尤其是当它作为参数出现在它自己的右侧时。</font><font id="614">如<a class="reference internal" href="./ch10.html#ex-walk-chewgum21">(34a)</a>和它的翻译<a class="reference internal" href="./ch10.html#ex-walk-chewgum22">(34b)</a>中的演示。</font></p>
+<p></p>
+<pre class="literal-block">(walk(x) &amp; chew_gum(x))[gerald/x]
+</pre>
+<p><font id="643">虽然我们迄今只考虑了λ-抽象的主体是一个某种类型<span class="math">t</span>的开放公式，这不是必要的限制；主体可以是任何符合语法的表达式。</font><font id="644">下面是一个有两个λ的例子。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(read_expr(r<span class="pysrc-string">'\x.\y.(dog(x) &amp; own(y, x))(cyril)'</span>).simplify())
+<span class="pysrc-output">\y.(dog(cyril) &amp; own(y,cyril))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(read_expr(r<span class="pysrc-string">'\x y.(dog(x) &amp; own(y, x))(cyril, angus)'</span>).simplify()) <a href="./ch10.html#ref-dbl-lambda"><img alt="[1]" class="callout" src="Images/ab3d4c917ad3461f18759719a288afa5.jpg"/></a>
+<span class="pysrc-output">(dog(cyril) &amp; own(angus,cyril))</span></pre>
+<p><font id="650">我们所有的λ-抽象到目前为止只涉及熟悉的一阶变量：<tt class="doctest"><span class="pre">x</span></tt>、<tt class="doctest"><span class="pre">y</span></tt>等——类型<em>e</em>的变量。但假设我们要处理一个抽象，例如<tt class="doctest"><span class="pre">\x.walk(x)</span></tt>作为另一个λ-抽象的<span class="emphasis">参数</span>？</font><font id="651">我们不妨试试这个：</font></p>
+<pre class="literal-block">\y.y(angus)(\x.walk(x))
+</pre>
+<p><font id="687">当β-约减在一个应用<tt class="doctest"><span class="pre">f(a)</span></tt>中实施时，我们检查是否有自由变量在<tt class="doctest"><span class="pre">a</span></tt>同时也作为<tt class="doctest"><span class="pre">f</span></tt>的子术语中绑定的变量出现。假设在上面讨论的例子中，<tt class="doctest"><span class="pre">x</span></tt>是<tt class="doctest"><span class="pre">a</span></tt>中的自由变量，<tt class="doctest"><span class="pre">f</span></tt>包括子术语<tt class="doctest"><span class="pre">exists x.P(x)</span></tt>。</font><font id="688">在这种情况下，我们产生一个<tt class="doctest"><span class="pre">exists x.P(x)</span></tt>的字母变体，也就是说，<tt class="doctest"><span class="pre">exists z1.P(z1)</span></tt>，然后再进行约减。</font><font id="689">这种重新标记由<tt class="doctest"><span class="pre">logic</span></tt>中的β-约减代码自动进行，可以在下面的例子中看到的结果。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>expr3 = read_expr(<span class="pysrc-string">'\P.(exists x.P(x))(\y.see(y, x))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(expr3)
+<span class="pysrc-output">(\P.exists x.P(x))(\y.see(y,x))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(expr3.simplify())
+<span class="pysrc-output">exists z1.see(z1,x)</span></pre>
+<div class="note"><p class="first admonition-title"><font id="690">注意</font></p>
+<p class="last"><font id="691">当你在下面的章节运行这些例子时，你可能会发现返回的逻辑表达式的变量名不同；例如你可能在前面的公式的<tt class="doctest"><span class="pre">z1</span></tt>的位置看到<tt class="doctest"><span class="pre">z14</span></tt>。</font><font id="692">这种标签的变化是无害的——事实上，它仅仅是一个字母变体的例子。</font></p>
+</div>
+<p><font id="693">在此附注之后，让我们回到英语句子的逻辑形式建立的任务。</font></p>
+</div>
+<div class="section" id="quantified-nps"><h2 class="sigil_not_in_toc"><font id="694">4.3 量化的NP</font></h2>
+<p><font id="695">在本节开始，我们简要介绍了如何为<span class="example">Cyril barks</span>构建语义表示。</font><font id="696">你会以为这太容易了——肯定还有更多关于建立组合语义的。</font><font id="697">例如，量词？</font><font id="698">没错，这是一个至关重要的问题。</font><font id="699">例如，我们要给出<a class="reference internal" href="./ch10.html#ex-sem5a">(42a)</a>的逻辑形式<a class="reference internal" href="./ch10.html#ex-sem5b">(42b)</a>。</font><font id="700">如何才能实现呢？</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tvp = read_expr(r<span class="pysrc-string">'\X x.X(\y.chase(x,y))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>np = read_expr(r<span class="pysrc-string">'(\P.exists x.(dog(x) &amp; P(x)))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vp = nltk.sem.ApplicationExpression(tvp, np)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(vp)
+<span class="pysrc-output">(\X x.X(\y.chase(x,y)))(\P.exists x.(dog(x) &amp; P(x)))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(vp.simplify())
+<span class="pysrc-output">\x.exists z2.(dog(z2) &amp; chase(x,z2))</span></pre>
+<p><font id="756">为了建立一个句子的语义表示，我们也需要组合主语<tt class="doctest"><span class="pre">NP</span></tt>的语义。</font><font id="757">如果后者是一个量化的表达式，例如<span class="example">every girl</span>，一切都与我们前面讲过的<span class="example">a dog barks</span>一样的处理方式；主语转换为函数表达式，这被用于<tt class="doctest"><span class="pre">VP</span></tt>的语义表示。</font><font id="758">然而，我们现在似乎已经用适当的名称为自己创造了另一个问题。</font><font id="759">到目前为止，这些已经作为单独的常量进行了语义的处理，这些不能作为像<a class="reference internal" href="./ch10.html#ex-sem99">(47)</a>那样的表达式的函数应用。</font><font id="760">因此，我们需要为它们提出不同的语义表示。</font><font id="761">我们在这种情况下所做的是重新解释适当的名称，使它们也成为如量化的<tt class="doctest"><span class="pre">NP</span></tt>那样的函数表达式。这里是<span class="example">Angus</span>的λ表达式。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk <span class="pysrc-keyword">import</span> load_parser
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>parser = load_parser(<span class="pysrc-string">'grammars/book_grammars/simple-sem.fcfg'</span>, trace=0)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sentence = <span class="pysrc-string">'Angus gives a bone to every dog'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = sentence.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> parser.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree.label()[<span class="pysrc-string">'SEM'</span>])
+<span class="pysrc-output">all z2.(dog(z2) -&gt; exists z1.(bone(z1) &amp; give(angus,z1,z2)))</span></pre>
+<p><font id="769">NLTK提供一些实用工具使获得和检查的语义解释更容易。</font><font id="770">函数<tt class="doctest"><span class="pre">interpret_sents()</span></tt>用于批量解释输入句子的列表。</font><font id="771">它建立一个字典<tt class="doctest"><span class="pre">d</span></tt>，其中对每个输入的句子<tt class="doctest"><span class="pre">sent</span></tt>，<tt class="doctest"><span class="pre">d[sent]</span></tt>是包含<tt class="doctest"><span class="pre">sent</span></tt>的分析树和语义表示的(<em>synrep</em>, <em>semrep</em>)对的列表。</font><font id="772">该值是一个列表，因为<tt class="doctest"><span class="pre">sent</span></tt>可能有句法歧义；在下面的例子中，列表中的每个句子只有一个分析树。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sents = [<span class="pysrc-string">'Irene walks'</span>, <span class="pysrc-string">'Cyril bites an ankle'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar_file = <span class="pysrc-string">'grammars/book_grammars/simple-sem.fcfg'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> results <span class="pysrc-keyword">in</span> nltk.interpret_sents(sents, grammar_file):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> (synrep, semrep) <span class="pysrc-keyword">in</span> results:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(synrep)
+<span class="pysrc-output">(S[SEM=&lt;walk(irene)&gt;]</span>
+<span class="pysrc-output">  (NP[-LOC, NUM='sg', SEM=&lt;\P.P(irene)&gt;]</span>
+<span class="pysrc-output">    (PropN[-LOC, NUM='sg', SEM=&lt;\P.P(irene)&gt;] Irene))</span>
+<span class="pysrc-output">  (VP[NUM='sg', SEM=&lt;\x.walk(x)&gt;]</span>
+<span class="pysrc-output">    (IV[NUM='sg', SEM=&lt;\x.walk(x)&gt;, TNS='pres'] walks)))</span>
+<span class="pysrc-output">(S[SEM=&lt;exists z3.(ankle(z3) &amp; bite(cyril,z3))&gt;]</span>
+<span class="pysrc-output">  (NP[-LOC, NUM='sg', SEM=&lt;\P.P(cyril)&gt;]</span>
+<span class="pysrc-output">    (PropN[-LOC, NUM='sg', SEM=&lt;\P.P(cyril)&gt;] Cyril))</span>
+<span class="pysrc-output">  (VP[NUM='sg', SEM=&lt;\x.exists z3.(ankle(z3) &amp; bite(x,z3))&gt;]</span>
+<span class="pysrc-output">    (TV[NUM='sg', SEM=&lt;\X x.X(\y.bite(x,y))&gt;, TNS='pres'] bites)</span>
+<span class="pysrc-output">    (NP[NUM='sg', SEM=&lt;\Q.exists x.(ankle(x) &amp; Q(x))&gt;]</span>
+<span class="pysrc-output">      (Det[NUM='sg', SEM=&lt;\P Q.exists x.(P(x) &amp; Q(x))&gt;] an)</span>
+<span class="pysrc-output">      (Nom[NUM='sg', SEM=&lt;\x.ankle(x)&gt;]</span>
+<span class="pysrc-output">        (N[NUM='sg', SEM=&lt;\x.ankle(x)&gt;] ankle)))))</span></pre>
+<p><font id="773">现在我们已经看到了英文句子如何转换成逻辑形式，前面我们看到了在模型中如何检查逻辑形式的真假。</font><font id="774">把这两个映射放在一起，我们可以检查一个给定的模型中的英语句子的真值。</font><font id="775">让我们看看前面定义的模型<tt class="doctest"><span class="pre">m</span></tt>。</font><font id="776">工具<tt class="doctest"><span class="pre">evaluate_sents()</span></tt>类似于<tt class="doctest"><span class="pre">interpret_sents()</span></tt>，除了我们需要传递一个模型和一个变量赋值作为参数。</font><font id="777">输出是三元组(<em>synrep</em>, <em>semrep</em>, <em>value</em>)，其中<em>synrep</em>、<em>semrep</em>和以前一样，<em>value</em>是真值。</font><font id="778">为简单起见，下面的例子只处理一个简单的句子。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>v = <span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">bertie =&gt; b</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">olive =&gt; o</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">cyril =&gt; c</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">boy =&gt; {b}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">girl =&gt; {o}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">dog =&gt; {c}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">walk =&gt; {o, c}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">see =&gt; {(b, o), (c, b), (o, c)}</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>val = nltk.Valuation.fromstring(v)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g = nltk.Assignment(val.domain)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>m = nltk.Model(val.domain, val)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">'Cyril sees every boy'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar_file = <span class="pysrc-string">'grammars/book_grammars/simple-sem.fcfg'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>results = nltk.evaluate_sents([sent], grammar_file, m, g)[0]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> (syntree, semrep, value) <span class="pysrc-keyword">in</span> results:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(semrep)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(value)
+<span class="pysrc-output">all z4.(boy(z4) -&gt; see(cyril,z4))</span>
+<span class="pysrc-output">True</span></pre>
+</div>
+<div class="section" id="quantifier-ambiguity-revisited"><h2 class="sigil_not_in_toc"><font id="779">4.5 再述量词歧义</font></h2>
+<p><font id="780">上述方法的一个重要的限制是它们没有处理范围歧义。</font><font id="781">我们的翻译方法是句法驱动的，认为语义表示与句法分析紧密耦合，语义中量词的范围也因此反映句法分析树中相应的<tt class="doctest"><span class="pre">NP</span></tt>的相对范围。</font><font id="782">因此，像<a class="reference internal" href="./ch10.html#ex-scope1">(26)</a>这样的句子，在这里重复，总是会被翻译为<a class="reference internal" href="./ch10.html#ex-scope12a">(53a)</a>而不是<a class="reference internal" href="./ch10.html#ex-scope12b">(53b)</a>。</font></p>
+<p></p>
+<pre class="literal-block">\P.exists y.(dog(y) &amp; P(y))(\z2.chase(z1,z2))
+</pre>
+<p><font id="833">最后，我们调用<tt class="doctest"><span class="pre">s_retrieve()</span></tt>检查读法。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cs_semrep.s_retrieve(trace=True)
+<span class="pysrc-output">Permutation 1</span>
+<span class="pysrc-output">   (\P.all x.(girl(x) -&gt; P(x)))(\z2.chase(z2,z4))</span>
+<span class="pysrc-output">   (\P.exists x.(dog(x) &amp; P(x)))(\z4.all x.(girl(x) -&gt; chase(x,z4)))</span>
+<span class="pysrc-output">Permutation 2</span>
+<span class="pysrc-output">   (\P.exists x.(dog(x) &amp; P(x)))(\z4.chase(z2,z4))</span>
+<span class="pysrc-output">   (\P.all x.(girl(x) -&gt; P(x)))(\z2.exists x.(dog(x) &amp; chase(z2,x)))</span></pre>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> reading <span class="pysrc-keyword">in</span> cs_semrep.readings:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(reading)
+<span class="pysrc-output">exists x.(dog(x) &amp; all z3.(girl(z3) -&gt; chase(z3,x)))</span>
+<span class="pysrc-output">all x.(girl(x) -&gt; exists z4.(dog(z4) &amp; chase(x,z4)))</span></pre>
+</div>
+</div>
+<div class="section" id="discourse-semantics"><h2 class="sigil_not_in_toc"><font id="834">5 段落语义层</font></h2>
+<p><font id="835"><span class="termdef">段落</span>是句子的序列。</font><font id="836">很多时候，段落中的一个句子的解释依赖它前面的句子。</font><font id="837">一个明显的例子来自照应代词，如<span class="example">he</span>、<span class="example">she</span>和<span class="example">it</span>。</font><font id="838">给定一个段落如<span class="example">Angus used to have a dog. But he recently disappeared.</span>，你可能会解释<span class="example">he</span>指的是Angus的狗。</font><font id="839">然而，在<span class="example">Angus used to have a dog. He took him for walks in New Town.</span>中，你更可能解释<span class="example">he</span>指的是Angus自己。</font></p>
+<div class="section" id="discourse-representation-theory"><h2 class="sigil_not_in_toc"><font id="840">5.1 段落表示理论</font></h2>
+<p><font id="841">一阶逻辑中的量化的标准方法仅限于单个句子。</font><font id="842">然而，似乎是有量词的范围可以扩大到两个或两个以上的句子的例子。</font><font id="843">。我们之前看到过一个，下面是第二个例子，与它的翻译一起。</font></p>
+<p></p>
+<pre class="literal-block">([x, y], [angus(x), dog(y), own(x,y)])
+</pre>
+<p><font id="870">我们可以使用<tt class="doctest"><span class="pre">draw()</span></tt>方法<a class="reference internal" href="./ch10.html#draw-drs"><span id="ref-draw-drs"><img alt="[1]" class="callout" src="Images/ab3d4c917ad3461f18759719a288afa5.jpg"/></span></a>可视化结果，如<a class="reference internal" href="./ch10.html#fig-drs-screenshot">5.2</a>所示。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>drs1.draw() <a href="./ch10.html#ref-draw-drs"><img alt="[1]" class="callout" src="Images/ab3d4c917ad3461f18759719a288afa5.jpg"/></a></pre>
+<div class="figure" id="fig-drs-screenshot"><img alt="Images/drs_screenshot0.png" src="Images/66d94cb86ab90a95cfe745d9613c37b1.jpg" style="width: 190.8px; height: 198.0px;"/><p class="caption"><font id="871"><span class="caption-label">图 5.2</span>：DRS截图</font></p>
+</div>
+<p><font id="872">我们讨论<a class="reference internal" href="./ch10.html#fig-drs1">5.1</a>中DRS的真值条件时，假设最上面的段落指称被解释为存在量词，而条件也进行了解释，虽然它们是联合的。</font><font id="873">事实上，每一个DRS都可以转化为一阶逻辑公式，<tt class="doctest"><span class="pre">fol()</span></tt>方法实现这种转换。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs1.fol())
+<span class="pysrc-output">exists x y.(angus(x) &amp; dog(y) &amp; own(x,y))</span></pre>
+<p><font id="874">作为一阶逻辑表达式功能补充，DRT<tt class="doctest"><span class="pre">表达式</span></tt>有DRS-连接运算符，用<tt class="doctest"><span class="pre">+</span></tt>符号表示。</font><font id="875">两个DRS的连接是一个单独的DRS包含合并的段落指称和来自两个论证的条件。</font><font id="876">DRS-连接自动进行α-转换绑定变量避免名称冲突。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>drs2 = read_dexpr(<span class="pysrc-string">'([x], [walk(x)]) + ([y], [run(y)])'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs2)
+<span class="pysrc-output">(([x],[walk(x)]) + ([y],[run(y)]))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs2.simplify())
+<span class="pysrc-output">([x,y],[walk(x), run(y)])</span></pre>
+<p><font id="877">虽然迄今为止见到的所有条件都是原子的，一个DRS可以内嵌入另一个DRS，这是全称量词被处理的方式。</font><font id="878">在<tt class="doctest"><span class="pre">drs3</span></tt>中，没有顶层的段落指称，唯一的条件是由两个子DRS组成，通过蕴含连接。</font><font id="879">再次，我们可以使用<tt class="doctest"><span class="pre">fol()</span></tt>来获得真值条件的句柄。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>drs3 = read_dexpr(<span class="pysrc-string">'([], [(([x], [dog(x)]) -&gt; ([y],[ankle(y), bite(x, y)]))])'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs3.fol())
+<span class="pysrc-output">all x.(dog(x) -&gt; exists y.(ankle(y) &amp; bite(x,y)))</span></pre>
+<p><font id="880">我们较早前指出DRT旨在通过链接照应代词和现有的段落指称来解释照应代词。</font><font id="881">DRT设置约束条件使段落指称可以像先行词那样“可访问”，但并不打算解释一个特殊的先行词如何被从候选集合中选出的。</font><font id="882">模块<tt class="doctest"><span class="pre">nltk.sem.drt_resolve_anaphora</span></tt>采用了类此的保守策略：如果DRS包含<tt class="doctest"><span class="pre">PRO(x)</span></tt>形式的条件，方法<tt class="doctest"><span class="pre">resolve_anaphora()</span></tt>将其替换为<tt class="doctest"><span class="pre">x = [...]</span></tt>形式的条件，其中<tt class="doctest"><span class="pre">[...]</span></tt>是一个可能的先行词列表。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>drs4 = read_dexpr(<span class="pysrc-string">'([x, y], [angus(x), dog(y), own(x, y)])'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>drs5 = read_dexpr(<span class="pysrc-string">'([u, z], [PRO(u), irene(z), bite(u, z)])'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>drs6 = drs4 + drs5
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs6.simplify())
+<span class="pysrc-output">([u,x,y,z],[angus(x), dog(y), own(x,y), PRO(u), irene(z), bite(u,z)])</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(drs6.simplify().resolve_anaphora())
+<span class="pysrc-output">([u,x,y,z],[angus(x), dog(y), own(x,y), (u = [x,y,z]), irene(z), bite(u,z)])</span></pre>
+<p><font id="883">由于指代消解算法已分离到它自己的模块，这有利于在替代程序中交换，使对正确的先行词的猜测更加智能。</font></p>
+<p><font id="884">我们对DRS的处理与处理λ-抽象的现有机制是完全兼容的，因此可以直接基于DRT而不是一阶逻辑建立组合语义表示。</font><font id="885">这种技术在下面的不确定性规则（是语法<tt class="doctest"><span class="pre">drt.fcfg</span></tt>的一部分）中说明。</font><font id="886">为便于比较，我们已经从<tt class="doctest"><span class="pre">simple-sem.fcfg</span></tt>增加了不确定性的平行规则。</font></p>
+<pre class="literal-block">Det[num=sg,SEM=&lt;\P Q.(([x],[]) + P(x) + Q(x))&gt;] -&gt; 'a'
+Det[num=sg,SEM=&lt;\P Q. exists x.(P(x) &amp; Q(x))&gt;] -&gt; 'a'
+</pre>
+</div>
+<div class="section" id="discourse-processing"><h2 class="sigil_not_in_toc"><font id="890">5.2 段落处理</font></h2>
+<p><font id="891">我们解释一句话时会使用丰富的上下文知识，一部分取决于前面的内容，一部分取决于我们的背景假设。</font><font id="892">DRT提供了一个句子的含义如何集成到前面段落表示中的理论，但是在前面的讨论中明显缺少这两个部分。</font><font id="893">首先，一直没有尝试纳入任何一种推理；第二，我们只处理了个别句子。</font><font id="894">这些遗漏由模块<tt class="doctest"><span class="pre">nltk.inference.discourse</span></tt>纠正。</font></p>
+<p><font id="895">段落是一个句子的序列<span class="mathit">s</span><sub>1</sub>, ... <span class="mathit">s</span><sub>n</sub>，<span class="example">段落线</span>是读法的序列<span class="mathit">s</span><sub>1</sub><span class="mathit">-r</span><sub>i</sub>, ... <span class="mathit">s</span><sub>n</sub><span class="mathit">-r</span><sub>j</sub> ，每个序列对应段落中的一个句子。</font><font id="896">该模块按增量处理句子，当有歧义时保持追踪所有可能的线。</font><font id="897">为简单起见，下面的例子中忽略了范围歧义。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt = nltk.DiscourseTester([<span class="pysrc-string">'A student dances'</span>, <span class="pysrc-string">'Every student is a person'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.readings()
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s0 readings:</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s0-r0: exists x.(student(x) &amp; dance(x))</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s1 readings:</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s1-r0: all x.(student(x) -&gt; person(x))</span></pre>
+<p><font id="898">一个新句子添加到当前的段落时，设置参数<tt class="doctest"><span class="pre">consistchk=True</span></tt>会通过每条线，即每个可接受的读法的序列的检查模块来检查一致性。</font><font id="899">在这种情况下，用户可以选择收回有问题的句子。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.add_sentence(<span class="pysrc-string">'No person dances'</span>, consistchk=True)
+<span class="pysrc-output">Inconsistent discourse: d0 ['s0-r0', 's1-r0', 's2-r0']:</span>
+<span class="pysrc-output">    s0-r0: exists x.(student(x) &amp; dance(x))</span>
+<span class="pysrc-output">    s1-r0: all x.(student(x) -&gt; person(x))</span>
+<span class="pysrc-output">    s2-r0: -exists x.(person(x) &amp; dance(x))</span></pre>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.retract_sentence(<span class="pysrc-string">'No person dances'</span>, verbose=True)
+<span class="pysrc-output">Current sentences are</span>
+<span class="pysrc-output">s0: A student dances</span>
+<span class="pysrc-output">s1: Every student is a person</span></pre>
+<p><font id="900">以类似的方式，我们使用<tt class="doctest"><span class="pre">informchk=True</span></tt>检查新的句子φ是否对当前的段落有信息量。</font><font id="901">定理证明器将段落线中现有的句子当做假设，尝试证明φ；如果没有发现这样的证据，那么它是有信息量的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.add_sentence(<span class="pysrc-string">'A person dances'</span>, informchk=True)
+<span class="pysrc-output">Sentence 'A person dances' under reading 'exists x.(person(x) &amp; dance(x))':</span>
+<span class="pysrc-output">Not informative relative to thread 'd0'</span></pre>
+<p><font id="902">也可以传递另一套假设作为背景知识，并使用这些筛选出不一致的读法；详情请参阅<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的段落HOWTO。</font></p>
+<p><font id="903"><tt class="doctest"><span class="pre">discourse</span></tt>模块可适应语义歧义，筛选出不可接受的读法。</font><font id="904">下面的例子调用Glue语义和DRT。</font><font id="905">由于Glue语义模块被配置为使用的覆盖面广的Malt 依存关系分析器，输入（<span class="example">Every dog chases a boy. He runs</span>.）</font><font id="906">需要分词和标注。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.tag <span class="pysrc-keyword">import</span> RegexpTagger
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tagger = RegexpTagger(
+<span class="pysrc-more">... </span>    [(<span class="pysrc-string">'^(chases|runs)$'</span>, <span class="pysrc-string">'VB'</span>),
+<span class="pysrc-more">... </span>     (<span class="pysrc-string">'^(a)$'</span>, <span class="pysrc-string">'ex_quant'</span>),
+<span class="pysrc-more">... </span>     (<span class="pysrc-string">'^(every)$'</span>, <span class="pysrc-string">'univ_quant'</span>),
+<span class="pysrc-more">... </span>     (<span class="pysrc-string">'^(dog|boy)$'</span>, <span class="pysrc-string">'NN'</span>),
+<span class="pysrc-more">... </span>     (<span class="pysrc-string">'^(He)$'</span>, <span class="pysrc-string">'PRP'</span>)
+<span class="pysrc-more">... </span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>rc = nltk.DrtGlueReadingCommand(depparser=nltk.MaltParser(tagger=tagger))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>dt = nltk.DiscourseTester([<span class="pysrc-string">'Every dog chases a boy'</span>, <span class="pysrc-string">'He runs'</span>], rc)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.readings()
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s0 readings:</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s0-r0: ([],[(([x],[dog(x)]) -&gt; ([z3],[boy(z3), chases(x,z3)]))])</span>
+<span class="pysrc-output">s0-r1: ([z4],[boy(z4), (([x],[dog(x)]) -&gt; ([],[chases(x,z4)]))])</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s1 readings:</span>
+<span class="pysrc-output"></span>
+<span class="pysrc-output">s1-r0: ([x],[PRO(x), runs(x)])</span></pre>
+<p><font id="907">段落的第一句有两种可能的读法，取决于量词的作用域。</font><font id="908">第二句的唯一的读法通过条件<cite>PRO(x)`</cite>表示代词<span class="example">He</span>。</font><font id="909">现在让我们看看段落线的结果：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.readings(show_thread_readings=True)
+<span class="pysrc-output">d0: ['s0-r0', 's1-r0'] : INVALID: AnaphoraResolutionException</span>
+<span class="pysrc-output">d1: ['s0-r1', 's1-r0'] : ([z6,z10],[boy(z6), (([x],[dog(x)]) -&gt;</span>
+<span class="pysrc-output">([],[chases(x,z6)])), (z10 = z6), runs(z10)])</span></pre>
+<p><font id="910">当我们检查段落线<tt class="doctest"><span class="pre">d0</span></tt>和<tt class="doctest"><span class="pre">d1</span></tt>时，我们看到读法<tt class="doctest"><span class="pre">s0-r0</span></tt>，其中<span class="example">every dog</span>超出了<tt class="doctest"><span class="pre">a boy</span></tt>的范围，被认为是不可接受的，因为第二句的代词不能得到解释。</font><font id="911">相比之下，段落线<tt class="doctest"><span class="pre">d1</span></tt>中的代词（重写为<tt class="doctest"><span class="pre">z24</span></tt>）<em>通过</em>等式<tt class="doctest"><span class="pre">(z24 = z20)</span></tt>绑定。</font></p>
+<p><font id="912">不可接受的读法可以通过传递参数<tt class="doctest"><span class="pre">filter=True</span></tt>过滤掉。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>dt.readings(show_thread_readings=True, filter=True)
+<span class="pysrc-output">d1: ['s0-r1', 's1-r0'] : ([z12,z15],[boy(z12), (([x],[dog(x)]) -&gt;</span>
+<span class="pysrc-output">([],[chases(x,z12)])), (z17 = z12), runs(z15)])</span></pre>
+<p><font id="913">虽然这一小段是极其有限的，它应该能让你对于我们在超越单个句子后产生的语义处理问题，以及部署用来解决它们的技术有所了解。</font></p>
+</div>
+</div>
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="914">6 小结</font></h2>
+<ul class="simple"><li><font id="915">一阶逻辑是一种适合在计算环境中表示自然语言的含义的语言，因为它很灵活，足以表示自然语言含义的很多有用的方面，具有使用一阶逻辑推理的高效的定理证明器。</font><font id="916">（同样的，自然语言语义中也有各种各样的现象，需要更强大的逻辑机制。）</font></li>
+<li><font id="917">在将自然语言句子翻译成一阶逻辑的同时，我们可以通过检查一阶公式模型表述这些句子的真值条件。</font></li>
+<li><font id="918">为了构建成分组合的意思表示，我们为一阶逻辑补充了λ-演算。</font></li>
+<li><font id="919">λ-演算中的β-约简在语义上与函数传递参数对应。</font><font id="920">句法上，它包括将被函数表达式中的λ绑定的变量替换为函数应用中表达式提供的参数。</font></li>
+<li><font id="921">构建模型的一个关键部分在于建立估值，为非逻辑常量分配解释。</font><font id="922">这些被解释为<em>n</em>元谓词或独立常量。</font></li>
+<li><font id="923">一个开放表达式是一个包含一个或多个自由变量的表达式。</font><font id="924">开放表达式只在它的自由变量被赋值时被解释。</font></li>
+<li><font id="925">量词的解释是对于具有变量<span class="mathit">x</span>的公式φ[<span class="mathit">x</span>]，构建个体的集合，赋值<em>g</em>分配它们作为<span class="mathit">x</span>的值使φ[<span class="mathit">x</span>]为真。</font><font id="926">然后量词对这个集合加以约束。</font></li>
+<li><font id="927">一个封闭的表达式是一个没有自由变量的表达式；也就是，变量都被绑定。</font><font id="928">一个封闭的表达式是真是假取决于所有变量赋值。</font></li>
+<li><font id="929">如果两个公式只是由绑定操作符（即λ或量词）绑定的变量的标签不同，那么它们是α-等价。</font><font id="930">重新标记公式中的绑定变量的结果被称为α-转换。</font></li>
+<li><font id="931">给定有两个嵌套量词<em>Q</em><sub>1</sub>和<em>Q</em><sub>2</sub>的公式，最外层的量词<em>Q</em><sub>1</sub>有较广的范围（或范围超出<em>Q</em><sub>2</sub>）。</font><font id="932">英语句子往往由于它们包含的量词的范围而产生歧义。</font></li>
+<li><font id="933">在基于特征的语法中英语句子可以通过将<tt class="doctest"><span class="pre">sem</span></tt>作为特征与语义表达关联。</font><font id="934">一个复杂的表达式的<tt class="doctest"><span class="pre">sem</span></tt>值通常包括成分表达式的<tt class="doctest"><span class="pre">sem</span></tt>值的函数应用。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="935">7 深入阅读</font></h2>
+<p><font id="936">关于本章的进一步材料以及如何安装Prover9定理证明器和Mace4模型生成器的内容请查阅<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>。</font><font id="937">这两个推论工具一般信息见<a class="reference external" href="./bibliography.html#mccune" id="id5">(McCune, 2008)</a>。</font></p>
+<p><font id="938">用NLTK进行语义分析的更多例子，请参阅<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的语义和逻辑HOWTO。</font><font id="939">请注意，范围歧义还有其他两种解决方法，即<a class="reference external" href="./bibliography.html#blackburn2005rin" id="id6">(Blackburn &amp; Bos, 2005)</a>描述的<span class="termdef">Hole语义</span>和<a class="reference external" href="./bibliography.html#dalrymple:1999:rrb" id="id7">(Dalrymple, 1999)</a>描述的<span class="termdef">Glue语义</span>。</font></p>
+<p><font id="940">自然语言语义中还有很多现象没有在本章中涉及到，主要有：</font></p>
+<ol class="lowerroman simple"><li><font id="941">事件、时态和体；</font></li>
+<li><font id="942">语义角色；</font></li>
+<li><font id="943">广义量词，如<span class="example">most</span>；</font></li>
+<li><font id="944">内涵结构，例如像<span class="example">may</span>和<span class="example">believe</span>这样的动词。</font></li>
+</ol>
+<p><font id="945">（1）和（2）可以使用一阶逻辑处理，（3）和（4）需要不同的逻辑。</font><font id="946">下面的读物中很多都讲述了这些问题。</font></p>
+<p><font id="947">建立自然语言前端数据库方面的结果和技术的综合概述可以在<a class="reference external" href="./bibliography.html#androutsopoulos1995nli" id="id8">(Androutsopoulos, Ritchie, &amp; Thanisch, 1995)</a>中找到。</font></p>
+<p><font id="948">任何一本现代逻辑的入门书都将提出命题和一阶逻辑。</font><font id="949">强烈推荐<a class="reference external" href="./bibliography.html#hodges1977l" id="id9">(Hodges, 1977)</a>，书中有很多有关自然语言的有趣且有洞察力的文字和插图。</font></p>
+<p><font id="950">要说范围广泛，参阅两卷本的关于逻辑教科书<a class="reference external" href="./bibliography.html#gamut1991il" id="id10">(Gamut, 1991)</a>和<a class="reference external" href="./bibliography.html#gamut1991illg" id="id11">(Gamut, 1991)</a>，也包含了有关自然语言的形式语义的当代材料，例如Montague文法和内涵逻辑。</font><font id="951"><a class="reference external" href="./bibliography.html#kampreyle1993" id="id12">(Kamp &amp; Reyle, 1993)</a>提供段落表示理论的权威报告，包括涵盖大量且有趣的自然语言片段，包括时态、体和形态。</font><font id="952">另一个对许多自然语言结构的语义的全面研究是<a class="reference external" href="./bibliography.html#carpenter1997tls" id="id13">(Carpenter, 1997)</a>。</font></p>
+<p><font id="953">有许多作品介绍语言学理论框架内的逻辑语义。</font><font id="954"><a class="reference external" href="./bibliography.html#chierchia1990mg" id="id14">(Chierchia &amp; McConnell-Ginet, 1990)</a>与句法相对无关，而<a class="reference external" href="./bibliography.html#heim1998sgg" id="id15">(Heim &amp; Kratzer, 1998)</a> and <a class="reference external" href="./bibliography.html#larson1995km" id="id16">(Larson &amp; Segal, 1995)</a>都更明确的倾向于将语义真值条件整合到乔姆斯基框架中。</font></p>
+<p><font id="955"><a class="reference external" href="./bibliography.html#blackburn2005rin" id="id17">(Blackburn &amp; Bos, 2005)</a>是致力于计算语义的第一本教科书，为该领域提供了极好的介绍。</font><font id="956">它扩展了许多本章涵盖的主题，包括量词范围歧义的未指定、一阶逻辑推理以及段落处理。</font></p>
+<p><font id="957">要获得更先进的当代语义方法的概述，包括处理时态和广义量词，尝试查阅<a class="reference external" href="./bibliography.html#lappin1996hcs" id="id18">(Lappin, 1996)</a>或<a class="reference external" href="./bibliography.html#vanbenthem1997hll" id="id19">(Benthem &amp; Meulen, 1997)</a>。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="958">8 练习</font></h2>
+<ol class="arabic"><li><p class="first"><font id="959">☼ 将下列句子翻译成命题逻辑，并用<tt class="doctest"><span class="pre">Expression.fromstring()</span></tt>验证结果。</font><font id="960">提供显示你的翻译中命题变量如何对应英语表达的一个要点。</font></p><ol class="loweralpha simple"><li><font id="961">If Angus sings, it is not the case that Bertie sulks.</font></li>
+<li><font id="962">Cyril runs and barks.</font></li>
+<li><font id="963">It will snow if it doesn't rain.</font></li>
+<li><font id="964">It's not the case that Irene will be happy if Olive or Tofu comes.</font></li>
+<li><font id="965">Pat didn't cough or sneeze.</font></li>
+<li><font id="966">If you don't come if I call, I won't come if you call.</font></li>
+</ol></li>
+<li><p class="first"><font id="967">☼ 翻译下面的句子为一阶逻辑的谓词参数公式。</font></p><ol class="arabic simple"><li><font id="968">Angus likes Cyril and Irene hates Cyril.</font></li>
+<li><font id="969">Tofu is taller than Bertie.</font></li>
+<li><font id="970">Bruce loves himself and Pat does too.</font></li>
+<li><font id="971">Cyril saw Bertie, but Angus didn't.</font></li>
+<li><font id="972">Cyril is a fourlegged friend.</font></li>
+<li><font id="973">Tofu and Olive are near each other.</font></li>
+</ol></li>
+<li><p class="first"><font id="974">☼ 翻译下列句子为成一阶逻辑的量化公式。</font></p><ol class="arabic simple"><li><font id="975">Angus likes someone and someone likes Julia.</font></li>
+<li><font id="976">Angus loves a dog who loves him.</font></li>
+<li><font id="977">Nobody smiles at Pat.</font></li>
+<li><font id="978">Somebody coughs and sneezes.</font></li>
+<li><font id="979">Nobody coughed or sneezed.</font></li>
+<li><font id="980">Bruce loves somebody other than Bruce.</font></li>
+<li><font id="981">Nobody other than Matthew loves somebody Pat.</font></li>
+<li><font id="982">Cyril likes everyone except for Irene.</font></li>
+<li><font id="983">Exactly one person is asleep.</font></li>
+</ol></li>
+<li><p class="first"><font id="984">☼ 翻译下列动词短语，使用λ-抽象</font><font id="985">和一阶逻辑的量化公式。</font></p><ol class="arabic simple"><li><font id="986">feed Cyril and give a capuccino to Angus</font></li>
+<li><font id="987">be given 'War and Peace' by Pat</font></li>
+<li><font id="988">be loved by everyone</font></li>
+<li><font id="989">be loved or detested by everyone</font></li>
+<li><font id="990">be loved by everyone and detested by no-one</font></li>
+</ol></li>
+<li><p class="first"><font id="991">☼ 思考下面的语句：</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>read_expr = nltk.sem.Expression.fromstring
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'pat'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">exists y.love(pat, y)</span></pre><p><font id="992">显然这里缺少了什么东西，即<tt class="doctest"><span class="pre">e1</span></tt>值的声明。</font><font id="993">为了<tt class="doctest"><span class="pre">ApplicationExpression(e1, e2)</span></tt>被β-转换为<tt class="doctest"><span class="pre">exists y.love(pat, y)</span></tt>，<tt class="doctest"><span class="pre">e1</span></tt>必须是一个以<tt class="doctest"><span class="pre">pat</span></tt>为参数的λ-抽象。</font><font id="994">你的任务是构建这样的一个抽象，将它绑定到<tt class="doctest"><span class="pre">e1</span></tt>，使上面的语句都是满足（上到字母方差）。</font><font id="995">此外，提供一个<tt class="doctest"><span class="pre">e3.simplify()</span></tt>的非正式的英文翻译。</font></p><p><font id="996">现在根据<tt class="doctest"><span class="pre">e3.simplify()</span></tt>的进一步情况（如下所示）继续做同样的任务。</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">exists y.(love(pat,y) | love(y,pat))</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">exists y.(love(pat,y) | love(y,pat))</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">walk(fido)</span></pre></li>
+<li><p class="first"><font id="997">☼ 如前面的练习中那样，找到一个λ-抽象<tt class="doctest"><span class="pre">e1</span></tt>，产生与下面显示的等效的结果。</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'chase'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">\x.all y.(dog(y) -&gt; chase(x,pat))</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'chase'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">\x.exists y.(dog(y) &amp; chase(pat,x))</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'give'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">\x0 x1.exists y.(present(y) &amp; give(x1,y,x0))</span></pre></li>
+<li><p class="first"><font id="998">☼ 如前面的练习中那样，找到一个λ-抽象<tt class="doctest"><span class="pre">e1</span></tt>，产生与下面显示的等效的结果。</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'bark'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">exists y.(dog(x) &amp; bark(x))</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'bark'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">bark(fido)</span></pre><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>e2 = read_expr(<span class="pysrc-string">'\\P. all x. (dog(x) -&gt; P(x))'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>e3 = nltk.sem.ApplicationExpression(e1, e2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(e3.simplify())
+<span class="pysrc-output">all x.(dog(x) -&gt; bark(x))</span></pre></li>
+<li><p class="first"><font id="999">◑ 开发一种方法，翻译英语句子为带有二元<span class="termdef">广义量词</span>的公式。</font><font id="1000">在此方法中，给定广义量词<tt class="doctest"><span class="pre">Q</span></tt>，量化公式的形式为<tt class="doctest"><span class="pre">Q(A, B)</span></tt>，其中<tt class="doctest"><span class="pre">A</span></tt>和<tt class="doctest"><span class="pre">B</span></tt>是〈<em>e</em>, <em>t</em>〉类型的表达式。</font><font id="1001">那么，例如<tt class="doctest"><span class="pre">all(A, B)</span></tt>为真当且仅当<tt class="doctest"><span class="pre">A</span></tt>表示的是<tt class="doctest"><span class="pre">B</span></tt>所表示的一个子集。</font></p></li>
+<li><p class="first"><font id="1002">◑ 扩展前面练习中的方法，使量词如<span class="example">most</span>和<span class="example">exactly three</span>的真值条件可以在模型中计算。</font></p></li>
+<li><p class="first"><font id="1003">◑ 修改<tt class="doctest"><span class="pre">sem.evaluate</span></tt>代码，使它能提供一个有用的错误消息，如果一个表达式不在模型的估值函数的域中。</font></p></li>
+<li><p class="first"><font id="1004">★ 从儿童读物中选择三个或四个连续的句子。</font><font id="1005">一个例子是<tt class="doctest"><span class="pre">nltk.corpus.gutenberg</span></tt>中的故事集：<tt class="doctest"><span class="pre">bryant-stories.txt</span></tt>，<tt class="doctest"><span class="pre">burgess-busterbrown.txt</span></tt>和<tt class="doctest"><span class="pre">edgeworth-parents.txt</span></tt>。</font><font id="1006">开发一个语法，能将你的句子翻译成一阶逻辑，建立一个模型，使它能检查这些翻译为真或为假。</font></p></li>
+<li><p class="first"><font id="1007">★ 实施前面的练习，但使用DRT作为意思表示。</font></p></li>
+<li><p class="first"><font id="1008"><a name="generalized_quantifiers_index_term">★ 以</a><a class="reference external" href="./bibliography.html#warren1982eea" id="id20">(Warren &amp; Pereira, 1982)</a>为出发点，开发一种技术，转换一个自然语言查询为一种可以更加有效的在模型中评估的形式。</font><font id="1009">例如，给定一个<tt class="doctest"><span class="pre">(P(x) &amp; Q(x))</span></tt>形式的查询，将它转换为<tt class="doctest"><span class="pre">(Q(x) &amp; P(x))</span></tt>，如果<tt class="doctest"><span class="pre">Q</span></tt>的范围比<tt class="doctest"><span class="pre">P</span></tt>小。</font></p></li>
+</ol>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="1010">关于本文档...</font></p>
+<p><font id="1011">针对NLTK 3.0 作出更新。</font><font id="1012">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="1013">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="1014">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>

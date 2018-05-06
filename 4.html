@@ -1,0 +1,1142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document"><div class="compound"></div>
+<div class="section" id="writing-structured-programs"><h1><font id="1">4 编写结构化程序</font></h1>
+<p><font id="2">现在，你对Python 编程语言处理自然语言的能力已经有了体会。</font><font id="3">不过，如果你是Python或者编程新手，你可能仍然要努力对付Python，而尚未感觉到你在完全控制它。</font><font id="4">在这一章中，我们将解决以下问题：</font></p>
+<ol class="arabic simple"><li><font id="5">怎么能写出结构良好、可读的程序，你和其他人将能够很容易的重新使用它？</font></li>
+<li><font id="6">基本结构块，如循环、函数以及赋值，是如何执行的？</font></li>
+<li><font id="7">Python 编程的陷阱有哪些，你怎么能避免它们吗？</font></li>
+</ol>
+<p><font id="8">一路上，你将巩固基本编程结构的知识，了解更多关于以一种自然和简洁的方式使用Python语言特征的内容，并学习一些有用的自然语言数据可视化技术。</font><font id="9">如前所述，本章包含许多例子和练习（和以前一样，一些练习会引入新材料）。</font><font id="10">编程新手的读者应仔细做完它们，并在需要时查询其他编程介绍；有经验的程序员可以快速浏览本章。</font></p>
+<p><font id="11">在这本书的其他章节中，为了讲述NLP的需要，我们已经组织了一些编程的概念。</font><font id="12">在这里，我们回到一个更传统的方法，材料更紧密的与编程语言的结构联系在一起。</font><font id="13">这里不会完整的讲述编程语言，我们只关注对NLP最重要的语言结构和习惯用法。</font></p>
+<div class="section" id="back-to-the-basics"><h2 class="sigil_not_in_toc"><font id="14">4.1 回到基础</font></h2>
+<div class="section" id="assignment"><h3 class="sigil_not_in_toc"><font id="15">赋值</font></h3>
+<p><font id="16">赋值似乎是最基本的编程概念，不值得单独讨论。</font><font id="17">不过，也有一些令人吃惊的微妙之处。</font><font id="18">思考下面的代码片段：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>foo = <span class="pysrc-string">'Monty'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bar = foo <a href="./ch04.html#ref-assignment1"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>foo = <span class="pysrc-string">'Python'</span> <a href="./ch04.html#ref-assignment2"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bar
+<span class="pysrc-output">'Monty'</span></pre>
+<p><font id="19">这个结果与预期的完全一样。</font><font id="20">当我们在上面的代码中写<tt class="doctest"><span class="pre">bar = foo</span></tt>时<a class="reference internal" href="./ch04.html#assignment1"><span id="ref-assignment1"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，<tt class="doctest"><span class="pre">foo</span></tt>的值（字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">'Monty'</span></span></tt>）被赋值给<tt class="doctest"><span class="pre">bar</span></tt>。</font><font id="21">也就是说，<tt class="doctest"><span class="pre">bar</span></tt>是<tt class="doctest"><span class="pre">foo</span></tt>的一个<span class="termdef">副本</span>，所以当我们在第<a class="reference internal" href="./ch04.html#assignment2"><span id="ref-assignment2"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>行用一个新的字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">'Python'</span></span></tt>覆盖<tt class="doctest"><span class="pre">foo</span></tt>时，<tt class="doctest"><span class="pre">bar</span></tt>的值不会受到影响。</font></p>
+<p><font id="22">然而，赋值语句并不总是以这种方式复制副本。</font><font id="23">赋值总是一个表达式的值的复制，但值并不总是你可能希望的那样。</font><font id="24">特别是结构化对象的“值”，例如一个列表，实际上是一个对象的<span class="emphasis">引用</span>。</font><font id="25">在下面的例子中，<a class="reference internal" href="./ch04.html#assignment3"><span id="ref-assignment3"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>将<tt class="doctest"><span class="pre">foo</span></tt>的引用分配给新的变量<tt class="doctest"><span class="pre">bar</span></tt>。</font><font id="26">现在，当我们在<a class="reference internal" href="./ch04.html#assignment4"><span id="ref-assignment4"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>行修改<tt class="doctest"><span class="pre">foo</span></tt>内的东西，我们可以看到<tt class="doctest"><span class="pre">bar</span></tt>的内容也已改变。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>foo = [<span class="pysrc-string">'Monty'</span>, <span class="pysrc-string">'Python'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bar = foo <a href="./ch04.html#ref-assignment3"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>foo[1] = <span class="pysrc-string">'Bodkin'</span> <a href="./ch04.html#ref-assignment4"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bar
+<span class="pysrc-output">['Monty', 'Bodkin']</span></pre>
+<div class="figure" id="fig-array-memory"><img alt="Images/array-memory.png" src="Images/64864d38550248d5bd9b82eeb6f0583b.jpg" style="width: 527.25px; height: 187.5px;"/><p class="caption"><font id="27"><span class="caption-label">图 4.1</span>：列表赋值与计算机内存：两个列表对象<tt class="doctest"><span class="pre">foo</span></tt>和<tt class="doctest"><span class="pre">bar</span></tt>引用计算机内存中的相同的位置；更新<tt class="doctest"><span class="pre">foo</span></tt>将同样修改<tt class="doctest"><span class="pre">bar</span></tt>，反之亦然。</font></p>
+</div>
+<p><font id="28"><tt class="doctest"><span class="pre">bar = foo</span></tt><a class="reference internal" href="./ch04.html#assignment3"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>行并不会复制变量的内容，只有它的“引用对象”。</font><font id="29">要了解这里发生了什么事，我们需要知道列表是如何存储在计算机内存的。</font><font id="30">在<a class="reference internal" href="./ch04.html#fig-array-memory">4.1</a>中，我们看到一个列表<tt class="doctest"><span class="pre">foo</span></tt>是对存储在位置3133处的一个对象的引用（它自身是一个指针序列，其中的指针指向其它保存字符串的位置）。</font><font id="31">当我们赋值<tt class="doctest"><span class="pre">bar = foo</span></tt>时，仅仅是3133位置处的引用被复制。</font><font id="32">这种行为延伸到语言的其他方面，如参数传递（<a class="reference internal" href="./ch04.html#sec-functions">4.4</a>）。</font></p>
+<p><font id="33">让我们做更多的实验，通过创建一个持有空列表的变量<tt class="doctest"><span class="pre">empty</span></tt>，然后在下一行使用它三次。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>empty = []
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested = [empty, empty, empty]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested
+<span class="pysrc-output">[[], [], []]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nested[1].append(<span class="pysrc-string">'Python'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested
+<span class="pysrc-output">[['Python'], ['Python'], ['Python']]</span></pre>
+<p><font id="34">请看，改变列表中嵌套列表内的一个项目，它们全改变了。</font><font id="35">这是因为三个元素中的每一个实际上都只是一个内存中的同一列表的引用。</font></p>
+<div class="note"><p class="first admonition-title"><font id="36">注意</font></p>
+<p class="last"><font id="37"><strong>轮到你来：</strong> 用乘法创建一个列表的列表：<tt class="doctest"><span class="pre">nested = [[]] * 3</span></tt>。</font><font id="38">现在修改列表中的一个元素，观察所有的元素都改变了。</font><font id="39">使用Python的<tt class="doctest"><span class="pre">id()</span></tt>函数找出任一对象的数字标识符， 并验证<tt class="doctest"><span class="pre">id(nested[0])</span></tt>，<tt class="doctest"><span class="pre">id(nested[1])</span></tt>与<tt class="doctest"><span class="pre">id(nested[2])</span></tt>是一样的。</font></p>
+</div>
+<p><font id="40">现在请注意，当我们分配一个新值给列表中的一个元素时，它并不会传送给其他元素：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nested = [[]] * 3
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested[1].append(<span class="pysrc-string">'Python'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested[1] = [<span class="pysrc-string">'Monty'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nested
+<span class="pysrc-output">[['Python'], ['Monty'], ['Python']]</span></pre>
+<p><font id="41">我们一开始用含有3个引用的列表，每个引用指向一个空列表对象。</font><font id="42">然后，我们通过给它追加<tt class="doctest"><span class="pre"><span class="pysrc-string">'Python'</span></span></tt>修改这个对象，结果变成包含3个到一个列表对象<tt class="doctest"><span class="pre">[<span class="pysrc-string">'Python'</span>]</span></tt>的引用的列表。</font><font id="43">下一步，我们使用到一个新对象<tt class="doctest"><span class="pre">[<span class="pysrc-string">'Monty'</span>]</span></tt>的引用来<em>覆盖</em>三个元素中的一个。</font><font id="44">这最后一步修改嵌套列表内的3个对象引用中的1个。</font><font id="45">然而，<tt class="doctest"><span class="pre">[<span class="pysrc-string">'Python'</span>]</span></tt>对象并没有改变，仍然是在我们的嵌套列表的列表中的两个位置被引用。</font><font id="46">关键是要明白通过一个对象引用修改一个对象与通过覆盖一个对象引用之间的区别。</font></p>
+<div class="note"><p class="first admonition-title"><font id="47">注意</font></p>
+<p class="last"><font id="48"><strong>重要：</strong> 要从列表<tt class="doctest"><span class="pre">foo</span></tt>复制项目到一个新的列表<tt class="doctest"><span class="pre">bar</span></tt>，你可以写<tt class="doctest"><span class="pre">bar = foo[:]</span></tt>。</font><font id="49">这会复制列表中的对象引用。</font><font id="50">若要复制结构而不复制任何对象引用，请使用<tt class="doctest"><span class="pre"><span class="pysrc-builtin">copy</span>.deepcopy()</span></tt>。</font></p>
+</div>
+</div>
+<div class="section" id="equality"><h3 class="sigil_not_in_toc"><font id="51">等式</font></h3>
+<p><font id="52">Python提供两种方法来检查一对项目是否相同。</font><font id="53"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">is</span></span></tt>操作符测试对象的ID。</font><font id="54">我们可以用它来验证我们早先的对对象的观察。</font><font id="55">首先，我们创建一个列表，其中包含同一对象的多个副本，证明它们不仅对于<tt class="doctest"><span class="pre">==</span></tt>完全相同，而且它们是同一个对象：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>size = 5
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>python = [<span class="pysrc-string">'Python'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest = [python] * size
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest[0] == snake_nest[1] == snake_nest[2] == snake_nest[3] == snake_nest[4]
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest[0] <span class="pysrc-keyword">is</span> snake_nest[1] <span class="pysrc-keyword">is</span> snake_nest[2] <span class="pysrc-keyword">is</span> snake_nest[3] <span class="pysrc-keyword">is</span> snake_nest[4]
+<span class="pysrc-output">True</span></pre>
+<p><font id="56">现在，让我们将一个新的python放入嵌套中。</font><font id="57">我们可以很容易地表明这些对象不完全相同:</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> random
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>position = random.choice(range(size))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest[position] = [<span class="pysrc-string">'Python'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest
+<span class="pysrc-output">[['Python'], ['Python'], ['Python'], ['Python'], ['Python']]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest[0] == snake_nest[1] == snake_nest[2] == snake_nest[3] == snake_nest[4]
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>snake_nest[0] <span class="pysrc-keyword">is</span> snake_nest[1] <span class="pysrc-keyword">is</span> snake_nest[2] <span class="pysrc-keyword">is</span> snake_nest[3] <span class="pysrc-keyword">is</span> snake_nest[4]
+<span class="pysrc-output">False</span></pre>
+<p><font id="58">你可以再做几对测试，发现哪个位置包含闯入者，函数<tt class="doctest"><span class="pre">id()</span></tt>使检测更加容易：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[id(snake) <span class="pysrc-keyword">for</span> snake <span class="pysrc-keyword">in</span> snake_nest]
+<span class="pysrc-output">[4557855488, 4557854763, 4557855488, 4557855488, 4557855488]</span></pre>
+<p><font id="59">这表明列表中的第二个项目有一个独特的标识符。</font><font id="60">如果你尝试自己运行这段代码，请期望看到结果列表中的不同数字，以及闯入者可能在不同的位置。</font></p>
+<p><font id="61">有两种等式可能看上去有些奇怪。</font><font id="62">然而，这真的只是类型与标识符式的区别，与自然语言相似，这里在一种编程语言中呈现出来。</font></p>
+</div>
+<div class="section" id="conditionals"><h3 class="sigil_not_in_toc"><font id="63">条件</font></h3>
+<p><font id="64">在<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句的条件部分，一个非空字符串或列表被求值为真，而一个空字符串或列表的被求值为假。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>mixed = [<span class="pysrc-string">'cat'</span>, <span class="pysrc-string">''</span>, [<span class="pysrc-string">'dog'</span>], []]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> element <span class="pysrc-keyword">in</span> mixed:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> element:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(element)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">cat</span>
+<span class="pysrc-output">['dog']</span></pre>
+<p><font id="65">也就是说，我们<em>不必</em>在条件中写<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span> len(element) &gt; 0:</span></tt>。</font></p>
+<p><font id="66">使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span>...<span class="pysrc-keyword">elif</span></span></tt>而不是在一行中使用两个<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>语句有什么区别？</font><font id="67">嗯，考虑以下情况：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>animals = [<span class="pysrc-string">'cat'</span>, <span class="pysrc-string">'dog'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">if</span> <span class="pysrc-string">'cat'</span> <span class="pysrc-keyword">in</span> animals:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(1)
+<span class="pysrc-more">... </span><span class="pysrc-keyword">elif</span> <span class="pysrc-string">'dog'</span> <span class="pysrc-keyword">in</span> animals:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(2)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">1</span></pre>
+<p><font id="68">因为表达式中<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>子句条件满足，Python就不会求值<tt class="doctest"><span class="pre"><span class="pysrc-keyword">elif</span></span></tt>子句，所以我们永远不会得到输出<tt class="doctest"><span class="pre">2</span></tt>。</font><font id="69">相反，如果我们用一个<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>替换<tt class="doctest"><span class="pre"><span class="pysrc-keyword">elif</span></span></tt>，那么我们将会输出<tt class="doctest"><span class="pre">1</span></tt>和<tt class="doctest"><span class="pre">2</span></tt>。</font><font id="70">所以<tt class="doctest"><span class="pre"><span class="pysrc-keyword">elif</span></span></tt>子句比单独的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>子句潜在地给我们更多信息；当它被判定为真时，告诉我们不仅条件满足而且前面的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>子句条件<em>不</em>满足。</font></p>
+<p><font id="71"><tt class="doctest"><span class="pre">all()</span></tt>函数和<tt class="doctest"><span class="pre">any()</span></tt>函数可以应用到一个列表（或其他序列），来检查是否全部或任一项目满足某个条件：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'No'</span>, <span class="pysrc-string">'good'</span>, <span class="pysrc-string">'fish'</span>, <span class="pysrc-string">'goes'</span>, <span class="pysrc-string">'anywhere'</span>, <span class="pysrc-string">'without'</span>, <span class="pysrc-string">'a'</span>, <span class="pysrc-string">'porpoise'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>all(len(w) &gt; 4 <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent)
+<span class="pysrc-output">False</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>any(len(w) &gt; 4 <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent)
+<span class="pysrc-output">True</span></pre>
+</div>
+</div>
+<div class="section" id="sequences"><h2 class="sigil_not_in_toc"><font id="72">4.2 序列</font></h2>
+<p><font id="73">到目前为止，我们已经看到了两种序列对象：字符串和列表。</font><font id="74">另一种序列被称为<span class="termdef">元组</span>。</font><font id="75">元组由逗号操作符<a class="reference internal" href="./ch04.html#create-tuple"><span id="ref-create-tuple"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>构造，而且通常使用括号括起来。</font><font id="76">实际上，我们已经在前面的章节中看到过它们，它们有时也被称为“配对”，因为总是有两名成员。</font><font id="77">然而，元组可以有任何数目的成员。</font><font id="78">与列表和字符串一样，元组可以被索引<a class="reference internal" href="./ch04.html#index-tuple"><span id="ref-index-tuple"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>和切片<a class="reference internal" href="./ch04.html#slice-tuple"><span id="ref-slice-tuple"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>，并有长度<a class="reference internal" href="./ch04.html#length-tuple"><span id="ref-length-tuple"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>t = <span class="pysrc-string">'walk'</span>, <span class="pysrc-string">'fem'</span>, 3 <a href="./ch04.html#ref-create-tuple"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>t
+<span class="pysrc-output">('walk', 'fem', 3)</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>t[0] <a href="./ch04.html#ref-index-tuple"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-output">'walk'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>t[1:] <a href="./ch04.html#ref-slice-tuple"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-output">('fem', 3)</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(t) <a href="./ch04.html#ref-length-tuple"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></a>
+<span class="pysrc-output">3</span></pre>
+<div class="caution"><p class="first admonition-title"><font id="79">小心！</font></p>
+<p class="last"><font id="80">元组使用逗号操作符来构造。</font><font id="81">括号是一个Python语法的一般功能，设计用于分组。</font><font id="82">定义一个包含单个元素<tt class="doctest"><span class="pre"><span class="pysrc-string">'snark'</span></span></tt>的元组是通过添加一个尾随的逗号，像这样："<tt class="doctest"><span class="pre"><span class="pysrc-string">'snark'</span>,</span></tt>"。</font><font id="83">空元组是一个特殊的情况下，使用空括号<tt class="doctest"><span class="pre">()</span></tt>定义。</font></p>
+</div>
+<p><font id="84">让我们直接比较字符串、列表和元组，在各个类型上做索引、切片和长度操作：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>raw = <span class="pysrc-string">'I turned off the spectroroute'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>text = [<span class="pysrc-string">'I'</span>, <span class="pysrc-string">'turned'</span>, <span class="pysrc-string">'off'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'spectroroute'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pair = (6, <span class="pysrc-string">'turned'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>raw[2], text[3], pair[1]
+<span class="pysrc-output">('t', 'the', 'turned')</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>raw[-3:], text[-3:], pair[-3:]
+<span class="pysrc-output">('ute', ['off', 'the', 'spectroroute'], (6, 'turned'))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(raw), len(text), len(pair)
+<span class="pysrc-output">(29, 5, 2)</span></pre>
+<p><font id="85">请注意在此代码示例中，我们在一行代码中计算多个值，中间用逗号分隔。</font><font id="86">这些用逗号分隔的表达式其实就是元组——如果没有歧义，Python允许我们忽略元组周围的括号。</font><font id="87">当我们输出一个元组时，括号始终显示。</font><font id="88">通过以这种方式使用元组，我们隐式的将这些项目聚集在一起。</font></p>
+<div class="section" id="operating-on-sequence-types"><h3 class="sigil_not_in_toc"><font id="89">序列类型上的操作</font></h3>
+<p><font id="90">我们可以用多种有用的方式遍历一个序列<tt class="doctest"><span class="pre">s</span></tt>中的项目，如<a class="reference internal" href="./ch04.html#tab-python-sequence">4.1</a>所示。</font></p>
+<p class="caption"><font id="91"><span class="caption-label">表 4.1</span>：</font></p>
+<p><font id="92">遍历序列的各种方式</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>raw = <span class="pysrc-string">'Red lorry, yellow lorry, red lorry, yellow lorry.'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>text = word_tokenize(raw)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist = nltk.FreqDist(text)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(fdist)
+<span class="pysrc-output">[',', '.', 'Red', 'lorry', 'red', 'yellow']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> key <span class="pysrc-keyword">in</span> fdist:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(key + <span class="pysrc-string">':'</span>, fdist[key], end=<span class="pysrc-string">'; '</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">lorry: 4; red: 1; .: 1; ,: 3; Red: 1; yellow: 2</span></pre>
+<p><font id="112">在接下来的例子中，我们使用元组重新安排我们的列表中的内容。</font><font id="113">（可以省略括号，因为逗号比赋值的优先级更高。）</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>words = [<span class="pysrc-string">'I'</span>, <span class="pysrc-string">'turned'</span>, <span class="pysrc-string">'off'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'spectroroute'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words[2], words[3], words[4] = words[3], words[4], words[2]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words
+<span class="pysrc-output">['I', 'turned', 'the', 'spectroroute', 'off']</span></pre>
+<p><font id="114">这是一种地道和可读的移动列表内的项目的方式。</font><font id="115">它相当于下面的传统方式不使用元组做上述任务（注意这种方法需要一个临时变量<tt class="doctest"><span class="pre">tmp</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tmp = words[2]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words[2] = words[3]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words[3] = words[4]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words[4] = tmp</pre>
+<p><font id="116">正如我们已经看到的，Python有序列处理函数，如<tt class="doctest"><span class="pre">sorted()</span></tt>和<tt class="doctest"><span class="pre">reversed()</span></tt>，它们重新排列序列中的项目。</font><font id="117">也有修改序列<span class="emphasis">结构</span>的函数，可以很方便的处理语言。</font><font id="118">因此，<tt class="doctest"><span class="pre">zip()</span></tt>接收两个或两个以上的序列中的项目，将它们“压缩”打包成单个的配对列表。</font><font id="119">给定一个序列<tt class="doctest"><span class="pre">s</span></tt>，<tt class="doctest"><span class="pre">enumerate(s)</span></tt>返回一个包含索引和索引处项目的配对。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>words = [<span class="pysrc-string">'I'</span>, <span class="pysrc-string">'turned'</span>, <span class="pysrc-string">'off'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'spectroroute'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tags = [<span class="pysrc-string">'noun'</span>, <span class="pysrc-string">'verb'</span>, <span class="pysrc-string">'prep'</span>, <span class="pysrc-string">'det'</span>, <span class="pysrc-string">'noun'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>zip(words, tags)
+<span class="pysrc-output">&lt;zip object at ...&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(zip(words, tags))
+<span class="pysrc-output">[('I', 'noun'), ('turned', 'verb'), ('off', 'prep'),</span>
+<span class="pysrc-output">('the', 'det'), ('spectroroute', 'noun')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(enumerate(words))
+<span class="pysrc-output">[(0, 'I'), (1, 'turned'), (2, 'off'), (3, 'the'), (4, 'spectroroute')]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="120">注意</font></p>
+<p class="last"><font id="121">只在需要的时候进行计算（或者叫做“惰性计算”特性），这是Python 3和NLTK 3的一个普遍特点。</font><font id="122">当你期望看到一个序列时，如果你看到的却是类似<tt class="doctest"><span class="pre">&lt;zip object at 0x10d005448&gt;</span></tt>这样的结果， 你可以强制求值这个对象，只要把它放在一个期望序列的上下文中，比如<tt class="doctest"><span class="pre">list(</span></tt><span class="mathit">x</span><tt class="doctest"><span class="pre">)</span></tt>或<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span> item <span class="pysrc-keyword">in</span></span></tt> <span class="mathit">x</span>。</font></p>
+</div>
+<p><font id="123">对于一些NLP任务，有必要将一个序列分割成两个或两个以上的部分。</font><font id="124">例如，我们可能需要用90％的数据来“训练”一个系统，剩余10％进行测试。</font><font id="125">要做到这一点，我们指定想要分割数据的位置<a class="reference internal" href="./ch04.html#cut-location"><span id="ref-cut-location"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，然后在这个位置分割序列<a class="reference internal" href="./ch04.html#cut-sequence"><span id="ref-cut-sequence"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = nltk.corpus.nps_chat.words()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cut = int(0.9 * len(text)) <a href="./ch04.html#ref-cut-location"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>training_data, test_data = text[:cut], text[cut:] <a href="./ch04.html#ref-cut-sequence"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>text == training_data + test_data <a href="./ch04.html#ref-cut-preserve"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-output">True</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(training_data) / len(test_data) <a href="./ch04.html#ref-cut-ratio"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></a>
+<span class="pysrc-output">9.0</span></pre>
+<p><font id="126">我们可以验证在此过程中的原始数据没有丢失，也没有重复<a class="reference internal" href="./ch04.html#cut-preserve"><span id="ref-cut-preserve"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>。</font><font id="127">我们也可以验证两块大小的比例是我们预期的<a class="reference internal" href="./ch04.html#cut-ratio"><span id="ref-cut-ratio"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></span></a>。</font></p>
+</div>
+<div class="section" id="combining-different-sequence-types"><h3 class="sigil_not_in_toc"><font id="128">合并不同类型的序列</font></h3>
+<p><font id="129">让我们综合关于这三种类型的序列的知识，一起使用列表推导处理一个字符串中的词，按它们的长度排序。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>words = <span class="pysrc-string">'I turned off the spectroroute'</span>.split() <a href="./ch04.html#ref-string-object"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlens = [(len(word), word) <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> words] <a href="./ch04.html#ref-tuple-comprehension"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlens.sort() <a href="./ch04.html#ref-sort-method"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-string">' '</span>.join(w <span class="pysrc-keyword">for</span> (_, w) <span class="pysrc-keyword">in</span> wordlens) <a href="./ch04.html#ref-discard-length"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></a>
+<span class="pysrc-output">'I off the turned spectroroute'</span></pre>
+<p><font id="130">上述代码段中每一行都包含一个显著的特征。</font><font id="131">一个简单的字符串实际上是一个其上定义了方法如<tt class="doctest"><span class="pre">split()</span></tt> <a class="reference internal" href="./ch04.html#string-object"><span id="ref-string-object"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>的对象。</font><font id="132">我们使用列表推导建立一个元组的列表<a class="reference internal" href="./ch04.html#tuple-comprehension"><span id="ref-tuple-comprehension"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>，其中每个元组由一个数字（词长）和这个词组成，例如</font><font id="133"><tt class="doctest"><span class="pre">(3, <span class="pysrc-string">'the'</span>)</span></tt>。</font><font id="134">我们使用<tt class="doctest"><span class="pre">sort()</span></tt>方法<a class="reference internal" href="./ch04.html#sort-method"><span id="ref-sort-method"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>就地排序列表。</font><font id="135">最后，丢弃长度信息，并将这些词连接回一个字符串<a class="reference internal" href="./ch04.html#discard-length"><span id="ref-discard-length"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></span></a>。</font><font id="136">（下划线<a class="reference internal" href="./ch04.html#discard-length"><img alt="[4]" class="callout" src="Images/ca21bcde8ab16a341929b7fb9ccb0a0e.jpg"/></a>只是一个普通的Python变量，我们约定可以用下划线表示我们不会使用其值的变量。）</font></p>
+<p><font id="137">我们开始谈论这些序列类型的共性，但上面的代码说明了这些序列类型的重要的区别。</font><font id="138">首先，字符串出现在开头和结尾：这是很典型的，我们的程序先读一些文本，最后产生输出给我们看。</font><font id="139">列表和元组在中间，但使用的目的不同。</font><font id="140">一个链表是一个典型的具有<span class="emphasis">相同类型</span>的对象的序列，它的<span class="emphasis">长度是任意的</span>。</font><font id="141">我们经常使用列表保存词序列。</font><font id="142">相反，一个元组通常是<span class="emphasis">不同类型</span>的对象的集合，<span class="emphasis">长度固定</span>。</font><font id="143">我们经常使用一个元组来保存一个<span class="termdef">纪录</span>，与一些实体相关的不同<span class="termdef">字段</span>的集合。</font><font id="144">使用列表与使用元组之间的区别需要一些时间来习惯，所以这里是另一个例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon = [
+<span class="pysrc-more">... </span>    (<span class="pysrc-string">'the'</span>, <span class="pysrc-string">'det'</span>, [<span class="pysrc-string">'Di:'</span>, <span class="pysrc-string">'D@'</span>]),
+<span class="pysrc-more">... </span>    (<span class="pysrc-string">'off'</span>, <span class="pysrc-string">'prep'</span>, [<span class="pysrc-string">'Qf'</span>, <span class="pysrc-string">'O:f'</span>])
+<span class="pysrc-more">... </span>]</pre>
+<p><font id="145">在这里，用一个列表表示词典，因为它是一个单一类型的对象的集合——词汇条目——没有预定的长度。</font><font id="146">个别条目被表示为一个元组，因为它是一个有不同的解释的对象的集合，例如正确的拼写形式、词性、发音（以SAMPA计算机可读的拼音字母表示，<tt class="doctest"><span class="pre">http://www.phon.ucl.ac.uk/home/sampa/</span></tt>）。</font><font id="147">请注意，这些发音都是用列表存储的。</font><font id="148">（为什么呢？）</font></p>
+<div class="note"><p class="first admonition-title"><font id="149">注意</font></p>
+<p class="last"><font id="150">决定何时使用元组还是列表的一个好办法是看一个项目的内容是否取决与它的位置。</font><font id="151">例如，一个已标注的词标识符由两个具有不同解释的字符串组成，我们选择解释第一项为词标识符，第二项为标注。</font><font id="152">因此，我们使用这样的元组：<tt class="doctest"><span class="pre">(<span class="pysrc-string">'grail'</span>, <span class="pysrc-string">'noun'</span>)</span></tt>；一个形式为<tt class="doctest"><span class="pre">(<span class="pysrc-string">'noun'</span>, <span class="pysrc-string">'grail'</span>)</span></tt>的元组将是无意义的，因为这将是一个词<tt class="doctest"><span class="pre">noun</span></tt>被标注为<tt class="doctest"><span class="pre">grail</span></tt>。</font><font id="153">相反，一个文本中的元素都是词符， 位置并不重要。</font><font id="154">因此， 我们使用这样的列表：<tt class="doctest"><span class="pre">[<span class="pysrc-string">'venetian'</span>, <span class="pysrc-string">'blind'</span>]</span></tt>；一个形式为<tt class="doctest"><span class="pre">[<span class="pysrc-string">'blind'</span>, <span class="pysrc-string">'venetian'</span>]</span></tt>的列表也同样有效。</font><font id="155">词的语言学意义可能会有所不同，但作为词符的列表项的解释是不变的。</font></p>
+</div>
+<p><font id="156">列表和元组之间的使用上的区别已经讲过了。</font><font id="157">然而，还有一个更加基本的区别：在Python中，列表是<span class="termdef">可变的</span>，而元组是<span class="termdef">不可变的</span>。</font><font id="158">换句话说，列表可以被修改，而元组不能。</font><font id="159">这里是一些在列表上的操作，就地修改一个列表。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon.sort()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>lexicon[1] = (<span class="pysrc-string">'turned'</span>, <span class="pysrc-string">'VBD'</span>, [<span class="pysrc-string">'t3:nd'</span>, <span class="pysrc-string">'t3`nd'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">del</span> lexicon[0]</pre>
+<div class="note"><p class="first admonition-title"><font id="160">注意</font></p>
+<p class="last"><font id="161"><strong>轮到你来：</strong>使用<tt class="doctest"><span class="pre">lexicon = tuple(lexicon)</span></tt>将<tt class="doctest"><span class="pre">lexicon</span></tt>转换为一个元组，然后尝试上述操作，确认它们都不能运用在元组上。</font></p>
+</div>
+</div>
+<div class="section" id="generator-expressions"><h3 class="sigil_not_in_toc"><font id="162">生成器表达式</font></h3>
+<p><font id="163">我们一直在大量使用列表推导，因为用它处理文本结构紧凑和可读性好。</font><font id="164">下面是一个例子，分词和规范化一个文本：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = <span class="pysrc-string">'''"When I use a word," Humpty Dumpty said in rather a scornful tone,</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"it means just what I choose it to mean - neither more nor less."'''</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> word_tokenize(text)]
+<span class="pysrc-output">['``', 'when', 'i', 'use', 'a', 'word', ',', "''", 'humpty', 'dumpty', 'said', ...]</span></pre>
+<p><font id="165">假设我们现在想要进一步处理这些词。</font><font id="166">我们可以将上面的表达式插入到一些其他函数的调用中<a class="reference internal" href="./ch04.html#max-comprehension"><span id="ref-max-comprehension"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，Python允许我们省略方括号<a class="reference internal" href="./ch04.html#max-generator"><span id="ref-max-generator"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>max([w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> word_tokenize(text)]) <a href="./ch04.html#ref-max-comprehension"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-output">'word'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>max(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> word_tokenize(text)) <a href="./ch04.html#ref-max-generator"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-output">'word'</span></pre>
+<p><font id="167">第二行使用了<span class="termdef">生成器表达式</span>。</font><font id="168">这不仅仅是标记方便：在许多语言处理的案例中，生成器表达式会更高效。</font><font id="169">在<a class="reference internal" href="./ch04.html#max-comprehension"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>中，列表对象的存储空间必须在max()的值被计算之前分配。</font><font id="170">如果文本非常大的，这将会很慢。</font><font id="171">在<a class="reference internal" href="./ch04.html#max-generator"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>中，数据流向调用它的函数。</font><font id="172">由于调用的函数只是简单的要找最大值——按字典顺序排在最后的词——它可以处理数据流，而无需存储迄今为止的最大值以外的任何值。</font></p>
+</div>
+</div>
+<div class="section" id="questions-of-style"><h2 class="sigil_not_in_toc"><font id="173">4.3 风格的问题</font></h2>
+<p><font id="174">编程是作为一门科学的艺术。</font><font id="175">无可争议的程序设计的“圣经”，Donald Knuth 的2500页的多卷作品，叫做<span class="emphasis">《计算机程序设计艺术》</span>。</font><font id="176">已经有许多书籍是关于<span class="emphasis">文学化编程</span>的，它们认为人类，不只是电脑，必须阅读和理解程序。</font><font id="177">在这里，我们挑选了一些编程风格的问题，它们对你的代码的可读性，包括代码布局、程序与声明的风格、使用循环变量都有重要的影响。</font></p>
+<div class="section" id="python-coding-style"><h3 class="sigil_not_in_toc"><font id="178">Python代码风格</font></h3>
+<p><font id="179">编写程序时，你会做许多微妙的选择：名称、间距、注释等等。</font><font id="180">当你在看别人编写的代码时，风格上的不必要的差异使其难以理解。</font><font id="181">因此，Python 语言的设计者发表了Python代码风格指南，http<tt class="doctest"><span class="pre">http://www.python.org/dev/peps/pep-0008/</span></tt>。</font><font id="182">风格指南中提出的基本价值是<span class="emphasis">一致性</span>，目的是最大限度地提高代码的可读性。</font><font id="183">我们在这里简要回顾一下它的一些主要建议，并请读者阅读完整的指南，里面有对实例的详细的讨论。</font></p>
+<p><font id="184">代码布局中每个缩进级别应使用4个空格。</font><font id="185">你应该确保当你在一个文件中写Python代码时，避免使用tab缩进，因为它可能由于不同的文本编辑器的不同解释而产生混乱。</font><font id="186">每行应少于80个字符长；如果必要的话，你可以在圆括号、方括号或花括号内换行，因为Python能够探测到该行与下一行是连续的。</font><font id="187">如果你需要在圆括号、方括号或大括号中换行，通常可以添加额外的括号，也可以在行尾需要换行的地方添加一个反斜杠：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">if</span> (len(syllables) &gt; 4 <span class="pysrc-keyword">and</span> len(syllables[2]) == 3 <span class="pysrc-keyword">and</span>
+<span class="pysrc-more">... </span>   syllables[2][2] <span class="pysrc-keyword">in</span> [aeiou] <span class="pysrc-keyword">and</span> syllables[2][3] == syllables[1][3]):
+<span class="pysrc-more">... </span>    process(syllables)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">if</span> len(syllables) &gt; 4 <span class="pysrc-keyword">and</span> len(syllables[2]) == 3 <span class="pysrc-keyword">and</span> \
+<span class="pysrc-more">... </span>   syllables[2][2] <span class="pysrc-keyword">in</span> [aeiou] <span class="pysrc-keyword">and</span> syllables[2][3] == syllables[1][3]:
+<span class="pysrc-more">... </span>    process(syllables)</pre>
+<div class="note"><p class="first admonition-title"><font id="188">注意</font></p>
+<p class="last"><font id="189">键入空格来代替制表符很快就会成为一件苦差事。</font><font id="190">许多程序编辑器内置对Python的支持，能自动缩进代码，突出任何语法错误（包括缩进错误）。</font><font id="191">关于Python编辑器列表，请见<tt class="doctest"><span class="pre">http://wiki.python.org/moin/PythonEditors</span></tt>。</font></p>
+</div>
+</div>
+<div class="section" id="procedural-vs-declarative-style"><h3 class="sigil_not_in_toc"><font id="192">过程风格与声明风格</font></h3>
+<p><font id="193">我们刚才已经看到可以不同的方式执行相同的任务，其中蕴含着对执行效率的影响。</font><font id="194">另一个影响程序开发的因素是<em>编程风格</em>。</font><font id="195">思考下面的计算布朗语料库中词的平均长度的程序：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = nltk.corpus.brown.words(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>count = 0
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>total = 0
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> token <span class="pysrc-keyword">in</span> tokens:
+<span class="pysrc-more">... </span>    count += 1
+<span class="pysrc-more">... </span>    total += len(token)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>total / count
+<span class="pysrc-output">4.401545438271973</span></pre>
+<p><font id="196">在这段程序中，我们使用变量<tt class="doctest"><span class="pre">count</span></tt>跟踪遇到的词符的数量，<tt class="doctest"><span class="pre">total</span></tt>储存所有词的长度的总和。</font><font id="197">这是一个低级别的风格，与机器代码，即计算机的CPU 所执行的基本操作，相差不远。</font><font id="198">两个变量就像CPU的两个寄存器，积累许多中间环节产生的值，和直到最才有意义的值。</font><font id="199">我们说，这段程序是以<em>过程</em>风格编写，一步一步口授机器操作。</font><font id="200">现在，考虑下面的程序，计算同样的事情：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>total = sum(len(t) <span class="pysrc-keyword">for</span> t <span class="pysrc-keyword">in</span> tokens)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(total / len(tokens))
+<span class="pysrc-output">4.401...</span></pre>
+<p><font id="201">第一行使用生成器表达式累加标示符的长度，第二行像前面一样计算平均值。</font><font id="202">每行代码执行一个完整的、有意义的工作，可以高级别的属性，如：“<tt class="doctest"><span class="pre">total</span></tt>是标识符长度的总和”，的方式来理解。</font><font id="203">实施细节留给Python解释器。</font><font id="204">第二段程序使用内置函数，在一个更抽象的层面构成程序；生成的代码是可读性更好。</font><font id="205">让我们看一个极端的例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>word_list = []
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>i = 0
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>while i &lt; len(tokens):
+<span class="pysrc-more">... </span>    j = 0
+<span class="pysrc-more">... </span>    while j &lt; len(word_list) <span class="pysrc-keyword">and</span> word_list[j] &lt;= tokens[i]:
+<span class="pysrc-more">... </span>        j += 1
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> j == 0 <span class="pysrc-keyword">or</span> tokens[i] != word_list[j-1]:
+<span class="pysrc-more">... </span>        word_list.insert(j, tokens[i])
+<span class="pysrc-more">... </span>    i += 1
+<span class="pysrc-more">...</span></pre>
+<p><font id="206">等效的声明版本使用熟悉的内置函数，可以立即知道代码的目的：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>word_list = sorted(set(tokens))</pre>
+<p><font id="207">另一种情况，对于每行输出一个计数值，一个循环计数器似乎是必要的。</font><font id="208">然而，我们可以使用<tt class="doctest"><span class="pre">enumerate()</span></tt>处理序列<tt class="doctest"><span class="pre">s</span></tt>，为<tt class="doctest"><span class="pre">s</span></tt>中每个项目产生一个<tt class="doctest"><span class="pre">(i, s[i])</span></tt>形式的元组，以<tt class="doctest"><span class="pre">(0, s[0])</span></tt>开始。</font><font id="209">下面我们枚举频率分布的值，生成嵌套的<tt class="doctest"><span class="pre">(rank, (word, count))</span></tt>元组。</font><font id="210">按照产生排序项列表时的需要，输出<tt class="doctest"><span class="pre">rank+1</span></tt>使计数从<tt class="doctest"><span class="pre">1</span></tt>开始。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fd = nltk.FreqDist(nltk.corpus.brown.words())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cumulative = 0.0
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>most_common_words = [word <span class="pysrc-keyword">for</span> (word, count) <span class="pysrc-keyword">in</span> fd.most_common()]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> rank, word <span class="pysrc-keyword">in</span> enumerate(most_common_words):
+<span class="pysrc-more">... </span>    cumulative += fd.freq(word)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"%3d %6.2f%% %s"</span> % (rank + 1, cumulative * 100, word))
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> cumulative &gt; 0.25:
+<span class="pysrc-more">... </span>        break
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">  1   5.40% the</span>
+<span class="pysrc-output">  2  10.42% ,</span>
+<span class="pysrc-output">  3  14.67% .</span>
+<span class="pysrc-output">  4  17.78% of</span>
+<span class="pysrc-output">  5  20.19% and</span>
+<span class="pysrc-output">  6  22.40% to</span>
+<span class="pysrc-output">  7  24.29% a</span>
+<span class="pysrc-output">  8  25.97% in</span></pre>
+<p><font id="211">到目前为止，使用循环变量存储最大值或最小值，有时很诱人。</font><font id="212">让我们用这种方法找出文本中最长的词。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = nltk.corpus.gutenberg.words(<span class="pysrc-string">'milton-paradise.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>longest = <span class="pysrc-string">''</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(word) &gt; len(longest):
+<span class="pysrc-more">... </span>        longest = word
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>longest
+<span class="pysrc-output">'unextinguishable'</span></pre>
+<p><font id="213">然而，一个更加清楚的解决方案是使用两个列表推导，它们的形式现在应该很熟悉：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>maxlen = max(len(word) <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[word <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text <span class="pysrc-keyword">if</span> len(word) == maxlen]
+<span class="pysrc-output">['unextinguishable', 'transubstantiate', 'inextinguishable', 'incomprehensible']</span></pre>
+<p><font id="214">请注意，我们的第一个解决方案找到第一个长度最长的词，而第二种方案找到<em>所有</em>最长的词（通常是我们想要的）。</font><font id="215">虽然有两个解决方案之间的理论效率的差异，主要的开销是到内存中读取数据；一旦数据准备好，第二阶段处理数据可以瞬间高效完成。</font><font id="216">我们还需要平衡我们对程序的效率与程序员的效率的关注。</font><font id="217">一种快速但神秘的解决方案将是更难理解和维护的。</font></p>
+</div>
+<div class="section" id="some-legitimate-uses-for-counters"><h3 class="sigil_not_in_toc"><font id="218">计数器的一些合理用途</font></h3>
+<p><font id="219">在有些情况下，我们仍然要在列表推导中使用循环变量。</font><font id="220">例如：我们需要使用一个循环变量中提取列表中连续重叠的n-grams：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'The'</span>, <span class="pysrc-string">'dog'</span>, <span class="pysrc-string">'gave'</span>, <span class="pysrc-string">'John'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'newspaper'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>n = 3
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[sent[i:i+n] <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(len(sent)-n+1)]
+<span class="pysrc-output">[['The', 'dog', 'gave'],</span>
+<span class="pysrc-output"> ['dog', 'gave', 'John'],</span>
+<span class="pysrc-output"> ['gave', 'John', 'the'],</span>
+<span class="pysrc-output"> ['John', 'the', 'newspaper']]</span></pre>
+<p><font id="221">确保循环变量范围的正确相当棘手的。</font><font id="222">因为这是NLP中的常见操作，NLTK提供了支持函数<tt class="doctest"><span class="pre">bigrams(text)</span></tt>、<tt class="doctest"><span class="pre">trigrams(text)</span></tt>和一个更通用的<tt class="doctest"><span class="pre">ngrams(text, n)</span></tt>。</font></p>
+<p><font id="223">下面是我们如何使用循环变量构建多维结构的一个例子。</font><font id="224">例如，建立一个<em>m</em>行<em>n</em>列的数组，其中每个元素是一个集合，我们可以使用一个嵌套的列表推导：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>m, n = 3, 7
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>array = [[set() <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(n)] <span class="pysrc-keyword">for</span> j <span class="pysrc-keyword">in</span> range(m)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>array[2][5].add(<span class="pysrc-string">'Alice'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pprint.pprint(array)
+<span class="pysrc-output">[[set(), set(), set(), set(), set(), set(), set()],</span>
+<span class="pysrc-output"> [set(), set(), set(), set(), set(), set(), set()],</span>
+<span class="pysrc-output"> [set(), set(), set(), set(), set(), {'Alice'}, set()]]</span></pre>
+<p><font id="225">请看循环变量<tt class="doctest"><span class="pre">i</span></tt>和<tt class="doctest"><span class="pre">j</span></tt>在产生对象过程中没有用到，它们只是需要一个语法正确的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt> 语句。</font><font id="226">这种用法的另一个例子，请看表达式<tt class="doctest"><span class="pre">[<span class="pysrc-string">'very'</span> <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(3)]</span></tt>产生一个包含三个<tt class="doctest"><span class="pre"><span class="pysrc-string">'very'</span></span></tt>实例的列表，没有整数。</font></p>
+<p><font id="227">请注意，由于我们前面所讨论的有关对象复制的原因，使用乘法做这项工作是不正确的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>array = [[set()] * n] * m
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>array[2][5].add(7)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pprint.pprint(array)
+<span class="pysrc-output">[[{7}, {7}, {7}, {7}, {7}, {7}, {7}],</span>
+<span class="pysrc-output"> [{7}, {7}, {7}, {7}, {7}, {7}, {7}],</span>
+<span class="pysrc-output"> [{7}, {7}, {7}, {7}, {7}, {7}, {7}]]</span></pre>
+<p><font id="228">迭代是一个重要的编程概念。</font><font id="229">采取其他语言中的习惯用法是很诱人的。</font><font id="230">然而， Python提供一些优雅和高度可读的替代品，正如我们已经看到。</font></p>
+</div>
+</div>
+<div class="section" id="functions-the-foundation-of-structured-programming"><h2 class="sigil_not_in_toc"><font id="231">4.4 函数：结构化编程的基础</font></h2>
+<p><font id="232">函数提供了程序代码打包和重用的有效途径，已经在<a class="reference external" href="./ch02.html#sec-reusing-code">3</a>中解释过。</font><font id="233">例如，假设我们发现我们经常要从HTML文件读取文本。</font><font id="234">这包括以下几个步骤，打开文件，将它读入，规范化空白符号，剥离HTML标记。</font><font id="235">我们可以将这些步骤收集到一个函数中，并给它一个名字，如<tt class="doctest"><span class="pre">get_text()</span></tt>，如<a class="reference internal" href="./ch04.html#code-get-text">4.2</a>所示。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">import</span> re
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">get_text</span>(file):
+    <span class="pysrc-string">"""Read text from a file, normalizing whitespace and stripping HTML markup."""</span>
+    text = open(file).read()
+    text = re.sub(r<span class="pysrc-string">'&lt;.*?&gt;'</span>, <span class="pysrc-string">' '</span>, text)
+    text = re.sub(<span class="pysrc-string">'\s+'</span>, <span class="pysrc-string">' '</span>, text)
+    return text</pre>
+<p><font id="237">现在，任何时候我们想从一个HTML文件得到干净的文字，都可以用文件的名字作为唯一的参数调用<tt class="doctest"><span class="pre">get_text()</span></tt>。</font><font id="238">它会返回一个字符串，我们可以将它指定给一个变量，例如</font><font id="239">：<tt class="doctest"><span class="pre">contents = get_text(<span class="pysrc-string">"test.html"</span>)</span></tt>。</font><font id="240">每次我们要使用这一系列的步骤，只需要调用这个函数。</font></p>
+<p><font id="241">使用函数可以为我们的程序节约空间。</font><font id="242">更重要的是，我们为函数选择名称可以提高程序<em>可读性</em>。</font><font id="243">在上面的例子中，只要我们的程序需要从文件读取干净的文本，我们不必弄乱这四行代码的程序，只需要调用<tt class="doctest"><span class="pre">get_text()</span></tt>。</font><font id="244">这种命名方式有助于提供一些“语义解释”——它可以帮助我们的程序的读者理解程序的“意思”。</font></p>
+<p><font id="245">请注意，上面的函数定义包含一个字符串。</font><font id="246">函数定义内的第一个字符串被称为<span class="termdef">文档字符串</span>。</font><font id="247">它不仅为阅读代码的人记录函数的功能，从文件加载这段代码的程序员也能够访问：</font></p>
+<pre class="literal-block">|   &gt;&gt;&gt; help(get_text)
+|   Help on function get_text in module __main__:
+|
+|   get(text)
+|       Read text from a file, normalizing whitespace and stripping HTML markup.
+</pre>
+<p><font id="261">我们首先定义函数的两个参数，<tt class="doctest"><span class="pre">msg</span></tt>和<tt class="doctest"><span class="pre">num</span></tt> <a class="reference internal" href="./ch04.html#fun-def"><span id="ref-fun-def"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>。</font><font id="262">然后调用函数，并传递给它两个参数，<tt class="doctest"><span class="pre">monty</span></tt>和<tt class="doctest"><span class="pre">3</span></tt> <a class="reference internal" href="./ch04.html#fun-call"><span id="ref-fun-call"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>；这些参数填补了参数提供的“占位符”，为函数体中出现的<tt class="doctest"><span class="pre">msg</span></tt>和<tt class="doctest"><span class="pre">num</span></tt>提供值。</font></p>
+<p><font id="263">我们看到在下面的例子中不需要有任何参数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">monty</span>():
+<span class="pysrc-more">... </span>    return <span class="pysrc-string">"Monty Python"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>monty()
+<span class="pysrc-output">'Monty Python'</span></pre>
+<p><font id="264">函数通常会通过<tt class="doctest"><span class="pre">return</span></tt>语句将其结果返回给调用它的程序，正如我们刚才看到的。</font><font id="265">对于调用程序，它看起来就像函数调用已被函数结果替代，例如</font><font id="266">：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>repeat(monty(), 3)
+<span class="pysrc-output">'Monty Python Monty Python Monty Python'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>repeat(<span class="pysrc-string">'Monty Python'</span>, 3)
+<span class="pysrc-output">'Monty Python Monty Python Monty Python'</span></pre>
+<p><font id="267">一个Python函数并不是一定需要有一个return语句。</font><font id="268">有些函数做它们的工作的同时会附带输出结果、修改文件或者更新参数的内容。（这种函数在其他一些编程语言中被称为“过程”）。</font></p>
+<p><font id="269">考虑以下三个排序函数。</font><font id="270">第三个是危险的，因为程序员可能没有意识到它已经修改了给它的输入。</font><font id="271">一般情况下，函数应该修改参数的内容（<tt class="doctest"><span class="pre">my_sort1()</span></tt>）或返回一个值（<tt class="doctest"><span class="pre">my_sort2()</span></tt>），而不是两个都做（<tt class="doctest"><span class="pre">my_sort3()</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">my_sort1</span>(mylist):      <span class="pysrc-comment"># good: modifies its argument, no return value</span>
+<span class="pysrc-more">... </span>    mylist.sort()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">my_sort2</span>(mylist):      <span class="pysrc-comment"># good: doesn't touch its argument, returns value</span>
+<span class="pysrc-more">... </span>    return sorted(mylist)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">my_sort3</span>(mylist):      <span class="pysrc-comment"># bad: modifies its argument and also returns it</span>
+<span class="pysrc-more">... </span>    mylist.sort()
+<span class="pysrc-more">... </span>    return mylist</pre>
+
+<div class="section" id="parameter-passing"><h3 class="sigil_not_in_toc"><font id="272">参数传递</font></h3>
+<p><font id="273">早在<a class="reference internal" href="./ch04.html#sec-back-to-the-basics">4.1</a>节中，你就已经看到了赋值操作，而一个结构化对象的值是该对象的<span class="emphasis">引用</span>。</font><font id="274">函数也是一样的。</font><font id="275">Python按它的值来解释函数的参数（这被称为<span class="termdef">按值调用</span>）。</font><font id="276">在下面的代码中，<tt class="doctest"><span class="pre">set_up()</span></tt>有两个参数，都在函数内部被修改。</font><font id="277">我们一开始将一个空字符串分配给<tt class="doctest"><span class="pre">w</span></tt>，将一个空列表分配给<tt class="doctest"><span class="pre">p</span></tt>。调用该函数后，<tt class="doctest"><span class="pre">w</span></tt>没有变，而<tt class="doctest"><span class="pre">p</span></tt>改变了：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">set_up</span>(word, properties):
+<span class="pysrc-more">... </span>    word = <span class="pysrc-string">'lolcat'</span>
+<span class="pysrc-more">... </span>    properties.append(<span class="pysrc-string">'noun'</span>)
+<span class="pysrc-more">... </span>    properties = 5
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>w = <span class="pysrc-string">''</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>p = []
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>set_up(w, p)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>w
+<span class="pysrc-output">''</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>p
+<span class="pysrc-output">['noun']</span></pre>
+<p><font id="278">请注意，<tt class="doctest"><span class="pre">w</span></tt>没有被函数改变。</font><font id="279">当我们调用<tt class="doctest"><span class="pre">set_up(w, p)</span></tt>时，<tt class="doctest"><span class="pre">w</span></tt>（空字符串）的值被分配到一个新的变量<tt class="doctest"><span class="pre">word</span></tt>。</font><font id="280">在函数内部<tt class="doctest"><span class="pre">word</span></tt>值被修改。</font><font id="281">然而，这种变化并没有传播给<tt class="doctest"><span class="pre">w</span></tt>。这个参数传递过程与下面的赋值序列是一样的：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>w = <span class="pysrc-string">''</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>word = w
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>word = <span class="pysrc-string">'lolcat'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>w
+<span class="pysrc-output">''</span></pre>
+<p><font id="282">让我们来看看列表<tt class="doctest"><span class="pre">p</span></tt>上发生了什么。当我们调用<tt class="doctest"><span class="pre">set_up(w, p)</span></tt>，<tt class="doctest"><span class="pre">p</span></tt>的值（一个空列表的引用）被分配到一个新的本地变量<tt class="doctest"><span class="pre">properties</span></tt>，所以现在这两个变量引用相同的内存位置。</font><font id="283">函数修改<tt class="doctest"><span class="pre">properties</span></tt>，而这种变化也反映在<tt class="doctest"><span class="pre">p</span></tt>值上，正如我们所看到的。</font><font id="284">函数也分配给properties一个新的值（数字<tt class="doctest"><span class="pre">5</span></tt>）；这并不能修改该内存位置上的内容，而是创建了一个新的局部变量。</font><font id="285">这种行为就好像是我们做了下列赋值序列：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>p = []
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>properties = p
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>properties.append(<span class="pysrc-string">'noun'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>properties = 5
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>p
+<span class="pysrc-output">['noun']</span></pre>
+<p><font id="286">因此，要理解Python按值传递参数，只要了解它是如何赋值的就足够了。</font><font id="287">记住，你可以使用<tt class="doctest"><span class="pre">id()</span></tt>函数和<tt class="doctest"><span class="pre"><span class="pysrc-keyword">is</span></span></tt>操作符来检查每个语句执行之后你对对象标识符的理解。</font></p>
+</div>
+<div class="section" id="variable-scope"><h3 class="sigil_not_in_toc"><font id="288">变量的作用域</font></h3>
+<p><font id="289">函数定义为变量创建了一个新的局部的<span class="termdef">作用域</span>。</font><font id="290">当你在函数体内部分配一个新的变量时，这个名字只在该函数内部被定义。</font><font id="291">函数体外或者在其它函数体内，这个名字是不可见的。</font><font id="292">这一行为意味着你可以选择变量名而不必担心它与你的其他函数定义中使用的名称冲突。</font></p>
+<p><font id="293">当你在一个函数体内部使用一个现有的名字时，Python解释器先尝试按照函数本地的名字来解释。</font><font id="294">如果没有发现，解释器检查它是否是一个模块内的全局名称。</font><font id="295">最后，如果没有成功，解释器会检查是否是Python内置的名字。</font><font id="296">这就是所谓的名称解析的<span class="termdef">LGB规则</span>：本地（local），全局（global），然后内置（built-in）。</font></p>
+<div class="caution"><p class="first admonition-title"><font id="297">小心！</font></p>
+<p class="last"><font id="298">一个函数可以使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">global</span></span></tt>声明创建一个新的全局变量。</font><font id="299">然而，这种做法应尽可能避免。</font><font id="300">在函数内部定义全局变量会导致上下文依赖性而限制函数的可移植性（或重用性）。</font><font id="301">一般来说，你应该使用参数作为函数的输入，返回值作为函数的输出。</font></p>
+</div>
+</div>
+<div class="section" id="checking-parameter-types"><h3 class="sigil_not_in_toc"><font id="302">参数类型检查</font></h3>
+<p><font id="303">我们写程序时，Python不会强迫我们声明变量的类型，这允许我们定义参数类型灵活的函数。</font><font id="304">例如，我们可能希望一个标注只是一个词序列，而不管这个序列被表示为一个列表、元组（或是迭代器，一种新的序列类型，超出了当前的讨论范围）。</font></p>
+<p><font id="305">然而，我们常常想写一些能被他人利用的程序，并希望以一种防守的风格，当函数没有被正确调用时提供有益的警告。</font><font id="306">下面的<tt class="doctest"><span class="pre">tag()</span></tt>函数的作者假设其参数将始终是一个字符串。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">tag</span>(word):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> word <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'a'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'all'</span>]:
+<span class="pysrc-more">... </span>        return <span class="pysrc-string">'det'</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        return <span class="pysrc-string">'noun'</span>
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tag(<span class="pysrc-string">'the'</span>)
+<span class="pysrc-output">'det'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tag(<span class="pysrc-string">'knight'</span>)
+<span class="pysrc-output">'noun'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tag([<span class="pysrc-string">"'Tis"</span>, <span class="pysrc-string">'but'</span>, <span class="pysrc-string">'a'</span>, <span class="pysrc-string">'scratch'</span>]) <a href="./ch04.html#ref-list-arg"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-output">'noun'</span></pre>
+<p><font id="307">该函数对参数<tt class="doctest"><span class="pre"><span class="pysrc-string">'the'</span></span></tt>和<tt class="doctest"><span class="pre"><span class="pysrc-string">'knight'</span></span></tt>返回合理的值，传递给它一个列表<a class="reference internal" href="./ch04.html#list-arg"><span id="ref-list-arg"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，看看会发生什么——它没有抱怨，虽然它返回的结果显然是不正确的。</font><font id="308">此函数的作者可以采取一些额外的步骤来确保<tt class="doctest"><span class="pre">tag()</span></tt>函数的参数<tt class="doctest"><span class="pre">word</span></tt>是一个字符串。</font><font id="309">一种直白的做法是使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span> <span class="pysrc-keyword">not</span> type(word) <span class="pysrc-keyword">is</span> str</span></tt>检查参数的类型，如果<tt class="doctest"><span class="pre">word</span></tt>不是一个字符串，简单地返回Python特殊的空值<tt class="doctest"><span class="pre">None</span></tt>。</font><font id="310">这是一个略微的改善，因为该函数在检查参数类型，并试图对错误的输入返回一个“特殊的”诊断结果。</font><font id="311">然而，它也是危险的，因为调用程序可能不会检测<tt class="doctest"><span class="pre">None</span></tt>是故意设定的“特殊”值，这种诊断的返回值可能被传播到程序的其他部分产生不可预测的后果。</font><font id="312">如果这个词是一个Unicode字符串这种方法也会失败。因为它的类型是<tt class="doctest"><span class="pre">unicode</span></tt>而不是<tt class="doctest"><span class="pre">str</span></tt>。</font><font id="313">这里有一个更好的解决方案，使用<tt class="doctest"><span class="pre">assert</span></tt>语句和Python的<tt class="doctest"><span class="pre">basestring</span></tt>的类型一起，它是<tt class="doctest"><span class="pre">unicode</span></tt>和<tt class="doctest"><span class="pre">str</span></tt>的共同类型。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">tag</span>(word):
+<span class="pysrc-more">... </span>    assert isinstance(word, basestring), <span class="pysrc-string">"argument to tag() must be a string"</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> word <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'a'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'all'</span>]:
+<span class="pysrc-more">... </span>        return <span class="pysrc-string">'det'</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        return <span class="pysrc-string">'noun'</span></pre>
+<p><font id="314">如果<tt class="doctest"><span class="pre">assert</span></tt>语句失败，它会产生一个不可忽视的错误而停止程序执行。</font><font id="315">此外，该错误信息是容易理解的。</font><font id="316">程序中添加断言能帮助你找到逻辑错误，是一种<span class="termdef">防御性编程</span>。</font><font id="317">一个更根本的方法是在本节后面描述的使用文档字符串为每个函数记录参数的文档。</font></p>
+</div>
+<div class="section" id="functional-decomposition"><h3 class="sigil_not_in_toc"><font id="318">功能分解</font></h3>
+<p><font id="319">结构良好的程序通常都广泛使用函数。</font><font id="320">当一个程序代码块增长到超过10-20行，如果将代码分成一个或多个函数，每一个有明确的目的，这将对可读性有很大的帮助。</font><font id="321">这类似于好文章被划分成段，每段话表示一个主要思想。</font></p>
+<p><font id="322">函数提供了一种重要的抽象。</font><font id="323">它们让我们将多个动作组合成一个单一的复杂的行动，并给它关联一个名称。</font><font id="324">（比较我们组合动作<span class="example">go</span>和<span class="example">bring back</span>为一个单一的更复杂的动作<span class="example">fetch</span>。）</font><font id="325">当我们使用函数时，主程序可以在一个更高的抽象水平编写，使其结构更透明，例如</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>data = load_corpus()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>results = analyze(data)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>present(results)</pre>
+<p><font id="326">适当使用函数使程序更具可读性和可维护性。</font><font id="327">另外，重新实现一个函数已成为可能——使用更高效的代码替换函数体——不需要关心程序的其余部分。</font></p>
+<p><font id="328">思考<a class="reference internal" href="./ch04.html#code-freq-words1">4.3</a>中<tt class="doctest"><span class="pre">freq_words</span></tt>函数。</font><font id="329">它更新一个作为参数传递进来的频率分布的内容，并输出前<span class="math">n</span>个最频繁的词的列表。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> urllib <span class="pysrc-keyword">import</span> request
+<span class="pysrc-keyword">from</span> bs4 <span class="pysrc-keyword">import</span> BeautifulSoup
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">freq_words</span>(url, freqdist, n):
+    html = request.urlopen(url).read().decode(<span class="pysrc-string">'utf8'</span>)
+    raw = BeautifulSoup(html).get_text()
+    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> word_tokenize(raw):
+        freqdist[word.lower()] += 1
+    result = []
+    <span class="pysrc-keyword">for</span> word, count <span class="pysrc-keyword">in</span> freqdist.most_common(n):
+        result = result + [word]
+    <span class="pysrc-keyword">print</span>(result)</pre>
+<p><font id="331">这个函数有几个问题。</font><font id="332">该函数有两个副作用：它修改了第二个参数的内容，并输出它已计算的结果的经过选择的子集。</font><font id="333">如果我们在函数内部初始化<tt class="doctest"><span class="pre">FreqDist()</span></tt>对象（在它被处理的同一个地方），并且去掉选择集而将结果显示给调用程序的话，函数会更容易理解和更容易在其他地方重用。</font><font id="334">考虑到它的任务是找出频繁的一个词，它应该只应该返回一个列表，而不是整个频率分布。</font><font id="335">在<a class="reference internal" href="./ch04.html#code-freq-words2">4.4</a>中，我们<span class="termdef">重构</span>此函数，并通过去掉<tt class="doctest"><span class="pre">freqdist</span></tt>参数简化其接口。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> urllib <span class="pysrc-keyword">import</span> request
+<span class="pysrc-keyword">from</span> bs4 <span class="pysrc-keyword">import</span> BeautifulSoup
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">freq_words</span>(url, n):
+    html = request.urlopen(url).read().decode(<span class="pysrc-string">'utf8'</span>)
+    text = BeautifulSoup(html).get_text()
+    freqdist = nltk.FreqDist(word.lower() <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> word_tokenize(text))
+    return [word <span class="pysrc-keyword">for</span> (word, _) <span class="pysrc-keyword">in</span> fd.most_common(n)]</pre>
+<p><font id="337"><tt class="doctest"><span class="pre">freq_words</span></tt>函数的可读性和可用性得到改进。</font></p>
+<div class="note"><p class="first admonition-title"><font id="338">注意</font></p>
+<p class="last"><font id="339">我们将<tt class="doctest"><span class="pre">_</span></tt>用作变量名。</font><font id="340">这是对任何其他变量没有什么不同，除了它向读者发出信号，我们没有使用它保存的信息。</font></p>
+</div>
+
+<div class="section" id="documenting-functions"><h3 class="sigil_not_in_toc"><font id="341">编写函数的文档</font></h3>
+<p><font id="342">如果我们已经将工作分解成函数分解的很好了，那么应该很容易使用通俗易懂的语言描述每个函数的目的，并且在函数的定义顶部的文档字符串中提供这些描述。</font><font id="343">这个说明不应该解释函数是如何实现的；实际上，应该能够不改变这个说明，使用不同的方法，重新实现这个函数。</font></p>
+<p><font id="344">对于最简单的函数，一个单行的文档字符串通常就足够了（见<a class="reference internal" href="./ch04.html#code-get-text">4.2</a>）。</font><font id="345">你应该提供一个在一行中包含一个完整的句子的三重引号引起来的字符串。</font><font id="346">对于不寻常的函数，你还是应该在第一行提供一个一句话总结，因为很多的文档字符串处理工具会索引这个字符串。</font><font id="347">它后面应该有一个空行，然后是更详细的功能说明（见<tt class="doctest"><span class="pre">http://www.python.org/dev/peps/pep-0257/</span></tt>的文档字符串约定的更多信息）。</font></p>
+<p><font id="348">文档字符串可以包括一个<span class="termdef">doctest块</span>，说明使用的函数和预期的输出。</font><font id="349">这些都可以使用Python的<tt class="doctest"><span class="pre">docutils</span></tt>模块自动测试。</font><font id="350">文档字符串应当记录函数的每个参数的类型和返回类型。</font><font id="351">至少可以用纯文本来做这些。</font><font id="352">然而，请注意，NLTK使用Sphinx标记语言来记录参数。</font><font id="353">这种格式可以自动转换成富结构化的API文档（见<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>），并包含某些“字段”的特殊处理，例如<tt class="doctest"><span class="pre">param</span></tt>，允许清楚地记录函数的输入和输出。</font><font id="354"><a class="reference internal" href="./ch04.html#code-sphinx">4.5</a>演示了一个完整的文档字符串。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">accuracy</span>(reference, test):
+    <span class="pysrc-string">"""</span>
+<span class="pysrc-string">    Calculate the fraction of test items that equal the corresponding reference items.</span>
+
+<span class="pysrc-string">    Given a list of reference values and a corresponding list of test values,</span>
+<span class="pysrc-string">    return the fraction of corresponding values that are equal.</span>
+<span class="pysrc-string">    In particular, return the fraction of indexes</span>
+<span class="pysrc-string">    {0&lt;i&lt;=len(test)} such that C{test[i] == reference[i]}.</span>
+
+<span class="pysrc-string">        &gt;&gt;&gt; accuracy(['ADJ', 'N', 'V', 'N'], ['N', 'N', 'V', 'ADJ'])</span>
+<span class="pysrc-string">        0.5</span>
+
+<span class="pysrc-string">    :param reference: An ordered list of reference values</span>
+<span class="pysrc-string">    :type reference: list</span>
+<span class="pysrc-string">    :param test: A list of values to compare against the corresponding</span>
+<span class="pysrc-string">        reference values</span>
+<span class="pysrc-string">    :type test: list</span>
+<span class="pysrc-string">    :return: the accuracy score</span>
+<span class="pysrc-string">    :rtype: float</span>
+<span class="pysrc-string">    :raises ValueError: If reference and length do not have the same length</span>
+<span class="pysrc-string">    """</span>
+
+    <span class="pysrc-keyword">if</span> len(reference) != len(test):
+        raise ValueError(<span class="pysrc-string">"Lists must have the same length."</span>)
+    num_correct = 0
+    <span class="pysrc-keyword">for</span> x, y <span class="pysrc-keyword">in</span> zip(reference, test):
+        <span class="pysrc-keyword">if</span> x == y:
+            num_correct += 1
+    return float(num_correct) / len(reference)</pre>
+
+
+<div class="section" id="doing-more-with-functions"><h2 class="sigil_not_in_toc"><font id="356">4.5 更多关于函数</font></h2>
+<p><font id="357">本节将讨论更高级的特性，你在第一次阅读本章时可能更愿意跳过此节。</font></p>
+<div class="section" id="functions-as-arguments"><h3 class="sigil_not_in_toc"><font id="358">作为参数的函数</font></h3>
+<p><font id="359">到目前为止，我们传递给函数的参数一直都是简单的对象，如字符串或列表等结构化对象。</font><font id="360">Python也允许我们传递一个函数作为另一个函数的参数。</font><font id="361">现在，我们可以抽象出操作，对<span class="emphasis">相同数据</span>进行<span class="emphasis">不同操作</span>。</font><font id="362">正如下面的例子表示的，我们可以传递内置函数<tt class="doctest"><span class="pre">len()</span></tt>或用户定义的函数<tt class="doctest"><span class="pre">last_letter()</span></tt>作为另一个函数的参数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'Take'</span>, <span class="pysrc-string">'care'</span>, <span class="pysrc-string">'of'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'sense'</span>, <span class="pysrc-string">','</span>, <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'the'</span>,
+<span class="pysrc-more">... </span>        <span class="pysrc-string">'sounds'</span>, <span class="pysrc-string">'will'</span>, <span class="pysrc-string">'take'</span>, <span class="pysrc-string">'care'</span>, <span class="pysrc-string">'of'</span>, <span class="pysrc-string">'themselves'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">extract_property</span>(prop):
+<span class="pysrc-more">... </span>    return [prop(word) <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> sent]
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>extract_property(len)
+<span class="pysrc-output">[4, 4, 2, 3, 5, 1, 3, 3, 6, 4, 4, 4, 2, 10, 1]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">last_letter</span>(word):
+<span class="pysrc-more">... </span>    return word[-1]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>extract_property(last_letter)
+<span class="pysrc-output">['e', 'e', 'f', 'e', 'e', ',', 'd', 'e', 's', 'l', 'e', 'e', 'f', 's', '.']</span></pre>
+<p><font id="363">对象<tt class="doctest"><span class="pre">len</span></tt>和<tt class="doctest"><span class="pre">last_letter</span></tt>可以像列表和字典那样被传递。</font><font id="364">请注意，只有在我们调用该函数时，才在函数名后使用括号；当我们只是将函数作为一个对象，括号被省略。</font></p>
+<p><font id="365">Python提供了更多的方式来定义函数作为其他函数的参数，即所谓的<span class="termdef">lambda 表达式</span>。</font><font id="366">试想在很多地方没有必要使用上述的<tt class="doctest"><span class="pre">last_letter()</span></tt>函数，因此没有必要给它一个名字。</font><font id="367">我们可以等价地写以下内容：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>extract_property(<span class="pysrc-keyword">lambda</span> w: w[-1])
+<span class="pysrc-output">['e', 'e', 'f', 'e', 'e', ',', 'd', 'e', 's', 'l', 'e', 'e', 'f', 's', '.']</span></pre>
+<p><font id="368">我们的下一个例子演示传递一个函数给<tt class="doctest"><span class="pre">sorted()</span></tt>函数。</font><font id="369">当我们用唯一的参数（需要排序的链表）调用后者，它使用内置的比较函数<tt class="doctest"><span class="pre">cmp()</span></tt>。</font><font id="370">然而，我们可以提供自己的排序函数，例如</font><font id="371">按长度递减排序。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(sent)
+<span class="pysrc-output">[',', '.', 'Take', 'and', 'care', 'care', 'of', 'of', 'sense', 'sounds',</span>
+<span class="pysrc-output">'take', 'the', 'the', 'themselves', 'will']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(sent, cmp)
+<span class="pysrc-output">[',', '.', 'Take', 'and', 'care', 'care', 'of', 'of', 'sense', 'sounds',</span>
+<span class="pysrc-output">'take', 'the', 'the', 'themselves', 'will']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(sent, <span class="pysrc-keyword">lambda</span> x, y: cmp(len(y), len(x)))
+<span class="pysrc-output">['themselves', 'sounds', 'sense', 'Take', 'care', 'will', 'take', 'care',</span>
+<span class="pysrc-output">'the', 'and', 'the', 'of', 'of', ',', '.']</span></pre>
+</div>
+<div class="section" id="accumulative-functions"><h3 class="sigil_not_in_toc"><font id="372">累计函数</font></h3>
+<p><font id="373">这些函数以初始化一些存储开始，迭代和处理输入的数据，最后返回一些最终的对象（一个大的结构或汇总的结果）。</font><font id="374">做到这一点的一个标准的方式是初始化一个空链表，累计材料，然后返回这个链表，如<a class="reference internal" href="./ch04.html#code-search-examples">4.6</a>中所示函数<tt class="doctest"><span class="pre">search1()</span></tt>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">search1</span>(substring, words):
+    result = []
+    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> words:
+        <span class="pysrc-keyword">if</span> substring <span class="pysrc-keyword">in</span> word:
+            result.append(word)
+    return result
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">search2</span>(substring, words):
+    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> words:
+        <span class="pysrc-keyword">if</span> substring <span class="pysrc-keyword">in</span> word:
+            yield word</pre>
+<p><font id="376">函数<tt class="doctest"><span class="pre">search2()</span></tt>是一个生成器。</font><font id="377">第一次调用此函数，它运行到<tt class="doctest"><span class="pre">yield</span></tt>语句然后停下来。</font><font id="378">调用程序获得第一个词，完成任何必要的处理。</font><font id="379">一旦调用程序对另一个词做好准备，函数会从停下来的地方继续执行，直到再次遇到<tt class="doctest"><span class="pre">yield</span></tt>语句。</font><font id="380">这种方法通常更有效，因为函数只产生调用程序需要的数据，并不需要分配额外的内存来存储输出（参见</font><font id="381">前面关于生成器表达式的讨论）。</font></p>
+<p><font id="382">下面是一个更复杂的生成器的例子，产生一个词列表的所有排列。</font><font id="383">为了强制<tt class="doctest"><span class="pre">permutations()</span></tt>函数产生所有它的输出，我们将它包装在<tt class="doctest"><span class="pre">list()</span></tt>调用中<a class="reference internal" href="./ch04.html#listperm"><span id="ref-listperm"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">permutations</span>(seq):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(seq) &lt;= 1:
+<span class="pysrc-more">... </span>        yield seq
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">for</span> perm <span class="pysrc-keyword">in</span> permutations(seq[1:]):
+<span class="pysrc-more">... </span>            <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(len(perm)+1):
+<span class="pysrc-more">... </span>                yield perm[:i] + seq[0:1] + perm[i:]
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>list(permutations([<span class="pysrc-string">'police'</span>, <span class="pysrc-string">'fish'</span>, <span class="pysrc-string">'buffalo'</span>])) <a href="./ch04.html#ref-listperm"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-output">[['police', 'fish', 'buffalo'], ['fish', 'police', 'buffalo'],</span>
+<span class="pysrc-output"> ['fish', 'buffalo', 'police'], ['police', 'buffalo', 'fish'],</span>
+<span class="pysrc-output"> ['buffalo', 'police', 'fish'], ['buffalo', 'fish', 'police']]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="384">注意</font></p>
+<p class="last"><font id="385"><tt class="doctest"><span class="pre">permutations</span></tt>函数使用了一种技术叫递归，将在下面<a class="reference internal" href="./ch04.html#sec-algorithm-design">4.7</a>讨论。</font><font id="386">产生一组词的排列对于创建测试一个语法的数据十分有用（<a class="reference external" href="./ch08.html#chap-parse">8.</a></font><font id="387">)。</font></p>
+</div>
+
+<div class="section" id="higher-order-functions"><h3 class="sigil_not_in_toc"><font id="388">高阶函数</font></h3>
+<p><font id="389">Python提供一些具有函数式编程语言如Haskell标准特征的高阶函数。</font><font id="390">我们将在这里演示它们，与使用列表推导的相对应的表达一起。</font></p>
+<p><font id="391">让我们从定义一个函数<tt class="doctest"><span class="pre">is_content_word()</span></tt>开始，它检查一个词是否来自一个开放的实词类。</font><font id="392">我们使用此函数作为<tt class="doctest"><span class="pre">filter()</span></tt>的第一个参数，它对作为它的第二个参数的序列中的每个项目运用该函数，只保留该函数返回<tt class="doctest"><span class="pre">True</span></tt>的项目。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">is_content_word</span>(word):
+<span class="pysrc-more">... </span>    return word.lower() <span class="pysrc-keyword">not</span> <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'a'</span>, <span class="pysrc-string">'of'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'will'</span>, <span class="pysrc-string">','</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'Take'</span>, <span class="pysrc-string">'care'</span>, <span class="pysrc-string">'of'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'sense'</span>, <span class="pysrc-string">','</span>, <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'the'</span>,
+<span class="pysrc-more">... </span>        <span class="pysrc-string">'sounds'</span>, <span class="pysrc-string">'will'</span>, <span class="pysrc-string">'take'</span>, <span class="pysrc-string">'care'</span>, <span class="pysrc-string">'of'</span>, <span class="pysrc-string">'themselves'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>list(filter(is_content_word, sent))
+<span class="pysrc-output">['Take', 'care', 'sense', 'sounds', 'take', 'care', 'themselves']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent <span class="pysrc-keyword">if</span> is_content_word(w)]
+<span class="pysrc-output">['Take', 'care', 'sense', 'sounds', 'take', 'care', 'themselves']</span></pre>
+<p><font id="393">另一个高阶函数是<tt class="doctest"><span class="pre">map()</span></tt>，将一个函数运用到一个序列中的每一项。</font><font id="394">它是我们在<a class="reference internal" href="./ch04.html#sec-doing-more-with-functions">4.5</a>看到的函数<tt class="doctest"><span class="pre">extract_property()</span></tt>的一个通用版本。</font><font id="395">这里是一个简单的方法找出布朗语料库新闻部分中的句子的平均长度，后面跟着的是使用列表推导计算的等效版本：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>lengths = list(map(len, nltk.corpus.brown.sents(categories=<span class="pysrc-string">'news'</span>)))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sum(lengths) / len(lengths)
+<span class="pysrc-output">21.75081116158339</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>lengths = [len(sent) <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> nltk.corpus.brown.sents(categories=<span class="pysrc-string">'news'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sum(lengths) / len(lengths)
+<span class="pysrc-output">21.75081116158339</span></pre>
+<p><font id="396">在上面的例子中，我们指定了一个用户定义的函数<tt class="doctest"><span class="pre">is_content_word()</span></tt> 和一个内置函数<tt class="doctest"><span class="pre">len()</span></tt>。</font><font id="397">我们还可以提供一个lambda 表达式。</font><font id="398">这里是两个等效的例子，计数每个词中的元音的数量。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(map(<span class="pysrc-keyword">lambda</span> w: len(filter(<span class="pysrc-keyword">lambda</span> c: c.lower() <span class="pysrc-keyword">in</span> <span class="pysrc-string">"aeiou"</span>, w)), sent))
+<span class="pysrc-output">[2, 2, 1, 1, 2, 0, 1, 1, 2, 1, 2, 2, 1, 3, 0]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[len(c <span class="pysrc-keyword">for</span> c <span class="pysrc-keyword">in</span> w <span class="pysrc-keyword">if</span> c.lower() <span class="pysrc-keyword">in</span> <span class="pysrc-string">"aeiou"</span>) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> sent]
+<span class="pysrc-output">[2, 2, 1, 1, 2, 0, 1, 1, 2, 1, 2, 2, 1, 3, 0]</span></pre>
+<p><font id="399">列表推导为基础的解决方案通常比基于高阶函数的解决方案可读性更好，我们在整个这本书的青睐于使用前者。</font></p>
+</div>
+<div class="section" id="named-arguments"><h3 class="sigil_not_in_toc"><font id="400">命名的参数</font></h3>
+<p><font id="401">当有很多参数时，很容易混淆正确的顺序。</font><font id="402">我们可以通过名字引用参数，甚至可以给它们分配默认值以供调用程序没有提供该参数时使用。</font><font id="403">现在参数可以按任意顺序指定，也可以省略。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">repeat</span>(msg=<span class="pysrc-string">'&lt;empty&gt;'</span>, num=1):
+<span class="pysrc-more">... </span>    return msg * num
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>repeat(num=3)
+<span class="pysrc-output">'&lt;empty&gt;&lt;empty&gt;&lt;empty&gt;'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>repeat(msg=<span class="pysrc-string">'Alice'</span>)
+<span class="pysrc-output">'Alice'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>repeat(num=5, msg=<span class="pysrc-string">'Alice'</span>)
+<span class="pysrc-output">'AliceAliceAliceAliceAlice'</span></pre>
+<p><font id="404">这些被称为<span class="termdef">关键字参数</span>。</font><font id="405">如果我们混合使用这两种参数，就必须确保未命名的参数在命名的参数前面。</font><font id="406">必须是这样，因为未命名参数是根据位置来定义的。</font><font id="407">我们可以定义一个函数，接受任意数量的未命名和命名参数，并通过一个就地的参数列表<tt class="doctest"><span class="pre">*args</span></tt>和一个就地的关键字参数字典<tt class="doctest"><span class="pre">**kwargs</span></tt>来访问它们。</font><font id="408">（字典将在<a class="reference external" href="./ch05.html#sec-dictionaries">3</a>中讲述。）</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">generic</span>(*args, **kwargs):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(args)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(kwargs)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>generic(1, <span class="pysrc-string">"African swallow"</span>, monty=<span class="pysrc-string">"python"</span>)
+<span class="pysrc-output">(1, 'African swallow')</span>
+<span class="pysrc-output">{'monty': 'python'}</span></pre>
+<p><font id="409">当<tt class="doctest"><span class="pre">*args</span></tt>作为函数参数时，它实际上对应函数所有的未命名参数。</font><font id="410">下面是另一个这方面的Python语法的演示，处理可变数目的参数的函数<tt class="doctest"><span class="pre">zip()</span></tt>。</font><font id="411">我们将使用变量名<tt class="doctest"><span class="pre">*song</span></tt>来表示名字<tt class="doctest"><span class="pre">*args</span></tt>并没有什么特别的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>song = [[<span class="pysrc-string">'four'</span>, <span class="pysrc-string">'calling'</span>, <span class="pysrc-string">'birds'</span>],
+<span class="pysrc-more">... </span>        [<span class="pysrc-string">'three'</span>, <span class="pysrc-string">'French'</span>, <span class="pysrc-string">'hens'</span>],
+<span class="pysrc-more">... </span>        [<span class="pysrc-string">'two'</span>, <span class="pysrc-string">'turtle'</span>, <span class="pysrc-string">'doves'</span>]]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>list(zip(song[0], song[1], song[2]))
+<span class="pysrc-output">[('four', 'three', 'two'), ('calling', 'French', 'turtle'), ('birds', 'hens', 'doves')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(zip(*song))
+<span class="pysrc-output">[('four', 'three', 'two'), ('calling', 'French', 'turtle'), ('birds', 'hens', 'doves')]</span></pre>
+<p><font id="412">应该从这个例子中明白输入<tt class="doctest"><span class="pre">*song</span></tt>仅仅是一个方便的记号，相当于输入了<tt class="doctest"><span class="pre">song[0], song[1], song[2]</span></tt>。</font></p>
+<p><font id="413">下面是另一个在函数的定义中使用关键字参数的例子，有三种等效的方法来调用这个函数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">freq_words</span>(file, min=1, num=10):
+<span class="pysrc-more">... </span>    text = open(file).read()
+<span class="pysrc-more">... </span>    tokens = word_tokenize(text)
+<span class="pysrc-more">... </span>    freqdist = nltk.FreqDist(t <span class="pysrc-keyword">for</span> t <span class="pysrc-keyword">in</span> tokens <span class="pysrc-keyword">if</span> len(t) &gt;= min)
+<span class="pysrc-more">... </span>    return freqdist.most_common(num)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fw = freq_words(<span class="pysrc-string">'ch01.rst'</span>, 4, 10)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fw = freq_words(<span class="pysrc-string">'ch01.rst'</span>, min=4, num=10)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fw = freq_words(<span class="pysrc-string">'ch01.rst'</span>, num=10, min=4)</pre>
+<p><font id="414">命名参数的另一个作用是它们允许选择性使用参数。</font><font id="415">因此，我们可以在我们高兴使用默认值的地方省略任何参数：<tt class="doctest"><span class="pre">freq_words(<span class="pysrc-string">'ch01.rst'</span>, min=4)</span></tt>, <tt class="doctest"><span class="pre">freq_words(<span class="pysrc-string">'ch01.rst'</span>, 4)</span></tt>。</font><font id="416">可选参数的另一个常见用途是作为标志使用。</font><font id="417">这里是同一个的函数的修订版本，如果设置了<tt class="doctest"><span class="pre">verbose</span></tt>标志将会报告其进展情况：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">freq_words</span>(file, min=1, num=10, verbose=False):
+<span class="pysrc-more">... </span>    freqdist = FreqDist()
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> verbose: <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"Opening"</span>, file)
+<span class="pysrc-more">... </span>    text = open(file).read()
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> verbose: <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"Read in %d characters"</span> % len(file))
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> word_tokenize(text):
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> len(word) &gt;= min:
+<span class="pysrc-more">... </span>            freqdist[word] += 1
+<span class="pysrc-more">... </span>            <span class="pysrc-keyword">if</span> verbose <span class="pysrc-keyword">and</span> freqdist.N() % 100 == 0: <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"."</span>, sep=<span class="pysrc-string">""</span>)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> verbose: <span class="pysrc-keyword">print</span>
+<span class="pysrc-more">... </span>    return freqdist.most_common(num)</pre>
+<div class="caution"><p class="first admonition-title"><font id="418">小心！</font></p>
+<p class="last"><font id="419">注意不要使用可变对象作为参数的默认值。</font><font id="420">这个函数的一系列调用将使用同一个对象，有时会出现离奇的结果，就像我们稍后会在关于调试的讨论中看到的那样。</font></p>
+</div>
+<div class="caution"><p class="first admonition-title"><font id="421">小心！</font></p>
+<p><font id="422">如果你的程序将使用大量的文件，它是一个好主意来关闭任何一旦不再需要的已经打开的文件。</font><font id="423">如果你使用<tt class="doctest"><span class="pre">with</span></tt>语句，Python会自动关闭打开的文件︰</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>with open(<span class="pysrc-string">"lexicon.txt"</span>) <span class="pysrc-keyword">as</span> f:
+<span class="pysrc-more">... </span>    data = f.read()
+<span class="pysrc-more">... </span>    <span class="pysrc-comment"># process the data</span></pre>
+</div>
+</div>
+
+<div class="section" id="program-development"><h2 class="sigil_not_in_toc"><font id="424">4.6 程序开发</font></h2>
+<p><font id="425">编程是一种技能，需要获得几年的各种编程语言和任务的经验。</font><font id="426">关键的高层次能力是<em>算法设计</em>及其在<em>结构化编程</em>中的实现。</font><font id="427">关键的低层次的能力包括熟悉语言的语法结构，以及排除故障的程序（不能表现预期的行为的程序）的各种诊断方法的知识。</font></p>
+<p><font id="428">本节描述一个程序模块的内部结构，以及如何组织一个多模块的程序。</font><font id="429">然后描述程序开发过程中出现的各种错误，你可以做些什么来解决这些问题，更好的是，从一开始就避免它们。</font></p>
+<div class="section" id="structure-of-a-python-module"><h3 class="sigil_not_in_toc"><font id="430">Python模块的结构</font></h3>
+<p><font id="431">程序模块的目的是把逻辑上相关的定义和函数结合在一起，以方便重用和更高层次的抽象。</font><font id="432">Python 模块只是一些单独的<tt class="doctest"><span class="pre">.py</span></tt>文件。</font><font id="433">例如，如果你在处理一种特定的语料格式，读取和写入这种格式的函数可以放在一起。</font><font id="434">这两种格式所使用的常量，如字段分隔符或一个<tt class="doctest"><span class="pre">EXTN = <span class="pysrc-string">".inf"</span></span></tt>文件扩展名，可以共享。</font><font id="435">如果要更新格式，你就会知道只有一个文件需要改变。</font><font id="436">类似地，一个模块可以包含用于创建和操纵一种特定的数据结构如语法树的代码，或执行特定的处理任务如绘制语料统计图表的代码。</font></p>
+<p><font id="437">当你开始编写Python模块，有一些例子来模拟是有益的。</font><font id="438">你可以使用变量<tt class="doctest"><span class="pre">__file__</span></tt>定位你的系统中任一NLTK模块的代码，例如</font><font id="439">：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.metrics.distance.__file__
+<span class="pysrc-output">'/usr/lib/python2.5/site-packages/nltk/metrics/distance.pyc'</span></pre>
+<p><font id="440">这将返回模块已编译<tt class="doctest"><span class="pre">.pyc</span></tt>文件的位置，在你的机器上你可能看到的位置不同。</font><font id="441">你需要打开的文件是对应的<tt class="doctest"><span class="pre">.py</span></tt>源文件，它和<tt class="doctest"><span class="pre">.pyc</span></tt>文件放在同一目录下。</font><font id="442">另外，你可以在网站上查看该模块的最新版本<tt class="doctest"><span class="pre">http://code.google.com/p/nltk/source/browse/trunk/nltk/nltk/metrics/distance.py</span></tt>。</font></p>
+<p><font id="443">与其他NLTK的模块一样，<tt class="doctest"><span class="pre">distance.py</span></tt>以一组注释行开始，包括一行模块标题和作者信息。</font><font id="444">（由于代码会被发布，也包括代码可用的URL、版权声明和许可信息。）</font><font id="445">接下来是模块级的文档字符串，三重引号的多行字符串，其中包括当有人输入<tt class="doctest"><span class="pre">help(nltk.metrics.distance)</span></tt>将被输出的关于模块的信息。</font></p>
+<pre class="literal-block"># Natural Language Toolkit: Distance Metrics
+#
+# Copyright (C) 2001-2013 NLTK Project
+# Author: Edward Loper &lt;edloper@gmail.com&gt;
+#         Steven Bird &lt;stevenbird1@gmail.com&gt;
+#         Tom Lippincott &lt;tom@cs.columbia.edu&gt;
+# URL: &lt;http://nltk.org/&gt;
+# For license information, see LICENSE.TXT
+#
+
+"""
+Distance Metrics.
+
+Compute the distance between two items (usually strings).
+As metrics, they must satisfy the following three requirements:
+
+1. d(a, a) = 0
+2. d(a, b) &gt;= 0
+3. d(a, c) &lt;= d(a, b) + d(b, c)
+"""
+</pre>
+</div>
+<div class="section" id="multi-module-programs"><h3 class="sigil_not_in_toc"><font id="455">多模块程序</font></h3>
+<p><font id="456">一些程序汇集多种任务，例如从语料库加载数据、对数据进行一些分析、然后将其可视化。</font><font id="457">我们可能已经有了稳定的模块来加载数据和实现数据可视化。</font><font id="458">我们的工作可能会涉及到那些分析任务的编码，只是从现有的模块调用一些函数。</font><font id="459"><a class="reference internal" href="./ch04.html#fig-multi-module">4.7</a>描述了这种情景。</font></p>
+<div class="figure" id="fig-multi-module"><img alt="Images/multi-module.png" src="Images/e685801a8cec4515b47e1bda95deb59d.jpg" style="width: 360.0px; height: 237.60000000000002px;"/><p class="caption"><font id="460"><span class="caption-label">图 4.7</span>：一个多模块程序的结构：主程序<tt class="doctest"><span class="pre">my_program.py</span></tt>从其他两个模块导入函数；独特的分析任务在主程序本地进行，而一般的载入和可视化任务被分离开以便可以重用和抽象。</font></p>
+</div>
+<p><font id="461">通过将我们的工作分成几个模块和使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>语句访问别处定义的函数，我们可以保持各个模块简单，易于维护。</font><font id="462">这种做法也将导致越来越多的模块的集合，使我们有可能建立复杂的涉及模块间层次结构的系统。</font><font id="463">设计这样的系统是一个复杂的软件工程任务，这超出了本书的范围。</font></p>
+</div>
+<div class="section" id="sources-of-error"><h3 class="sigil_not_in_toc"><font id="464">错误源头</font></h3>
+<p><font id="465">掌握编程技术取决于当程序不按预期运作时各种解决问题的技能的总结。</font><font id="466">一些琐碎的东西，如放错位置的符号，可能导致程序的行为异常。</font><font id="467">我们把这些叫做“bugs”，因为它们与它们所导致的损害相比较小。</font><font id="468">它们不知不觉的潜入我们的代码，只有在很久以后，我们在一些新的数据上运行程序时才会发现它们的存在。</font><font id="469">有时，一个错误的修复仅仅是暴露出另一个，于是我们得到了鲜明的印象，bug 在移动。</font><font id="470">我们唯一的安慰是bugs是自发的而不是程序员的错误。</font></p>
+<p><font id="471">繁琐浮躁不谈，调试代码是很难的，因为有那么多的方式出现故障。</font><font id="472">我们对输入数据、算法甚至编程语言的理解可能是错误的。</font><font id="473">让我们分别来看看每种情况的例子。</font></p>
+<p><font id="474">首先，输入的数据可能包含一些意想不到的字符。</font><font id="475">例如，WordNet的同义词集名称的形式是<tt class="doctest"><span class="pre">tree.n.01</span></tt>，由句号分割成3个部分。</font><font id="476">最初NLTK的WordNet模块使用<tt class="doctest"><span class="pre">split(<span class="pysrc-string">'.'</span>)</span></tt>分解这些名称。</font><font id="477">然而，当有人试图寻找词<span class="example">PhD</span>时，这种方法就不能用了，它的同义集名称是<tt class="doctest"><span class="pre">ph.d..n.01</span></tt>，包含4个逗号而不是预期的2个。</font><font id="478">解决的办法是使用<tt class="doctest"><span class="pre">rsplit(<span class="pysrc-string">'.'</span>, 2)</span></tt>利用最右边的句号最多分割两次，留下字符串<tt class="doctest"><span class="pre">ph.d.</span></tt>不变。</font><font id="479">虽然在模块发布之前已经测试过，但就在几个星期前有人检测到这个问题（见<tt class="doctest"><span class="pre">http://code.google.com/p/nltk/issues/detail?id=297</span></tt>）。</font></p>
+<p><font id="480">第二，提供的函数可能不会像预期的那样运作。</font><font id="481">例如，在测试NLTK中的WordNet接口时，一名作者注意到没有同义词集定义了反义词，而底层数据库提供了大量的反义词的信息。</font><font id="482">这看着像是WordNet接口中的一个错误，结果却是对WordNet本身的误解：反义词在词条中定义，而不是在义词集中。</font><font id="483">唯一的“bug”是对接口的一个误解（参见<tt class="doctest"><span class="pre">http://code.google.com/p/nltk/issues/detail?id=98</span></tt>）。</font></p>
+<p><font id="484">第三，我们对Python语义的理解可能出错。</font><font id="485">很容易做出关于两个操作符的相对范围的错误的假设。</font><font id="486">例如，<tt class="doctest"><span class="pre"><span class="pysrc-string">"%s.%s.%02d"</span> % <span class="pysrc-string">"ph.d."</span>, <span class="pysrc-string">"n"</span>, 1</span></tt>产生一个运行时错误<tt class="doctest"><span class="pre">TypeError: <span class="pysrc-keyword">not</span> enough arguments <span class="pysrc-keyword">for</span> format string</span></tt>。</font><font id="487">这是因为百分号操作符优先级高于逗号运算符。</font><font id="488">解决办法是添加括号强制限定所需的范围。</font><font id="489">作为另一个例子，假设我们定义一个函数来收集一个文本中给定长度的所有词符。</font><font id="490">该函数有文本和词长作为参数，还有一个额外的参数，允许指定结果的初始值作为参数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">find_words</span>(text, wordlength, result=[]):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> text:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> len(word) == wordlength:
+<span class="pysrc-more">... </span>            result.append(word)
+<span class="pysrc-more">... </span>    return result
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>find_words([<span class="pysrc-string">'omg'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'lolcat'</span>, <span class="pysrc-string">'sitted'</span>, <span class="pysrc-string">'on'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'mat'</span>], 3) <a href="./ch04.html#ref-find-words-1"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-output">['omg', 'teh', 'teh', 'mat']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>find_words([<span class="pysrc-string">'omg'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'lolcat'</span>, <span class="pysrc-string">'sitted'</span>, <span class="pysrc-string">'on'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'mat'</span>], 2, [<span class="pysrc-string">'ur'</span>]) <a href="./ch04.html#ref-find-words-2"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-output">['ur', 'on']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>find_words([<span class="pysrc-string">'omg'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'lolcat'</span>, <span class="pysrc-string">'sitted'</span>, <span class="pysrc-string">'on'</span>, <span class="pysrc-string">'teh'</span>, <span class="pysrc-string">'mat'</span>], 3) <a href="./ch04.html#ref-find-words-3"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-output">['omg', 'teh', 'teh', 'mat', 'omg', 'teh', 'teh', 'mat']</span></pre>
+<p><font id="491">我们第一次调用<tt class="doctest"><span class="pre">find_words()</span></tt><a class="reference internal" href="./ch04.html#find-words-1"><span id="ref-find-words-1"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，我们得到所有预期的三个字母的词。</font><font id="492">第二次，我们为result指定一个初始值，一个单元素列表<tt class="doctest"><span class="pre">[<span class="pysrc-string">'ur'</span>]</span></tt>，如预期，结果中有这个词连同我们的文本中的其他双字母的词。</font><font id="493">现在，我们再次使用<a class="reference internal" href="./ch04.html#find-words-1"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>中相同的参数调用<tt class="doctest"><span class="pre">find_words()</span></tt><a class="reference internal" href="./ch04.html#find-words-3"><span id="ref-find-words-3"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>，但我们得到了不同的结果！</font><font id="494">我们每次不使用第三个参数调用<tt class="doctest"><span class="pre">find_words()</span></tt>，结果都只会延长前次调用的结果，而不是以在函数定义中指定的空链表result开始。</font><font id="495">程序的行为并不如预期，因为我们错误地认为在函数被调用时会创建默认值。</font><font id="496">然而，它只创建了一次，在Python解释器加载这个函数时。</font><font id="497">这一个列表对象会被使用，只要没有给函数提供明确的值。</font></p>
+</div>
+<div class="section" id="debugging-techniques"><h3 class="sigil_not_in_toc"><font id="498">调试技术</font></h3>
+<p><font id="499">由于大多数代码错误是因为程序员的不正确的假设，你检测bug要做的第一件事是<span class="emphasis">检查你的假设</span>。</font><font id="500">通过给程序添加<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span></span></tt>语句定位问题，显示重要的变量的值，并显示程序的进展程度。</font></p>
+<p><font id="501">如果程序产生一个“异常”——运行时错误——解释器会输出一个<span class="termdef">堆栈跟踪</span>，精确定位错误发生时程序执行的位置。</font><font id="502">如果程序取决于输入数据，尽量将它减少到能产生错误的最小尺寸。</font></p>
+<p><font id="503">一旦你已经将问题定位在一个特定的函数或一行代码，你需要弄清楚是什么出了错误。</font><font id="504">使用交互式命令行重现错误发生时的情况往往是有益的。</font><font id="505">定义一些变量，然后复制粘贴可能出错的代码行到会话中，看看会发生什么。</font><font id="506">检查你对代码的理解，通过阅读一些文档和测试与你正在试图做的事情相同的其他代码示例。</font><font id="507">尝试将你的代码解释给别人听，也许他们会看出出错的地方。</font></p>
+<p><font id="508">Python提供了一个<span class="termdef">调试器</span>，它允许你监视程序的执行，指定程序暂停运行的行号（即</font><font id="509"><span class="termdef">断点</span>），逐步调试代码段和检查变量的值。</font><font id="510">你可以如下方式在你的代码中调用调试器：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> pdb
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> mymodule
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pdb.run(<span class="pysrc-string">'mymodule.myfunction()'</span>)</pre>
+<p><font id="511">它会给出一个提示<tt class="doctest"><span class="pre">(Pdb)</span></tt>，你可以在那里输入指令给调试器。</font><font id="512">输入<tt class="doctest"><span class="pre">help</span></tt>来查看命令的完整列表。</font><font id="513">输入<tt class="doctest"><span class="pre">step</span></tt>(或只输入<tt class="doctest"><span class="pre">s</span></tt>)将执行当前行然后停止。</font><font id="514">如果当前行调用一个函数，它将进入这个函数并停止在第一行。</font><font id="515">输入<tt class="doctest"><span class="pre">next</span></tt>(或只输入<tt class="doctest"><span class="pre">n</span></tt>)是类似的，但它会在当前函数中的下一行停止执行。</font><font id="516"><tt class="doctest"><span class="pre">break</span></tt>（或<tt class="doctest"><span class="pre">b</span></tt>）命令可用于创建或列出断点。</font><font id="517">输入<tt class="doctest"><span class="pre">continue</span></tt>（或<tt class="doctest"><span class="pre">c</span></tt>）会继续执行直到遇到下一个断点。</font><font id="518">输入任何变量的名称可以检查它的值。</font></p>
+<p><font id="519">我们可以使用Python调试器来查找<tt class="doctest"><span class="pre">find_words()</span></tt> 函数的问题。</font><font id="520">请记住问题是在第二次调用函数时产生的。</font><font id="521">我们一开始将不使用调试器而调用该函数<a href="./ch04.html#id9"><span class="problematic" id="id10">first-run_</span></a>，使用可能的最小输入。</font><font id="522">第二次我们使用调试器调用它<a href="./ch04.html#id11"><span class="problematic" id="id12">second-run_</span></a>。</font><font id="523">.. doctest-ignore:</font></p>
+<pre class="literal-block">&gt;&gt;&gt; import pdb
+&gt;&gt;&gt; find_words(['cat'], 3) # [_first-run]
+['cat']
+&gt;&gt;&gt; pdb.run("find_words(['dog'], 3)") # [_second-run]
+&gt; &lt;string&gt;(1)&lt;module&gt;()
+(Pdb) step
+--Call--
+&gt; &lt;stdin&gt;(1)find_words()
+(Pdb) args
+text = ['dog']
+wordlength = 3
+result = ['cat']
+</pre>
+<div class="section" id="defensive-programming"><h3 class="sigil_not_in_toc"><font id="527">防御性编程</font></h3>
+<p><font id="528">为了避免一些调试的痛苦，养成防御性的编程习惯是有益的。</font><font id="529">不要写20行程序然后测试它，而是自下而上的打造一些明确可以运作的小的程序片。</font><font id="530">每次你将这些程序片组合成更大的单位都要仔细的看它是否能如预期的运作。</font><font id="531">考虑在你的代码中添加<tt class="doctest"><span class="pre">assert</span></tt>语句，指定变量的属性，例如</font><font id="532"><tt class="doctest"><span class="pre">assert(isinstance(text, list))</span></tt>。</font><font id="533">如果<tt class="doctest"><span class="pre">text</span></tt>的值在你的代码被用在一些较大的环境中时变为了一个字符串，将产生一个<tt class="doctest"><span class="pre">AssertionError</span></tt>，于是你会立即得到问题的通知。</font></p>
+<p><font id="534">一旦你觉得你发现了错误，作为一个假设查看你的解决方案。</font><font id="535">在重新运行该程序之前尝试预测你修正错误的影响。</font><font id="536">如果bug不能被修正，不要陷入盲目修改代码希望它会奇迹般地重新开始运作的陷阱。</font><font id="537">相反，每一次修改都要尝试阐明错误是什么和为什么这样修改会解决这个问题的假设。</font><font id="538">如果这个问题没有解决就撤消这次修改。</font></p>
+<p><font id="539">当你开发你的程序时，扩展其功能，并修复所有bug，维护一套测试用例是有益的。</font><font id="540">这被称为<span class="termdef">回归测试</span>，因为它是用来检测代码“回归”的地方——修改代码后会带来一个意想不到的副作用是以前能运作的程序不运作了的地方。</font><font id="541">Python以<tt class="doctest"><span class="pre">doctest</span></tt>模块的形式提供了一个简单的回归测试框架。</font><font id="542">这个模块搜索一个代码或文档文件查找类似与交互式Python会话这样的文本块，这种形式你已经在这本书中看到了很多次。</font><font id="543">它执行找到的Python命令，测试其输出是否与原始文件中所提供的输出匹配。</font><font id="544">每当有不匹配时，它会报告预期值和实际值。</font><font id="545">有关详情，请查询在 documentation at <tt class="doctest"><span class="pre">http://docs.python.org/library/doctest.html</span></tt>上的<tt class="doctest"><span class="pre">doctest</span></tt>文档。</font><font id="546">除了回归测试它的值，<tt class="doctest"><span class="pre">doctest</span></tt>模块有助于确保你的软件文档与你的代码保持同步。</font></p>
+<p><font id="547">也许最重要的防御性编程策略是要清楚的表述你的代码，选择有意义的变量和函数名，并通过将代码分解成拥有良好文档的接口的函数和模块尽可能的简化代码。</font></p>
+</div>
+</div>
+<div class="section" id="algorithm-design"><h2 class="sigil_not_in_toc"><font id="548">4.7 算法设计</font></h2>
+<p><font id="549">本节将讨论更高级的概念，你在第一次阅读本章时可能更愿意跳过本节。</font></p>
+<p><font id="550">解决算法问题的一个重要部分是为手头的问题选择或改造一个合适的算法。</font><font id="551">有时会有几种选择，能否选择最好的一个取决于对每个选择随数据增长如何执行的知识。</font><font id="552">关于这个话题的书很多，我们只介绍一些关键概念和精心描述在自然语言处理中最普遍的做法。</font></p>
+<p><font id="553">最有名的策略被称为<span class="termdef">分而治之</span>。</font><font id="554">我们解决一个大小为<em>n</em>的问题通过将其分成两个大小为<em>n/2</em>的问题，解决这些问题，组合它们的结果成为原问题的结果。</font><font id="555">例如，假设我们有一堆卡片，每张卡片上写了一个词。</font><font id="556">我们可以排序这一堆卡片，通过将它分成两半分别给另外两个人来排序（他们又可以做同样的事情）。</font><font id="557">然后，得到两个排好序的卡片堆，将它们并成一个单一的排序堆就是一项容易的任务了。</font><font id="558">参见<a class="reference internal" href="./ch04.html#fig-mergesort">4.8</a>这个过程的说明。</font></p>
+<div class="figure" id="fig-mergesort"><img alt="Images/mergesort.png" src="Images/1094084b61ac3f0e4416e92869c52ccd.jpg" style="width: 650.1px; height: 345.0px;"/><p class="caption"><font id="559"><span class="caption-label">图 4.8</span>：通过分而治之排序：对一个数组排序，我们将其分成两半并对每一半进行排序（递归）；将每个排好序的一半合并成一个完整的链表（再次递归）；这个算法被称为“归并排序“。</font></p>
+</div>
+<p><font id="560">另一个例子是在词典中查找一个词的过程。</font><font id="561">我们打开在书的中部附近的一个地方，比较我们的词与当前页面上的词。</font><font id="562">如果它在词典中的词前面，我们就在词典的前一半重复上面的过程；如果它在后面，我们就使用词典的后一半。</font><font id="563">这种搜索方法被称为<span class="example">二分查找</span>，因为它的每一步都将问题分裂成一半。</font></p>
+<p><font id="564">算法设计的另一种方法，我们解决问题通过将它转化为一个我们已经知道如何解决的问题的一个实例。</font><font id="565">例如，为了检测列表中的重复项，我们可以<span class="termdef">预排序</span>这个列表，然后通过一次扫描检查是否有相邻的两个元素是相同的。</font></p>
+<div class="section" id="recursion"><h3 class="sigil_not_in_toc"><font id="566">递归</font></h3>
+<p><font id="567">上面的关于排序和搜索的例子有一个引人注目的特征：解决一个大小为<span class="math">n</span>的问题，可以将其分成两半，然后处理一个或多个大小为<span class="math">n/2</span>的问题。</font><font id="568">实现这种方法的一种常见方式是使用<span class="termdef">递归</span>。</font><font id="569">我们定义一个函数<span class="math">f</span>，从而简化了问题，并<span class="emphasis">调用自身</span>来解决一个或多个同样问题的更简单的实例。</font><font id="570">然后组合它们的结果成为原问题的解答。</font></p>
+<p><font id="571">例如，假设我们有<span class="math">n</span>个词，要计算出它们结合在一起有多少不同的方式能组成一个词序列。</font><font id="572">如果我们只有一个词（<span class="math">n=1</span>），只是一种方式组成一个序列。</font><font id="573">如果我们有2个词，就有2种方式将它们组成一个序列。</font><font id="574">3个词有6种可能性。</font><font id="575">一般的，<span class="math">n</span>个词有<span class="math">n</span> × <span class="math">n</span>-1 × … × 2 × 1种方式（即</font><font id="576"><span class="math">n</span>的阶乘）。</font><font id="577">我们可以将这些编写成如下代码：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">factorial1</span>(n):
+<span class="pysrc-more">... </span>    result = 1
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(n):
+<span class="pysrc-more">... </span>        result *= (i+1)
+<span class="pysrc-more">... </span>    return result</pre>
+<p><font id="578">但是，也可以使用一种递归算法来解决这个问题，该算法基于以下观察。</font><font id="579">假设我们有办法为<span class="math">n</span>-1 不同的词构建所有的排列。</font><font id="580">然后对于每个这样的排列，有<span class="math">n</span>个地方我们可以插入一个新词：开始、结束或任意两个词之间的<span class="math">n</span>-2个空隙。</font><font id="581">因此，我们简单的将<span class="math">n</span>-1个词的解决方案数乘以<span class="math">n</span>的值。我们还需要<span class="termdef">基础案例</span>，也就是说，如果我们有一个词，只有一个顺序。</font><font id="582">我们可以将这些编写成如下代码：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">factorial2</span>(n):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> n == 1:
+<span class="pysrc-more">... </span>        return 1
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        return n * factorial2(n-1)</pre>
+<p><font id="583">这两种算法解决同样的问题。</font><font id="584">一个使用迭代，而另一个使用递归。</font><font id="585">我们可以用递归处理深层嵌套的对象，例如WordNet的上位词层次。</font><font id="586">让我们计数给定同义词集<span class="math">s</span>为根的上位词层次的大小。我们会找到<span class="math">s</span>的每个下位词的大小，然后将它们加到一起（我们也将加1 表示同义词集本身）。</font><font id="587">下面的函数<tt class="doctest"><span class="pre">size1()</span></tt>做这项工作；注意函数体中包括<tt class="doctest"><span class="pre">size1()</span></tt>的递归调用：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">size1</span>(s):
+<span class="pysrc-more">... </span>    return 1 + sum(size1(child) <span class="pysrc-keyword">for</span> child <span class="pysrc-keyword">in</span> s.hyponyms())</pre>
+<p><font id="588">我们也可以设计一种这个问题的迭代解决方案处理层的层次结构。</font><font id="589">第一层是同义词集本身<a class="reference internal" href="./ch04.html#first-layer"><span id="ref-first-layer"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，然后是同义词集所有的下位词，之后是所有下位词的下位词。</font><font id="590">每次循环通过查找上一层的所有下位词计算下一层<a class="reference internal" href="./ch04.html#update-layer"><span id="ref-update-layer"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>。</font><font id="591">它也保存了到目前为止遇到的同义词集的总数<a class="reference internal" href="./ch04.html#update-total"><span id="ref-update-total"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">size2</span>(s):
+<span class="pysrc-more">... </span>    layer = [s] <a href="./ch04.html#ref-first-layer"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-more">... </span>    total = 0
+<span class="pysrc-more">... </span>    while layer:
+<span class="pysrc-more">... </span>        total += len(layer) <a href="./ch04.html#ref-update-total"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-more">... </span>        layer = [h <span class="pysrc-keyword">for</span> c <span class="pysrc-keyword">in</span> layer <span class="pysrc-keyword">for</span> h <span class="pysrc-keyword">in</span> c.hyponyms()] <a href="./ch04.html#ref-update-layer"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-more">... </span>    return total</pre>
+<p><font id="592">迭代解决方案不仅代码更长而且更难理解。</font><font id="593">它迫使我们程序式的思考问题，并跟踪<tt class="doctest"><span class="pre">layer</span></tt>和<tt class="doctest"><span class="pre">total</span></tt>随时间变化发生了什么。</font><font id="594">让我们满意的是两种解决方案均给出了相同的结果。</font><font id="595">我们将使用import语句的一个新的形式，允许我们缩写名称<tt class="doctest"><span class="pre">wordnet</span></tt>为<tt class="doctest"><span class="pre">wn</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> wordnet <span class="pysrc-keyword">as</span> wn
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>dog = wn.synset(<span class="pysrc-string">'dog.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>size1(dog)
+<span class="pysrc-output">190</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>size2(dog)
+<span class="pysrc-output">190</span></pre>
+<p><font id="596">作为递归的最后一个例子，让我们用它来<span class="emphasis">构建</span>一个深嵌套的对象。</font><font id="597">一个<span class="termdef">字母查找树</span>是一种可以用来索引词汇的数据结构，一次一个字母。</font><font id="598">（这个名字来自于单词re<span class="emphasis">trie</span>val）。</font><font id="599">例如，如果<tt class="doctest"><span class="pre">trie</span></tt>包含一个字母的查找树，那么<tt class="doctest"><span class="pre">trie[<span class="pysrc-string">'c'</span>]</span></tt>是一个较小的查找树，包含所有以<span class="example">c</span>开头的词。<a class="reference internal" href="./ch04.html#code-trie">4.9</a>演示了使用Python 字典（<a class="reference external" href="./ch05.html#sec-dictionaries">3</a>）构建查找树的递归过程。</font><font id="600">若要插入词<span class="example">chien</span>（<span class="example">dog</span>的法语），我们将<span class="example">c</span>分类，递归的掺入<span class="example">hien</span>到<tt class="doctest"><span class="pre">trie[<span class="pysrc-string">'c'</span>]</span></tt>子查找树中。</font><font id="601">递归继续直到词中没有剩余的字母，于是我们存储的了预期值（本例中是词<span class="example">dog</span>）。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">insert</span>(trie, key, value):
+    <span class="pysrc-keyword">if</span> key:
+        first, rest = key[0], key[1:]
+        <span class="pysrc-keyword">if</span> first <span class="pysrc-keyword">not</span> <span class="pysrc-keyword">in</span> trie:
+            trie[first] = {}
+        insert(trie[first], rest, value)
+    <span class="pysrc-keyword">else</span>:
+        trie[<span class="pysrc-string">'value'</span>] = value</pre>
+<div class="caution"><p class="first admonition-title"><font id="603">小心！</font></p>
+<p class="last"><font id="604">尽管递归编程结构简单，但它是有代价的。</font><font id="605">每次函数调用时，一些状态信息需要推入堆栈，这样一旦函数执行完成可以从离开的地方继续执行。</font><font id="606">出于这个原因，迭代的解决方案往往比递归解决方案的更高效。</font></p>
+</div>
+
+<div class="section" id="space-time-tradeoffs"><h3 class="sigil_not_in_toc"><font id="607">权衡空间与时间</font></h3>
+<p><font id="608">我们有时可以显著的加快程序的执行，通过建设一个辅助的数据结构，例如索引。</font><font id="609"><a class="reference internal" href="./ch04.html#code-search-documents">4.10</a>实现一个简单的电影评论语料库的全文检索系统。</font><font id="610">通过索引文档集合，它提供更快的查找。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">raw</span>(file):
+    contents = open(file).read()
+    contents = re.sub(r<span class="pysrc-string">'&lt;.*?&gt;'</span>, <span class="pysrc-string">' '</span>, contents)
+    contents = re.sub(<span class="pysrc-string">'\s+'</span>, <span class="pysrc-string">' '</span>, contents)
+    return contents
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">snippet</span>(doc, term):
+    text = <span class="pysrc-string">' '</span>*30 + raw(doc) + <span class="pysrc-string">' '</span>*30
+    pos = text.index(term)
+    return text[pos-30:pos+30]
+
+<span class="pysrc-keyword">print</span>(<span class="pysrc-string">"Building Index..."</span>)
+files = nltk.corpus.movie_reviews.abspaths()
+idx = nltk.Index((w, f) <span class="pysrc-keyword">for</span> f <span class="pysrc-keyword">in</span> files <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> raw(f).split())
+
+query = <span class="pysrc-string">''</span>
+while query != <span class="pysrc-string">"quit"</span>:
+    query = input(<span class="pysrc-string">"query&gt; "</span>)     <span class="pysrc-comment"># use raw_input() in Python 2</span>
+    <span class="pysrc-keyword">if</span> query <span class="pysrc-keyword">in</span> idx:
+        <span class="pysrc-keyword">for</span> doc <span class="pysrc-keyword">in</span> idx[query]:
+            <span class="pysrc-keyword">print</span>(snippet(doc, query))
+    <span class="pysrc-keyword">else</span>:
+        <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"Not found"</span>)</pre>
+<p><font id="612">一个更微妙的空间与时间折中的例子涉及使用整数标识符替换一个语料库的词符。</font><font id="613">我们为语料库创建一个词汇表，每个词都被存储一次的列表，然后转化这个列表以便我们能通过查找任意词来找到它的标识符。</font><font id="614">每个文档都进行预处理，使一个词列表变成一个整数列表。</font><font id="615">现在所有的语言模型都可以使用整数。</font><font id="616">见<a class="reference internal" href="./ch04.html#code-strings-to-ints">4.11</a>中的内容，如何为一个已标注的语料库做这个的例子的列表。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">preprocess</span>(tagged_corpus):
+    words = set()
+    tags = set()
+    <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> tagged_corpus:
+        <span class="pysrc-keyword">for</span> word, tag <span class="pysrc-keyword">in</span> sent:
+            words.add(word)
+            tags.add(tag)
+    wm = dict((w, i) <span class="pysrc-keyword">for</span> (i, w) <span class="pysrc-keyword">in</span> enumerate(words))
+    tm = dict((t, i) <span class="pysrc-keyword">for</span> (i, t) <span class="pysrc-keyword">in</span> enumerate(tags))
+    return [[(wm[w], tm[t]) <span class="pysrc-keyword">for</span> (w, t) <span class="pysrc-keyword">in</span> sent] <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> tagged_corpus]</pre>
+<p><font id="618">空间时间权衡的另一个例子是维护一个词汇表。</font><font id="619">如果你需要处理一段输入文本检查所有的词是否在现有的词汇表中，词汇表应存储为一个集合，而不是一个列表。</font><font id="620">集合中的元素会自动索引，所以测试一个大的集合的成员将远远快于测试相应的列表的成员。</font></p>
+<p><font id="621">我们可以使用<tt class="doctest"><span class="pre">timeit</span></tt>模块测试这种说法。</font><font id="622"><tt class="doctest"><span class="pre">Timer</span></tt>类有两个参数：一个是多次执行的语句，一个是只在开始执行一次的设置代码。</font><font id="623">我们将分别使用一个整数的列表<a class="reference internal" href="./ch04.html#vocab-list"><span id="ref-vocab-list"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>和一个整数的集合<a class="reference internal" href="./ch04.html#vocab-set"><span id="ref-vocab-set"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>模拟10 万个项目的词汇表。</font><font id="624">测试语句将产生一个随机项，它有50％的机会在词汇表中<a class="reference internal" href="./ch04.html#vocab-statement"><span id="ref-vocab-statement"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> timeit <span class="pysrc-keyword">import</span> Timer
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vocab_size = 100000
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>setup_list = <span class="pysrc-string">"import random; vocab = range(%d)"</span> % vocab_size <a href="./ch04.html#ref-vocab-list"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>setup_set = <span class="pysrc-string">"import random; vocab = set(range(%d))"</span> % vocab_size <a href="./ch04.html#ref-vocab-set"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>statement = <span class="pysrc-string">"random.randint(0, %d) in vocab"</span> % (vocab_size * 2) <a href="./ch04.html#ref-vocab-statement"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(Timer(statement, setup_list).timeit(1000))
+<span class="pysrc-output">2.78092288971</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(Timer(statement, setup_set).timeit(1000))
+<span class="pysrc-output">0.0037260055542</span></pre>
+<p><font id="625">执行1000 次链表成员资格测试总共需要2.8秒，而在集合上的等效试验仅需0.0037 秒，也就是说快了三个数量级！</font></p>
+
+<div class="section" id="dynamic-programming"><h3 class="sigil_not_in_toc"><font id="626">动态规划</font></h3>
+<p><font id="627">动态规划是一种自然语言处理中被广泛使用的算法设计的一般方法。</font><font id="628">“programming”一词的用法与你可能想到的感觉不同，是规划或调度的意思。</font><font id="629">动态规划用于解决包含多个重叠的子问题的问题。</font><font id="630">不是反复计算这些子问题，而是简单的将它们的计算结果存储在一个查找表中。</font><font id="631">在本节的余下部分，我们将介绍动态规划，在一个相当不同的背景下来句法分析。</font></p>
+<p><font id="632">Pingala是大约生活在公元前5世纪的印度作家，作品有被称为<em>《Chandas Shastra》</em>的梵文韵律专著。</font><font id="633">Virahanka大约在公元6 世纪延续了这项工作，研究短音节和长音节组合产生一个长度为<em>n</em>的旋律的组合数。短音节，标记为<em>S</em>，占一个长度单位，而长音节，标记为<em>L</em>，占2个长度单位。</font><font id="634">例如，Pingala 发现，有5 种方式构造一个长度为4 的旋律：<em>V</em><sub>4</sub> = <em>{LL, SSL, SLS, LSS, SSSS}</em>。</font><font id="635">请看，我们可以将<em>V</em><sub>4</sub>分成两个子集，以<em>L</em>开始的子集和以<em>S</em>开始的子集，如<a class="reference internal" href="./ch04.html#ex-v4">(1)</a>所示。</font></p>
+<p></p>
+<pre class="literal-block"><em>V</em><sub>4</sub> =
+  LL, LSS
+    i.e. L prefixed to each item of <em>V</em><sub>2</sub> = {L, SS}
+  SSL, SLS, SSSS
+    i.e. S prefixed to each item of <em>V</em><sub>3</sub> = {SL, LS, SSS}
+</pre>
+<p><font id="638">有了这个观察结果，我们可以写一个小的递归函数称为<tt class="doctest"><span class="pre">virahanka1()</span></tt>来计算这些旋律，如<a class="reference internal" href="./ch04.html#code-virahanka">4.12</a>所示。</font><font id="639">请注意，要计算<em>V</em><sub>4</sub>，我们先要计算<em>V</em><sub>3</sub>和<em>V</em><sub>2</sub>。</font><font id="640">但要计算<em>V</em><sub>3</sub>，我们先要计算<em>V</em><sub>2</sub>和<em>V</em><sub>1</sub>。</font><font id="641">在<a class="reference internal" href="./ch04.html#ex-call-structure">(2)</a>中描述了这种<span class="termdef">调用结构</span>。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> numpy <span class="pysrc-keyword">import</span> arange
+<span class="pysrc-keyword">from</span> matplotlib <span class="pysrc-keyword">import</span> pyplot
+
+colors = <span class="pysrc-string">'rgbcmyk'</span> <span class="pysrc-comment"># red, green, blue, cyan, magenta, yellow, black</span>
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">bar_chart</span>(categories, words, counts):
+    <span class="pysrc-string">"Plot a bar chart showing counts for each word by category"</span>
+    ind = arange(len(words))
+    width = 1 / (len(categories) + 1)
+    bar_groups = []
+    <span class="pysrc-keyword">for</span> c <span class="pysrc-keyword">in</span> range(len(categories)):
+        bars = pyplot.bar(ind+c*width, counts[categories[c]], width,
+                         color=colors[c % len(colors)])
+        bar_groups.append(bars)
+    pyplot.xticks(ind+width, words)
+    pyplot.legend([b[0] <span class="pysrc-keyword">for</span> b <span class="pysrc-keyword">in</span> bar_groups], categories, loc=<span class="pysrc-string">'upper left'</span>)
+    pyplot.ylabel(<span class="pysrc-string">'Frequency'</span>)
+    pyplot.title(<span class="pysrc-string">'Frequency of Six Modal Verbs by Genre'</span>)
+    pyplot.show()</pre>
+<div class="figure" id="fig-modal-genre"><img alt="Images/modal_genre.png" src="Images/2ce816f11fd01927802253d100780b0a.jpg" style="width: 613.0px; height: 463.0px;"/><p class="caption"><font id="679"><span class="caption-label">图 4.14</span>：条形图显示布朗语料库中不同部分的情态动词频率：这个可视化图形由<a class="reference internal" href="./ch04.html#code-modal-plot">4.13</a>中的程序产生。</font></p>
+</div>
+<p><font id="680">从该柱状图可以立即看出<span class="example">may</span>和<span class="example">must</span>有几乎相同的相对频率。</font><font id="681"><span class="example">could</span>和<span class="example">might</span>也一样。</font></p>
+<p><font id="682">也可以动态的产生这些数据的可视化图形。</font><font id="683">例如，一个使用表单输入的网页可以允许访问者指定搜索参数，提交表单，看到一个动态生成的可视化图形。</font><font id="684">要做到这一点，我们必须为<tt class="doctest"><span class="pre">matplotlib</span></tt>指定<tt class="doctest"><span class="pre">Agg</span></tt>后台，它是一个产生栅格（像素）图像的库<a class="reference internal" href="./ch04.html#agg-backend"><span id="ref-agg-backend"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>。</font><font id="685">下一步，我们像以前一样使用相同的Matplotlib 方法，但不是用<tt class="doctest"><span class="pre">pyplot.show()</span></tt>显示结果在图形终端，而是使用<tt class="doctest"><span class="pre">pyplot.savefig()</span></tt>把它保存到一个文件<a class="reference internal" href="./ch04.html#pyplot-savefig"><span id="ref-pyplot-savefig"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>。</font><font id="686">我们指定文件名，然后输出一些HTML标记指示网页浏览器来加载该文件。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> matplotlib <span class="pysrc-keyword">import</span> use, pyplot
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>use(<span class="pysrc-string">'Agg'</span>) <a href="./ch04.html#ref-agg-backend"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pyplot.savefig(<span class="pysrc-string">'modals.png'</span>) <a href="./ch04.html#ref-pyplot-savefig"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(<span class="pysrc-string">'Content-Type: text/html'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(<span class="pysrc-string">'&lt;html&gt;&lt;body&gt;'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(<span class="pysrc-string">'&lt;img src="modals.png"/&gt;'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(<span class="pysrc-string">'&lt;/body&gt;&lt;/html&gt;'</span>)</pre>
+
+<div class="section" id="networkx"><h3 class="sigil_not_in_toc"><font id="687">NetworkX</font></h3>
+<p><font id="688">NetworkX包定义和操作被称为<span class="termdef">图</span>的由节点和边组成的结构。</font><font id="689">它可以从<tt class="doctest"><span class="pre">https://networkx.lanl.gov/</span></tt>得到。</font><font id="690">NetworkX可以和Matplotlib 结合使用可视化如WordNet的网络结构（语义网络，我们在<a class="reference external" href="./ch02.html#sec-wordnet">5</a>介绍过）。</font><font id="691"><a class="reference internal" href="./ch04.html#code-networkx">4.15</a>中的程序初始化一个空的图<a class="reference internal" href="./ch04.html#define-graph"><span id="ref-define-graph"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></span></a>，然后遍历WordNet上位词层次为图添加边<a class="reference internal" href="./ch04.html#add-edge"><span id="ref-add-edge"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>。</font><font id="692">请注意，遍历是递归的<a class="reference internal" href="./ch04.html#recursive-traversal"><span id="ref-recursive-traversal"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>，使用在<a class="reference internal" href="./ch04.html#sec-algorithm-design">4.7</a>讨论的编程技术。</font><font id="693">结果显示在<a class="reference internal" href="./ch04.html#fig-dog-graph">4.16</a>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">import</span> networkx <span class="pysrc-keyword">as</span> nx
+<span class="pysrc-keyword">import</span> matplotlib
+<span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> wordnet <span class="pysrc-keyword">as</span> wn
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">traverse</span>(graph, start, node):
+    graph.depth[node.name] = node.shortest_path_distance(start)
+    <span class="pysrc-keyword">for</span> child <span class="pysrc-keyword">in</span> node.hyponyms():
+        graph.add_edge(node.name, child.name) <a href="./ch04.html#ref-add-edge"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+        traverse(graph, start, child) <a href="./ch04.html#ref-recursive-traversal"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">hyponym_graph</span>(start):
+    G = nx.Graph() <a href="./ch04.html#ref-define-graph"><img alt="[3]" class="callout" src="Images/496754d8cdb6262f8f72e1f066bab359.jpg"/></a>
+    G.depth = {}
+    traverse(G, start, start)
+    return G
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">graph_draw</span>(graph):
+    nx.draw_graphviz(graph,
+         node_size = [16 * graph.degree(n) <span class="pysrc-keyword">for</span> n <span class="pysrc-keyword">in</span> graph],
+         node_color = [graph.depth[n] <span class="pysrc-keyword">for</span> n <span class="pysrc-keyword">in</span> graph],
+         with_labels = False)
+    matplotlib.pyplot.show()</pre>
+<div class="figure" id="fig-dog-graph"><img alt="Images/dog-graph.png" src="Images/8cb61a943f3d34f94596e77065410cd3.jpg" style="width: 810.4000000000001px; height: 402.40000000000003px;"/><p class="caption"><font id="695"><span class="caption-label">图 4.16</span>：使用NetworkX和Matplotlib可视化数据：WordNet的上位词层次的部分显示，开始于<tt class="doctest"><span class="pre">dog.n.01</span></tt>（中间最黑的节点）；节点的大小对应节点的孩子的数目，颜色对应节点到<tt class="doctest"><span class="pre">dog.n.01</span></tt>的距离；此可视化图形由<a class="reference internal" href="./ch04.html#code-networkx">4.15</a>中的程序产生。</font></p>
+</div>
+
+<div class="section" id="csv"><h3 class="sigil_not_in_toc"><font id="696">csv</font></h3>
+<p><font id="697">语言分析工作往往涉及数据统计表，包括有关词项的信息、试验研究的参与者名单或从语料库提取的语言特征。</font><font id="698">这里有一个CSV格式的简单的词典片段：</font></p>
+<div class="line-block"><div class="line"><font id="699">sleep, sli:p, v.i, a condition of body and mind ...</font></div>
+<div class="line"><font id="700">walk, wo:k, v.intr, progress by lifting and setting down each foot ...</font></div>
+<div class="line"><font id="701">wake, weik, intrans, cease to sleep</font></div>
+</div>
+<p><font id="702">我们可以使用Python的CSV库读写这种格式存储的文件。</font><font id="703">例如，我们可以打开一个叫做<tt class="doctest"><span class="pre">lexicon.csv</span></tt>的CSV 文件<a class="reference internal" href="./ch04.html#open-csv"><span id="ref-open-csv"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></span></a>，并遍历它的行<a class="reference internal" href="./ch04.html#iterate-csv"><span id="ref-iterate-csv"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> csv
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>input_file = open(<span class="pysrc-string">"lexicon.csv"</span>, <span class="pysrc-string">"rb"</span>) <a href="./ch04.html#ref-open-csv"><img alt="[1]" class="callout" src="Images/ffa808c97c7034af1bc2806ed7224203.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> row <span class="pysrc-keyword">in</span> csv.reader(input_file): <a href="./ch04.html#ref-iterate-csv"><img alt="[2]" class="callout" src="Images/aa68e0e8f4d58caa31e5542dabe4ddc2.jpg"/></a>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(row)
+<span class="pysrc-output">['sleep', 'sli:p', 'v.i', 'a condition of body and mind ...']</span>
+<span class="pysrc-output">['walk', 'wo:k', 'v.intr', 'progress by lifting and setting down each foot ...']</span>
+<span class="pysrc-output">['wake', 'weik', 'intrans', 'cease to sleep']</span></pre>
+<p><font id="704">每一行是一个字符串列表。</font><font id="705">如果字段包含有数值数据，它们将作为字符串出现，所以都必须使用<tt class="doctest"><span class="pre">int()</span></tt>或<tt class="doctest"><span class="pre">float()</span></tt>转换。</font></p>
+</div>
+<div class="section" id="numpy"><h3 class="sigil_not_in_toc"><font id="706">NumPy</font></h3>
+<p><font id="707">NumPy包对Python中的数值处理提供了大量的支持。</font><font id="708">NumPy有一个多维数组对象，它可以很容易初始化和访问：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> numpy <span class="pysrc-keyword">import</span> array
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cube = array([ [[0,0,0], [1,1,1], [2,2,2]],
+<span class="pysrc-more">... </span>               [[3,3,3], [4,4,4], [5,5,5]],
+<span class="pysrc-more">... </span>               [[6,6,6], [7,7,7], [8,8,8]] ])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cube[1,1,1]
+<span class="pysrc-output">4</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cube[2].transpose()
+<span class="pysrc-output">array([[6, 7, 8],</span>
+<span class="pysrc-output">       [6, 7, 8],</span>
+<span class="pysrc-output">       [6, 7, 8]])</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cube[2,1:]
+<span class="pysrc-output">array([[7, 7, 7],</span>
+<span class="pysrc-output">       [8, 8, 8]])</span></pre>
+<p><font id="709">NumPy包括线性代数函数。</font><font id="710">在这里我们进行矩阵的奇异值分解，<span class="termdef">潜在语义分析中</span>使用的操作，它能帮助识别一个文档集合中的隐含概念。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> numpy <span class="pysrc-keyword">import</span> linalg
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>a=array([[4,0], [3,-5]])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>u,s,vt = linalg.svd(a)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>u
+<span class="pysrc-output">array([[-0.4472136 , -0.89442719],</span>
+<span class="pysrc-output">       [-0.89442719,  0.4472136 ]])</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>s
+<span class="pysrc-output">array([ 6.32455532,  3.16227766])</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>vt
+<span class="pysrc-output">array([[-0.70710678,  0.70710678],</span>
+<span class="pysrc-output">       [-0.70710678, -0.70710678]])</span></pre>
+<p><font id="711">NLTK中的聚类包<tt class="doctest"><span class="pre">nltk.cluster</span></tt>中广泛使用NumPy数组，支持包括<span class="math">k</span>-means聚类、高斯EM聚类、组平均凝聚聚类以及聚类分析图。</font><font id="712">有关详细信息，请输入<tt class="doctest"><span class="pre">help(nltk.cluster)</span></tt>。</font></p>
+</div>
+<div class="section" id="other-python-libraries"><h3 class="sigil_not_in_toc"><font id="713">其他Python库</font></h3>
+<p><font id="714">还有许多其他的Python库，你可以使用<tt class="doctest"><span class="pre">http://pypi.python.org/</span></tt>处的Python 包索引找到它们。</font><font id="715">许多库提供了外部软件接口，例如关系数据库（如</font><font id="716"><tt class="doctest"><span class="pre">mysql-python</span></tt>）和大数据集合（如</font><font id="717"><tt class="doctest"><span class="pre">PyLucene</span></tt>）。</font><font id="718">许多其他库能访问各种文件格式，如PDF、MSWord 和XML（<tt class="doctest"><span class="pre">pypdf</span></tt>, <tt class="doctest"><span class="pre">pywin32</span></tt>, <tt class="doctest"><span class="pre">xml.etree</span></tt>）、RSS 源（如</font><font id="719"><tt class="doctest"><span class="pre">feedparser</span></tt>）以及电子邮箱（如</font><font id="720"><tt class="doctest"><span class="pre">imaplib</span></tt>, <tt class="doctest"><span class="pre">email</span></tt>）。</font></p>
+</div>
+
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="721">6 小结</font></h2>
+<ul class="simple"><li><font id="722">Python 赋值和参数传递使用对象引用，例如</font><font id="723">如果<tt class="doctest"><span class="pre">a</span></tt>是一个列表，我们分配<tt class="doctest"><span class="pre">b = a</span></tt>，然后任何<tt class="doctest"><span class="pre">a</span></tt>上的操作都将修改<tt class="doctest"><span class="pre">b</span></tt>，反之亦然。</font></li>
+<li><font id="724"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">is</span></span></tt>操作测试是否两个对象是相同的内部对象，而<tt class="doctest"><span class="pre">==</span></tt>测试是否两个对象是相等的。</font><font id="725">两者的区别和词符与词类型的区别相似。</font></li>
+<li><font id="726">字符串、列表和元组是不同类型的序列对象，支持常见的操作如：索引、切片、<tt class="doctest"><span class="pre">len()</span></tt>、<tt class="doctest"><span class="pre">sorted()</span></tt>和使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">in</span></span></tt>的成员测试。</font></li>
+<li><font id="727">声明式的编程风格通常会产生更简洁更可读的代码；手动递增循环变量通常是不必要的；枚举一个序列，使用<tt class="doctest"><span class="pre">enumerate()</span></tt>。</font></li>
+<li><font id="728">函数是一个重要的编程抽象，需要理解的关键概念有：参数传递、变量的作用域和文档字符串。</font></li>
+<li><font id="729">函数作为一个命名空间：函数内部定义的名称在该函数外不可见，除非这些名称被宣布为是全局的。</font></li>
+<li><font id="730">模块允许将材料与本地的文件逻辑的关联起来。</font><font id="731">一个模块作为一个命名空间：在一个模块中定义的名称——如变量和函数——在其他模块中不可见，除非这些名称被导入。</font></li>
+<li><font id="732">动态规划是一种在NLP 中广泛使用的算法设计技术，它存储以前的计算结果，以避免不必要的重复计算。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="733">4.10 深入阅读</font></h2>
+<p><font id="734">本章已经触及编程中的许多主题，一些是Python特有的，一些是相当普遍的。</font><font id="735">我们只是触及了表面，你可能想要阅读更多有关这些主题的内容，可以从<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>处的本章深入阅读材料开始。</font></p>
+<p><font id="736">Python网站提供大量文档。</font><font id="737">理解内置的函数和标准类型是很重要的，在<tt class="doctest"><span class="pre">http://docs.python.org/library/functions.html</span></tt>和<tt class="doctest"><span class="pre">http://docs.python.org/library/stdtypes.html</span></tt>处有描述。</font><font id="738">我们已经学习了生成器以及它们对提高效率的重要性；关于迭代器的信息，一个密切相关的话题请看<tt class="doctest"><span class="pre">http://docs.python.org/library/itertools.html</span></tt>。</font><font id="739">查询你喜欢的Python书籍中这些主题的更多信息。</font><font id="740">使用Python进行多媒体处理包括声音文件的一个优秀的资源是<a class="reference external" href="./bibliography.html#guzdial2005" id="id1">(Guzdial, 2005)</a>。</font></p>
+<p><font id="741">使用在线Python文档时，要注意你安装的版本可能与你正在阅读的文档的版本不同。</font><font id="742">你可以使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> sys; sys.version</span></tt>松地查询你有的是什么版本。</font><font id="743">特定版本的文档在<tt class="doctest"><span class="pre">http://www.python.org/doc/versions/</span></tt>处。</font></p>
+<p><font id="744">算法设计是计算机科学中一个丰富的领域。</font><font id="745">一些很好的出发点是<a class="reference external" href="./bibliography.html#harel2004" id="id2">(Harel, 2004)</a>, <a class="reference external" href="./bibliography.html#levitin2004" id="id3">(Levitin, 2004)</a>, <a class="reference external" href="./bibliography.html#knuth2006trees" id="id4">(Knuth, 2006)</a>。</font><font id="746"><a class="reference external" href="./bibliography.html#hunt2000" id="id5">(Hunt &amp; Thomas, 2000)</a>和<a class="reference external" href="./bibliography.html#mcconnell2004" id="id6">(McConnell, 2004)</a>为软件开发实践提供了有益的指导。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="747">4.11 练习</font></h2>
+<ol class="arabic"><li><p class="first"><font id="748">☼ 使用Python的帮助功能，找出更多关于序列对象的内容。</font><font id="749">在解释器中输入<tt class="doctest"><span class="pre">help(str)</span></tt>，<tt class="doctest"><span class="pre">help(list)</span></tt>和<tt class="doctest"><span class="pre">help(tuple)</span></tt>。</font><font id="750">这会给你一个每种类型支持的函数的完整列表。</font><font id="751">一些函数名字有些特殊，两侧有下划线；正如帮助文档显示的那样，每个这样的函数对应于一些较为熟悉的东西。</font><font id="752">例如<tt class="doctest"><span class="pre">x.__getitem__(y)</span></tt>仅仅是以长篇大论的方式使用<tt class="doctest"><span class="pre">x[y]</span></tt>。</font></p></li>
+<li><p class="first"><font id="753">☼ 确定三个同时在元组和链表上都可以执行的操作。</font><font id="754">确定三个不能在元组上执行的列表操作。</font><font id="755">命名一段使用列表替代元组会产生一个Python错误的代码。</font></p></li>
+<li><p class="first"><font id="756">☼ 找出如何创建一个由单个项目组成的元组。</font><font id="757">至少有两种方法可以做到这一点。</font></p></li>
+<li><p class="first"><font id="758">☼ 创建一个列表<tt class="doctest"><span class="pre">words = [<span class="pysrc-string">'is'</span>, <span class="pysrc-string">'NLP'</span>, <span class="pysrc-string">'fun'</span>, <span class="pysrc-string">'?'</span>]</span></tt>。</font><font id="759">使用一系列赋值语句（如</font><font id="760"><tt class="doctest"><span class="pre">words[1] = words[2]</span></tt>）和临时变量<tt class="doctest"><span class="pre">tmp</span></tt>将这个列表转换为列表<tt class="doctest"><span class="pre">[<span class="pysrc-string">'NLP'</span>, <span class="pysrc-string">'is'</span>, <span class="pysrc-string">'fun'</span>, <span class="pysrc-string">'!'</span>]</span></tt>。</font><font id="761">现在，使用元组赋值做相同的转换。</font></p></li>
+<li><p class="first"><font id="762">☼ 通过输入<tt class="doctest"><span class="pre">help(cmp)</span></tt>阅读关于内置的比较函数<tt class="doctest"><span class="pre">cmp</span></tt>的内容。</font><font id="763">它与比较运算符在行为上有何不同？</font></p></li>
+<li><p class="first"><font id="764">☼ 创建一个n-grams的滑动窗口的方法在下面两种极端情况下是否正确：<span class="math">n</span> = 1 和<span class="math">n</span> = <tt class="doctest"><span class="pre">len(sent)</span></tt>？</font></p></li>
+<li><p class="first"><font id="765">☼ 我们指出当空字符串和空链表出现在<tt class="doctest"><span class="pre"><span class="pysrc-keyword">if</span></span></tt>从句的条件部分时，它们的判断结果是<tt class="doctest"><span class="pre">False</span></tt>。</font><font id="766">在这种情况下，它们被说成出现在一个布尔上下文中。</font><font id="767">实验各种不同的布尔上下文中的非布尔表达式，看它们是否被判断为<tt class="doctest"><span class="pre">True</span></tt>或<tt class="doctest"><span class="pre">False</span></tt>。</font></p></li>
+<li><p class="first"><font id="768">☼ 使用不等号比较字符串，如</font><font id="769"><tt class="doctest"><span class="pre"><span class="pysrc-string">'Monty'</span> &lt; <span class="pysrc-string">'Python'</span></span></tt>。</font><font id="770">当你做<tt class="doctest"><span class="pre"><span class="pysrc-string">'Z'</span> &lt; <span class="pysrc-string">'a'</span></span></tt>时会发生什么？</font><font id="771">尝试具有共同前缀的字符串对，如</font><font id="772"><tt class="doctest"><span class="pre"><span class="pysrc-string">'Monty'</span> &lt; <span class="pysrc-string">'Montague'</span></span></tt>。</font><font id="773">阅读有关“字典排序”的内容以便了解这里发生了什么事。</font><font id="774">尝试比较结构化对象，如</font><font id="775"><tt class="doctest"><span class="pre">(<span class="pysrc-string">'Monty'</span>, 1) &lt; (<span class="pysrc-string">'Monty'</span>, 2)</span></tt>。</font><font id="776">这与预期一样吗？</font></p></li>
+<li><p class="first"><font id="777">☼ 写代码删除字符串开头和结尾处的空白，并规范化词之间的空格为一个单独的空格字符。</font></p><ol class="arabic simple"><li><font id="778">使用<tt class="doctest"><span class="pre">split()</span></tt>和<tt class="doctest"><span class="pre">join()</span></tt>做这个任务</font></li>
+<li><font id="779">使用正则表达式替换做这个任务</font></li>
+</ol></li>
+<li><p class="first"><font id="780">☼ 写一个程序按长度对词排序。</font><font id="781">定义一个辅助函数<tt class="doctest"><span class="pre">cmp_len</span></tt>，它在词长上使用<tt class="doctest"><span class="pre">cmp</span></tt>比较函数。</font></p></li>
+<li><p class="first"><font id="782">◑ 创建一个词列表并将其存储在变量<tt class="doctest"><span class="pre">sent1</span></tt>。</font><font id="783">现在赋值<tt class="doctest"><span class="pre">sent2 = sent1</span></tt>。</font><font id="784">修改<tt class="doctest"><span class="pre">sent1</span></tt>中的一个项目，验证<tt class="doctest"><span class="pre">sent2</span></tt>改变了。</font></p><ol class="loweralpha simple"><li><font id="785">现在尝试同样的练习，但使用<tt class="doctest"><span class="pre">sent2 = sent1[:]</span></tt>赋值。</font><font id="786">再次修改<tt class="doctest"><span class="pre">sent1</span></tt>看看<tt class="doctest"><span class="pre">sent2</span></tt>会发生什么。</font><font id="787">解释。</font></li>
+<li><font id="788">现在定义<tt class="doctest"><span class="pre">text1</span></tt>为一个字符串列表的列表（例如</font><font id="789">表示由多个句子组成的文本）。</font><font id="790">现在赋值<tt class="doctest"><span class="pre">text2 = text1[:]</span></tt>，分配一个新值给其中一个词，例如</font><font id="791"><tt class="doctest"><span class="pre">text1[1][1] = <span class="pysrc-string">'Monty'</span></span></tt>。</font><font id="792">检查这对<tt class="doctest"><span class="pre">text2</span></tt>做了什么。</font><font id="793">解释。</font></li>
+<li><font id="794">导入Python的<tt class="doctest"><span class="pre">deepcopy()</span></tt>函数（即</font><font id="795"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> <span class="pysrc-builtin">copy</span> <span class="pysrc-keyword">import</span> deepcopy</span></tt>），查询其文档，使用它生成任一对象的新副本。</font></li>
+</ol></li>
+<li><p class="first"><font id="796">◑ 使用列表乘法初始化<em>n</em>-by-<em>m</em>的空字符串列表的咧表，例如</font><font id="797"><tt class="doctest"><span class="pre">word_table = [[<span class="pysrc-string">''</span>] * n] * m</span></tt>。当你设置其中一个值时会发生什么事，例如</font><font id="798"><tt class="doctest"><span class="pre">word_table[1][2] = <span class="pysrc-string">"hello"</span></span></tt>？</font><font id="799">解释为什么会出现这种情况。</font><font id="800">现在写一个表达式，使用<tt class="doctest"><span class="pre">range()</span></tt>构造一个列表，表明它没有这个问题。</font></p></li>
+<li><p class="first"><font id="801">◑ 写代码初始化一个称为<tt class="doctest"><span class="pre">word_vowels</span></tt>的二维数组的集合，处理一个词列表，添加每个词到<tt class="doctest"><span class="pre">word_vowels[l][v]</span></tt>，其中<tt class="doctest"><span class="pre">l</span></tt>是词的长度，<tt class="doctest"><span class="pre">v</span></tt>是它包含的元音的数量。</font></p></li>
+<li><p class="first"><font id="802">◑ 写一个函数<tt class="doctest"><span class="pre">novel10(text)</span></tt>输出所有在一个文本最后10%出现而之前没有遇到过的词。</font></p></li>
+<li><p class="first"><font id="803">◑ 写一个程序将一个句子表示成一个单独的字符串，分割和计数其中的词。</font><font id="804">让它输出每一个词和词的频率，每行一个，按字母顺序排列。</font></p></li>
+<li><p class="first"><font id="805">◑ 阅读有关Gematria的内容，它是一种方法，分配一个数字给词汇，具有相同数字的词之间映射以发现文本隐藏的含义（<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Gematria</span></tt>, <tt class="doctest"><span class="pre">http://essenes.net/gemcal.htm</span></tt>）。</font></p><ol class="loweralpha"><li><p class="first"><font id="806">写一个函数<tt class="doctest"><span class="pre">gematria()</span></tt>，根据<tt class="doctest"><span class="pre">letter_vals</span></tt>中的字母值，累加一个词的字母的数值：</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>letter_vals = {<span class="pysrc-string">'a'</span>:1, <span class="pysrc-string">'b'</span>:2, <span class="pysrc-string">'c'</span>:3, <span class="pysrc-string">'d'</span>:4, <span class="pysrc-string">'e'</span>:5, <span class="pysrc-string">'f'</span>:80, <span class="pysrc-string">'g'</span>:3, <span class="pysrc-string">'h'</span>:8,
+<span class="pysrc-more">... </span><span class="pysrc-string">'i'</span>:10, <span class="pysrc-string">'j'</span>:10, <span class="pysrc-string">'k'</span>:20, <span class="pysrc-string">'l'</span>:30, <span class="pysrc-string">'m'</span>:40, <span class="pysrc-string">'n'</span>:50, <span class="pysrc-string">'o'</span>:70, <span class="pysrc-string">'p'</span>:80, <span class="pysrc-string">'q'</span>:100,
+<span class="pysrc-more">... </span><span class="pysrc-string">'r'</span>:200, <span class="pysrc-string">'s'</span>:300, <span class="pysrc-string">'t'</span>:400, <span class="pysrc-string">'u'</span>:6, <span class="pysrc-string">'v'</span>:6, <span class="pysrc-string">'w'</span>:800, <span class="pysrc-string">'x'</span>:60, <span class="pysrc-string">'y'</span>:10, <span class="pysrc-string">'z'</span>:7}</pre></li>
+<li><p class="first"><font id="807">处理一个语料库（</font><font id="808"><tt class="doctest"><span class="pre">nltk.corpus.state_union</span></tt>）对每个文档计数它有多少词的字母数值为666。</font></p></li>
+<li><p class="first"><font id="809">写一个函数<tt class="doctest"><span class="pre">decode()</span></tt>来处理文本，随机替换词汇为它们的Gematria等值的词，以发现文本的“隐藏的含义”。</font></p></li>
+</ol></li>
+<li><p class="first"><font id="810">◑ 写一个函数<tt class="doctest"><span class="pre">shorten(text, n)</span></tt>处理文本，省略文本中前<span class="math">n</span>个最频繁出现的词。</font><font id="811">它的可读性会如何？</font></p></li>
+<li><p class="first"><font id="812">◑ 写代码输出词汇的索引，允许别人根据其含义查找词汇（或它们的发言；词汇条目中包含的任何属性）。</font></p></li>
+<li><p class="first"><font id="813">◑ 写一个列表推导排序WordNet中与给定同义词集接近的同义词集的列表。</font><font id="814">例如，给定同义词集<tt class="doctest"><span class="pre">minke_whale.n.01</span></tt>, <tt class="doctest"><span class="pre">orca.n.01</span></tt>, <tt class="doctest"><span class="pre">novel.n.01</span></tt>和<tt class="doctest"><span class="pre">tortoise.n.01</span></tt>，按照它们与<tt class="doctest"><span class="pre">right_whale.n.01</span></tt>的<tt class="doctest"><span class="pre">shortest_path_distance()</span></tt>对它们进行排序。</font></p></li>
+<li><p class="first"><font id="815">◑ 写一个函数处理一个词列表（含重复项），返回一个按照频率递减排序的词列表（没有重复项）。</font><font id="816">例如</font><font id="817">如果输入列表中包含词<tt class="doctest"><span class="pre">table</span></tt>的10个实例，<tt class="doctest"><span class="pre">chair</span></tt>的9个实例，那么在输出列表中<tt class="doctest"><span class="pre">table</span></tt>会出现在<tt class="doctest"><span class="pre">chair</span></tt>前面。</font></p></li>
+<li><p class="first"><font id="818">◑ 写一个函数以一个文本和一个词汇表作为它的参数，返回在文本中出现但不在词汇表中的一组词。</font><font id="819">两个参数都可以表示为字符串列表。</font><font id="820">你能使用<tt class="doctest"><span class="pre">set.difference()</span></tt>在一行代码中做这些吗？</font></p></li>
+<li><p class="first"><font id="821">◑ 从Python标准库的<tt class="doctest"><span class="pre">operator</span></tt>模块导入<tt class="doctest"><span class="pre">itemgetter()</span></tt>函数（即</font><font id="822"><tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> operator <span class="pysrc-keyword">import</span> itemgetter</span></tt>）。</font><font id="823">创建一个包含几个词的列表<tt class="doctest"><span class="pre">words</span></tt>。</font><font id="824">现在尝试调用：<tt class="doctest"><span class="pre">sorted(words, key=itemgetter(1))</span></tt>和<tt class="doctest"><span class="pre">sorted(words, key=itemgetter(-1))</span></tt>。</font><font id="825">解释<tt class="doctest"><span class="pre">itemgetter()</span></tt>正在做什么。</font></p></li>
+<li><p class="first"><font id="826">◑ 写一个递归函数<tt class="doctest"><span class="pre">lookup(trie, key)</span></tt>在查找树中查找一个关键字，返回找到的值。</font><font id="827">扩展这个函数，当一个词由其前缀唯一确定时返回这个词（例如</font><font id="828"><tt class="doctest"><span class="pre">vanguard</span></tt>是以<tt class="doctest"><span class="pre">vang-</span></tt>开头的唯一的词，所以<tt class="doctest"><span class="pre">lookup(trie, <span class="pysrc-string">'vang'</span>)</span></tt>应该返回与<tt class="doctest"><span class="pre">lookup(trie, <span class="pysrc-string">'vanguard'</span>)</span></tt>相同的内容）。</font></p></li>
+<li><p class="first"><font id="829">◑ 阅读关于“关键字联动”的内容（<a class="reference external" href="./bibliography.html#scott2006" id="id7">(Scott &amp; Tribble, 2006)</a>的第5章）。</font><font id="830">从NLTK的莎士比亚语料库中提取关键字，使用NetworkX包，画出关键字联动网络。</font></p></li>
+<li><p class="first"><font id="831">◑ 阅读有关字符串编辑距离和Levenshtein 算法的内容。</font><font id="832">尝试<tt class="doctest"><span class="pre">nltk.edit_distance()</span></tt>提供的实现。</font><font id="833">这用的是动态规划的何种方式？</font><font id="834">它使用的是自下而上还是自上而下的方法？</font><font id="835">[另见<tt class="doctest"><span class="pre">http://norvig.com/spell-correct.html</span></tt>]</font></p></li>
+<li><p class="first"><font id="836">◑ Catalan 数出现在组合数学的许多应用中，包括解析树的计数（<a class="reference external" href="./ch08.html#sec-grammar-development">6</a>）。</font><font id="837">该级数可以定义如下：C<sub>0</sub> = 1, and C<sub>n+1</sub> = Σ<sub>0..n</sub> (C<sub>i</sub>C<sub>n-i</sub>)。</font></p><ol class="loweralpha simple"><li><font id="838">编写一个递归函数计算第<span class="math">n</span>个Catalan数C<sub>n</sub>。</font></li>
+<li><font id="839">现在写另一个函数使用动态规划做这个计算。</font></li>
+<li><font id="840">使用<tt class="doctest"><span class="pre">timeit</span></tt>模块比较当<span class="math">n</span>增加时这些函数的性能。</font></li>
+</ol></li>
+<li><p class="first"><font id="841">★ 重现有关著作权鉴定的<a class="reference external" href="./bibliography.html#zhao07" id="id8">(Zhao &amp; Zobel, 2007)</a>中的一些结果。</font></p></li>
+<li><p class="first"><font id="842">★ 研究性别特异词汇选择，看你是否可以重现一些<tt class="doctest"><span class="pre">http://www.clintoneast.com/articles/words.php</span></tt>的结果</font></p></li>
+<li><p class="first"><font id="843">★ 写一个递归函数漂亮的按字母顺序排列输出一个查找树，例如</font><font id="844">:</font></p><pre class="literal-block">chair: 'flesh'
+---t: 'cat'
+--ic: 'stylish'
+---en: 'dog'
+</pre>
+</li>
+</ol>
+</div>
+
+<div class="system-messages section"><h2 class="sigil_not_in_toc"><font id="871">Docutils System Messages</font></h2>
+<div class="system-message" id="id9"><p class="system-message-title"><font id="872">System Message: ERROR/3 (<tt class="docutils">ch04.rst2</tt>, line 1791); <em><a href="./ch04.html#id10">backlink</a></em></font></p>
+<font id="873"> Unknown target name: "first-run".</font></div>
+<div class="system-message" id="id11"><p class="system-message-title"><font id="874">System Message: ERROR/3 (<tt class="docutils">ch04.rst2</tt>, line 1791); <em><a href="./ch04.html#id12">backlink</a></em></font></p>
+<font id="875"> Unknown target name: "second-run".</font></div>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</body>
+</html>

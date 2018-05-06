@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="analyzing-sentence-structure"><h1 class="title"><font id="1">8. </font><font id="2">分析句子结构</font></h1>
+<p><font id="3">前面的章节重点关注词：如何识别它们，分析它们的结构，分配给他们词汇类别，以及获得它们的含义。</font><font id="4">我们还看到了如何识别词序列或n-grams中的模式。</font><font id="5">然而，这些方法只触碰到支配句子的复杂约束的表面。</font><font id="6">我们需要一种方法处理自然语言中显著的歧义。</font><font id="7">我们还需要能够应对这样一个事实，句子有无限的可能，而我们只能写有限的程序来分析其结构和发现它们的含义。</font></p>
+<p><font id="8">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="9">我们如何使用形式化语法来描述无限的句子集合的结构？</font></li>
+<li><font id="10">我们如何使用句法树来表示句子结构？</font></li>
+<li><font id="11">语法分析器如何分析一个句子并自动构建句法树？</font></li>
+</ol>
+<p><font id="12">一路上，我们将覆盖英语句法的基础，并看到句子含义有系统化的一面，只要我们确定了句子结构，将更容易捕捉。</font></p>
+<div class="section" id="some-grammatical-dilemmas"><h2 class="sigil_not_in_toc"><font id="13">1 一些语法困境</font></h2>
+<div class="section" id="linguistic-data-and-unlimited-possibilities"><h2 class="sigil_not_in_toc"><font id="14">1.1 语言数据和无限可能性</font></h2>
+<p><font id="15">前面的章节中已经为你讲述了如何处理和分析的文本语料库，我们一直强调处理大量的每天都在增加的电子语言数据是NLP的挑战。</font><font id="16">让我们更加细致的思考这些数据，做一个思想上的实验，我们有一个巨大的语料库，包括在过去50年中英文表达或写成的一切。</font><font id="17">我们称这个语料库为“现代英语”合理吗？</font><font id="18">有许多为什么我们的回答可能是否定的的原因。</font><font id="19">回想一下，在<a class="reference external" href="./ch03.html#chap-words">3</a>中，我们让你搜索网络查找<span class="example">the of</span>模式的实例。</font><font id="20">虽然很容易在网上找到包含这个词序列的例子，例如<span class="example">New man at the of IMG</span> （见<tt class="doctest"><span class="pre">http://www.telegraph.co.uk/sport/2387900/New-man-at-the-of-IMG.html</span></tt>），说英语的人会说大多数这样的例子是错误的，因此它们根本不是英语。</font></p>
+<p><font id="21">因此，我们可以说，“现代英语”并不等同于我们想象中的语料库中的非常大的词序列的集合。</font><font id="22">说英语的人可以判断这些序列，并将拒绝其中一些不合语法的。</font></p>
+<p><font id="23">同样，组成一个新的句子，并让说话者认为它是非常好的英语是很容易的。</font><font id="24">例如，句子有一个有趣的属性，它们可以嵌入更大的句子中。</font><font id="25">考虑下面的句子：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>groucho_grammar = nltk.CFG.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">S -&gt; NP VP</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">PP -&gt; P NP</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">NP -&gt; Det N | Det N PP | 'I'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">VP -&gt; V NP | VP PP</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">Det -&gt; 'an' | 'my'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">N -&gt; 'elephant' | 'pajamas'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">V -&gt; 'shot'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">P -&gt; 'in'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>)</pre>
+<p><font id="57">这个文法允许以两种方式分析句子，取决于介词短语<span class="example">in my pajamas</span>是描述大象还是枪击事件。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'I'</span>, <span class="pysrc-string">'shot'</span>, <span class="pysrc-string">'an'</span>, <span class="pysrc-string">'elephant'</span>, <span class="pysrc-string">'in'</span>, <span class="pysrc-string">'my'</span>, <span class="pysrc-string">'pajamas'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>parser = nltk.ChartParser(groucho_grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> parser.parse(sent):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP I)</span>
+<span class="pysrc-output">  (VP</span>
+<span class="pysrc-output">    (VP (V shot) (NP (Det an) (N elephant)))</span>
+<span class="pysrc-output">    (PP (P in) (NP (Det my) (N pajamas)))))</span>
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP I)</span>
+<span class="pysrc-output">  (VP</span>
+<span class="pysrc-output">    (V shot)</span>
+<span class="pysrc-output">    (NP (Det an) (N elephant) (PP (P in) (NP (Det my) (N pajamas))))))</span></pre>
+<p><font id="58">程序产生两个括号括起的结构，我们可以用树来表示它们，如<a class="reference internal" href="./ch08.html#ex-elephant">(3b)</a>所示：</font></p>
+<p></p>
+<pre class="doctest">grammar1 = nltk.CFG.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-string">  S -&gt; NP VP</span>
+<span class="pysrc-string">  VP -&gt; V NP | V NP PP</span>
+<span class="pysrc-string">  PP -&gt; P NP</span>
+<span class="pysrc-string">  V -&gt; "saw" | "ate" | "walked"</span>
+<span class="pysrc-string">  NP -&gt; "John" | "Mary" | "Bob" | Det N | Det N PP</span>
+<span class="pysrc-string">  Det -&gt; "a" | "an" | "the" | "my"</span>
+<span class="pysrc-string">  N -&gt; "man" | "dog" | "cat" | "telescope" | "park"</span>
+<span class="pysrc-string">  P -&gt; "in" | "on" | "by" | "with"</span>
+<span class="pysrc-string">  """</span>)</pre>
+<p><font id="137">在<a class="reference internal" href="./ch08.html#code-cfg1">3.1</a>中的语法包含涉及各种句法类型的产生式，如在<a class="reference internal" href="./ch08.html#tab-syncat">3.1</a>中所列出的。</font></p>
+<p class="caption"><font id="138"><span class="caption-label">表 3.1</span>：</font></p>
+<p><font id="139">句法类型</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar1 = nltk.data.load(<span class="pysrc-string">'file:mygrammar.cfg'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">"Mary saw Bob"</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>rd_parser = nltk.RecursiveDescentParser(grammar1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> rd_parser.parse(sent):
+<span class="pysrc-more">... </span>     <span class="pysrc-keyword">print</span>(tree)</pre>
+<p><font id="185">确保你的文件名后缀为<tt class="doctest"><span class="pre">.cfg</span></tt>，并且字符串<tt class="doctest"><span class="pre"><span class="pysrc-string">'file:mygrammar.cfg'</span></span></tt>中间没有空格符。</font><font id="186">如果命令<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span>(tree)</span></tt>没有产生任何输出，这可能是因为你的句子<tt class="doctest"><span class="pre">sent</span></tt>并不符合你的语法。</font><font id="187">在这种情况下，可以将分析器的跟踪设置打开：<tt class="doctest"><span class="pre">rd_parser = nltk.RecursiveDescentParser(grammar1, trace=2)</span></tt>。</font><font id="188">你还可以查看当前使用的语法中的产生式，使用命令<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span> p <span class="pysrc-keyword">in</span> grammar1.productions(): <span class="pysrc-keyword">print</span>(p)</span></tt>。</font></p>
+<p><font id="189">当你编写CFG在NLTK中分析时，你不能将语法类型与词汇项目一起写在同一个产生式的右侧。</font><font id="190">因此，产生式<tt class="doctest"><span class="pre">PP -&gt; <span class="pysrc-string">'of'</span> NP</span></tt>是不允许的。</font><font id="191">另外，你不得在产生式右侧仿制多个词的词汇项。</font><font id="192">因此，不能写成<tt class="doctest"><span class="pre">NP -&gt; <span class="pysrc-string">'New</span> <span class="pysrc-string">York'</span></span></tt>，而要写成类似<tt class="doctest"><span class="pre">NP -&gt; <span class="pysrc-string">'New_York'</span></span></tt>这样的。</font></p>
+</div>
+<div class="section" id="recursion-in-syntactic-structure"><h2 class="sigil_not_in_toc"><font id="193">3.3 句法结构中的递归</font></h2>
+<p><font id="194">一个语法被认为是<span class="termdef">递归</span>的，如果语法类型出现在产生式左侧也出现在右侧，如<a class="reference internal" href="./ch08.html#code-cfg2">3.3</a>所示。</font><font id="195">产生式<tt class="doctest"><span class="pre">Nom -&gt; Adj Nom</span></tt>（其中<tt class="doctest"><span class="pre">Nom</span></tt>是名词性的类别）包含<tt class="doctest"><span class="pre">Nom</span></tt>类型的直接递归，而<tt class="doctest"><span class="pre">S</span></tt>上的间接递归来自于两个产生式的组合<tt class="doctest"><span class="pre">S -&gt; NP VP</span></tt>和<tt class="doctest"><span class="pre">VP -&gt; V S</span></tt>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar2 = nltk.CFG.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-string">  S  -&gt; NP VP</span>
+<span class="pysrc-string">  NP -&gt; Det Nom | PropN</span>
+<span class="pysrc-string">  Nom -&gt; Adj Nom | N</span>
+<span class="pysrc-string">  VP -&gt; V Adj | V NP | V S | V NP PP</span>
+<span class="pysrc-string">  PP -&gt; P NP</span>
+<span class="pysrc-string">  PropN -&gt; 'Buster' | 'Chatterer' | 'Joe'</span>
+<span class="pysrc-string">  Det -&gt; 'the' | 'a'</span>
+<span class="pysrc-string">  N -&gt; 'bear' | 'squirrel' | 'tree' | 'fish' | 'log'</span>
+<span class="pysrc-string">  Adj  -&gt; 'angry' | 'frightened' |  'little' | 'tall'</span>
+<span class="pysrc-string">  V -&gt;  'chased'  | 'saw' | 'said' | 'thought' | 'was' | 'put'</span>
+<span class="pysrc-string">  P -&gt; 'on'</span>
+<span class="pysrc-string">  """</span>)</pre>
+<p><font id="197">要看递归如何从这个语法产生，思考下面的树。</font><font id="198"><a class="reference internal" href="./ch08.html#ex-recnominals">(10a)</a>包括嵌套的名词短语，而<a class="reference internal" href="./ch08.html#ex-recsentences">(10b)</a>包含嵌套的句子。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>rd_parser = nltk.RecursiveDescentParser(grammar1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">'Mary saw a dog'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> rd_parser.parse(sent):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S (NP Mary) (VP (V saw) (NP (Det a) (N dog))))</span></pre>
+<div class="note"><p class="first admonition-title"><font id="237">注意</font></p>
+<p class="last"><font id="238"><tt class="doctest"><span class="pre">RecursiveDescentParser()</span></tt>接受一个可选的参数<tt class="doctest"><span class="pre">trace</span></tt>。</font><font id="239">如果<tt class="doctest"><span class="pre">trace</span></tt>大于零，则分析器将报告它解析一个文本的步骤。</font></p>
+</div>
+<p><font id="240">递归下降分析有三个主要的缺点。</font><font id="241">首先，左递归产生式，如<tt class="doctest"><span class="pre">NP -&gt; NP PP</span></tt>会进入死循环。</font><font id="242">第二，分析器浪费了很多时间处理不符合输入句子的词和结构。</font><font id="243">第三，回溯过程中可能会丢弃分析过的成分，它们将需要在之后再次重建。</font><font id="244">例如，从<tt class="doctest"><span class="pre">VP -&gt; V NP</span></tt>上回溯将放弃为<tt class="doctest"><span class="pre">NP</span></tt>创建的子树。</font><font id="245">如果分析器之后处理<tt class="doctest"><span class="pre">VP -&gt; V NP PP</span></tt>，那么<tt class="doctest"><span class="pre">NP</span></tt>子树必须重新创建。</font></p>
+<p><font id="246">递归下降分析是一种<span class="termdef">自上而下分析</span>。</font><font id="247">自上而下分析器在检查输入之前先使用文法<em>预测</em>输入将是什么！</font><font id="248">然而，由于输入对分析器一直是可用的，从一开始就考虑输入的句子会是更明智的做法。</font><font id="249">这种方法被称为<span class="termdef">自下而上</span>分析，在下一节中我们将看到一个例子。</font></p>
+</div>
+<div class="section" id="shift-reduce-parsing"><h2 class="sigil_not_in_toc"><font id="250">4.2 移进-归约分析</font></h2>
+<p><font id="251">一种简单的自下而上分析器是<span class="termdef">移进-归约分析器</span>。</font><font id="252">与所有自下而上的分析器一样，移进-归约分析器尝试找到对应文法生产式<em>右侧</em>的词和短语的序列，用左侧的替换它们，直到整个句子归约为一个<tt class="doctest"><span class="pre">S</span></tt>。</font></p>
+<p><font id="253">移位-规约分析器反复将下一个输入词推到堆栈（<a class="reference external" href="./ch04.html#sec-back-to-the-basics">4.1</a>）；这是<span class="termdef">移位</span>操作。</font><font id="254">如果堆栈上的前<em>n</em>项，匹配一些产生式的右侧的<em>n</em>个项目，那么就把它们弹出栈，并把产生式左边的项目压入栈。</font><font id="255">这种替换前<em>n</em>项为一项的操作就是<span class="termdef">规约</span>操作。</font><font id="256">此操作只适用于堆栈的顶部；规约栈中的项目必须在后面的项目被压入栈之前做。</font><font id="257">当所有的输入都使用过，堆栈中只剩余一个项目，也就是一颗分析树作为它的根的<tt class="doctest"><span class="pre">S</span></tt>节点时，分析器完成。</font><font id="258">移位-规约分析器通过上述过程建立一颗分析树。</font><font id="259">每次弹出堆栈<em>n</em>个项目，它就将它们组合成部分的分析树，然后将这压回推栈。</font><font id="260">我们可以使用图形化示范<tt class="doctest"><span class="pre">nltk.app.srparser()</span></tt>看到移位-规约分析算法步骤。</font><font id="261">执行此分析器的六个阶段，如<a class="reference internal" href="./ch08.html#fig-srparser1-6">4.2</a>所示。</font></p>
+<div class="figure" id="fig-srparser1-6"><img alt="Images/srparser1-6.png" src="Images/56cee123595482cf3edaef089cb9a6a7.jpg" style="width: 1010.5px; height: 598.0px;"/><p class="caption"><font id="262"><span class="caption-label">图 4.2</span>：移进-归约分析器的六个阶段：分析器一开始把输入的第一个词转移到堆栈；一旦堆栈顶端的项目与一个文法产生式的右侧匹配，就可以将它们用那个产生式的左侧替换；当所有输入都被使用过且堆栈中只有剩余一个项目<tt class="doctest"><span class="pre">S</span></tt>时，分析成功。</font></p>
+</div>
+<p><font id="263">NLTK中提供<tt class="doctest"><span class="pre">ShiftReduceParser()</span></tt>，移进-归约分析器的一个简单的实现。</font><font id="264">这个分析器不执行任何回溯，所以它不能保证一定能找到一个文本的解析，即使确实存在一个这样的解析。</font><font id="265">此外，它最多只会找到一个解析，即使有多个解析存在。</font><font id="266">我们可以提供一个可选的<tt class="doctest"><span class="pre">trace</span></tt>参数，控制分析器报告它分析一个文本的步骤的繁琐程度。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sr_parser = nltk.ShiftReduceParser(grammar1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">'Mary saw a dog'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> sr_parser.parse(sent):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">  (S (NP Mary) (VP (V saw) (NP (Det a) (N dog))))</span></pre>
+<div class="note"><p class="first admonition-title"><font id="267">注意</font></p>
+<p class="last"><font id="268"><strong>轮到你来：</strong> 以跟踪模式运行上述分析器，看看序列的移进和规约操作，使用<tt class="doctest"><span class="pre">sr_parse = nltk.ShiftReduceParser(grammar1, trace=2)</span></tt>。</font></p>
+</div>
+<p><font id="269">移进-规约分析器可能会到达一个死胡同，而不能找到任何解析，即使输入的句子是符合语法的。</font><font id="270">这种情况发生时，没有剩余的输入，而堆栈包含不能被规约到一个<tt class="doctest"><span class="pre">S</span></tt>的项目。问题出现的原因是较早前做出的选择不能被分析器撤销（虽然图形演示中用户可以撤消它们的选择）。</font><font id="271">分析器可以做两种选择：（a）当有多种规约可能时选择哪个规约（b）当移进和规约都可以时选择哪个动作。</font></p>
+<p><font id="272">移进-规约分析器可以改进执行策略来解决这些冲突。</font><font id="273">例如，它可以通过只有在不能规约时才移进，解决移进-规约冲突；它可以通过优先执行规约操作，解决规约-规约冲突；它可以从堆栈移除更多的项目。</font><font id="274">（一个通用的移进-规约分析器，是一个“超前LR 分析器”，普遍使用在编程语言编译器中。）</font></p>
+<p><font id="275">移进-规约分析器相比递归下降分析器的好处是，它们只建立与输入中的词对应的结构。</font><font id="276">此外，每个结构它们只建立一次，例如</font><font id="277"><tt class="doctest"><span class="pre">NP(Det(the), N(man))</span></tt>只建立和压入栈一次，不管以后<tt class="doctest"><span class="pre">VP -&gt; V NP PP</span></tt>规约或者<tt class="doctest"><span class="pre">NP -&gt; NP PP</span></tt>规约会不会用到。</font></p>
+</div>
+<div class="section" id="the-left-corner-parser"><h2 class="sigil_not_in_toc"><font id="278">4.3 左角落分析器</font></h2>
+<p><font id="279">递归下降分析器的问题之一是当它遇到一个左递归产生式时，会进入无限循环。</font><font id="280">这是因为它盲目应用文法产生式而不考虑实际输入的句子。</font><font id="281">左角落分析器是我们已经看到的自下而上与自上而下方法的混合体。</font></p>
+<p><font id="282">语法<tt class="doctest"><span class="pre">grammar1</span></tt>允许我们对<span class="example">John saw Mary</span>生成下面的分析：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = [<span class="pysrc-string">'I'</span>, <span class="pysrc-string">'shot'</span>, <span class="pysrc-string">'an'</span>, <span class="pysrc-string">'elephant'</span>, <span class="pysrc-string">'in'</span>, <span class="pysrc-string">'my'</span>, <span class="pysrc-string">'pajamas'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>groucho_grammar.productions(rhs=text[1])
+<span class="pysrc-output">[V -&gt; 'shot']</span></pre>
+<p><font id="337">对于我们的WFST，我们用Python中的列表的咧表创建一个<span class="math">(n-1)</span> × <span class="math">(n-1)</span>的矩阵，在<a class="reference internal" href="./ch08.html#code-wfst">4.4</a>中的函数<tt class="doctest"><span class="pre">init_wfst()</span></tt>中用每个标识符的词汇类型初始化它。</font><font id="338">我们还定义一个实用的函数<tt class="doctest"><span class="pre">display()</span></tt>来为我们精美的输出WFST。</font><font id="339">正如预期的那样，<tt class="doctest"><span class="pre">V</span></tt>在(1, 2)单元中。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">init_wfst</span>(tokens, grammar):
+    numtokens = len(tokens)
+    wfst = [[None <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(numtokens+1)] <span class="pysrc-keyword">for</span> j <span class="pysrc-keyword">in</span> range(numtokens+1)]
+    <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(numtokens):
+        productions = grammar.productions(rhs=tokens[i])
+        wfst[i][i+1] = productions[0].lhs()
+    return wfst
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">complete_wfst</span>(wfst, tokens, grammar, trace=False):
+    index = dict((p.rhs(), p.lhs()) <span class="pysrc-keyword">for</span> p <span class="pysrc-keyword">in</span> grammar.productions())
+    numtokens = len(tokens)
+    <span class="pysrc-keyword">for</span> span <span class="pysrc-keyword">in</span> range(2, numtokens+1):
+        <span class="pysrc-keyword">for</span> start <span class="pysrc-keyword">in</span> range(numtokens+1-span):
+            end = start + span
+            <span class="pysrc-keyword">for</span> mid <span class="pysrc-keyword">in</span> range(start+1, end):
+                nt1, nt2 = wfst[start][mid], wfst[mid][end]
+                <span class="pysrc-keyword">if</span> nt1 <span class="pysrc-keyword">and</span> nt2 <span class="pysrc-keyword">and</span> (nt1,nt2) <span class="pysrc-keyword">in</span> index:
+                    wfst[start][end] = index[(nt1,nt2)]
+                    <span class="pysrc-keyword">if</span> trace:
+                        <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"[%s] %3s [%s] %3s [%s] ==&gt; [%s] %3s [%s]"</span> % \
+                        (start, nt1, mid, nt2, end, start, index[(nt1,nt2)], end))
+    return wfst
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">display</span>(wfst, tokens):
+    <span class="pysrc-keyword">print</span>(<span class="pysrc-string">'\nWFST '</span> + <span class="pysrc-string">' '</span>.join((<span class="pysrc-string">"%-4d"</span> % i) <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(1, len(wfst))))
+    <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(len(wfst)-1):
+        <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"%d   "</span> % i, end=<span class="pysrc-string">" "</span>)
+        <span class="pysrc-keyword">for</span> j <span class="pysrc-keyword">in</span> range(1, len(wfst)):
+            <span class="pysrc-keyword">print</span>(<span class="pysrc-string">"%-4s"</span> % (wfst[i][j] <span class="pysrc-keyword">or</span> <span class="pysrc-string">'.'</span>), end=<span class="pysrc-string">" "</span>)
+        <span class="pysrc-keyword">print</span>()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = <span class="pysrc-string">"I shot an elephant in my pajamas"</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wfst0 = init_wfst(tokens, groucho_grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>display(wfst0, tokens)
+WFST 1    2    3    4    5    6    7
+0    NP   .    .    .    .    .    .
+1    .    V    .    .    .    .    .
+2    .    .    Det  .    .    .    .
+3    .    .    .    N    .    .    .
+4    .    .    .    .    P    .    .
+5    .    .    .    .    .    Det  .
+6    .    .    .    .    .    .    N
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wfst1 = complete_wfst(wfst0, tokens, groucho_grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>display(wfst1, tokens)
+WFST 1    2    3    4    5    6    7
+0    NP   .    .    S    .    .    S
+1    .    V    .    VP   .    .    VP
+2    .    .    Det  NP   .    .    .
+3    .    .    .    N    .    .    .
+4    .    .    .    .    P    .    PP
+5    .    .    .    .    .    Det  NP
+6    .    .    .    .    .    .    N</pre>
+<p><font id="341">回到我们的表格表示，假设对于词<span class="example">an</span>我们有<tt class="doctest"><span class="pre">Det</span></tt>在(2, 3)单元，对以词<span class="example">elephant</span>有<tt class="doctest"><span class="pre">N</span></tt>在(3, 4)单元，对于<span class="example">an elephant</span>我们应该在(2, 4)放入什么？</font><font id="342">我们需要找到一个形如<em>A</em> → <tt class="doctest"><span class="pre">Det N</span></tt>的产生式。查询了文法，我们知道我们可以输入(0, 2)单元的<tt class="doctest"><span class="pre">NP</span></tt>。</font></p>
+<p><font id="343">更一般的，我们可以在<span class="math">(i, j)</span>输入<em>A</em>，如果有一个产生式<em>A</em> → <em>B</em> <em>C</em>，并且我们在<span class="math">(i, k)</span>中找到非终结符<em>B</em>，在<span class="math">(k, j)</span>中找到非终结符<em>C</em>。</font><font id="344"><a class="reference internal" href="./ch08.html#code-wfst">4.4</a>中的程序使用此规则完成WFST。</font><font id="345">通过调用函数<tt class="doctest"><span class="pre">complete_wfst()</span></tt>时设置 <tt class="doctest"><span class="pre">trace</span></tt>为<tt class="doctest"><span class="pre">True</span></tt>，我们看到了显示WFST正在被创建的跟踪输出：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wfst1 = complete_wfst(wfst0, tokens, groucho_grammar, trace=True)
+<span class="pysrc-output">[2] Det [3]   N [4] ==&gt; [2]  NP [4]</span>
+<span class="pysrc-output">[5] Det [6]   N [7] ==&gt; [5]  NP [7]</span>
+<span class="pysrc-output">[1]   V [2]  NP [4] ==&gt; [1]  VP [4]</span>
+<span class="pysrc-output">[4]   P [5]  NP [7] ==&gt; [4]  PP [7]</span>
+<span class="pysrc-output">[0]  NP [1]  VP [4] ==&gt; [0]   S [4]</span>
+<span class="pysrc-output">[1]  VP [4]  PP [7] ==&gt; [1]  VP [7]</span>
+<span class="pysrc-output">[0]  NP [1]  VP [7] ==&gt; [0]   S [7]</span></pre>
+<p><font id="346">例如，由于我们在<tt class="doctest"><span class="pre">wfst[2][3]</span></tt>找到<tt class="doctest"><span class="pre">Det</span></tt>，在<tt class="doctest"><span class="pre">wfst[3][4]</span></tt>找到<tt class="doctest"><span class="pre">N</span></tt>，我们可以添加<tt class="doctest"><span class="pre">NP</span></tt>到<tt class="doctest"><span class="pre">wfst[2][4]</span></tt>。</font></p>
+<div class="note"><p class="first admonition-title"><font id="347">注意</font></p>
+<p class="last"><font id="348">为了帮助我们更简便地通过产生式的右侧检索产生式，我们为语法创建一个索引。</font><font id="349">这是空间-时间权衡的一个例子：我们对语法做反向查找，每次我们想要通过右侧查找产生式时不必遍历整个产生式列表。</font></p>
+</div>
+<div class="figure" id="fig-chart-positions2"><img alt="Images/chart_positions2.png" src="Images/eb630c6034e9ed7274ef2e04b9694347.jpg" style="width: 129.75px; height: 44.0px;"/><p class="caption"><font id="350"><span class="caption-label">图 4.5</span>：图数据结构：图中额外的边表示非终结符。</font></p>
+</div>
+<p><font id="351">我们得出结论，只要我们已经在(0, 7)单元构建了一个<tt class="doctest"><span class="pre">S</span></tt>节点，表明我们已经找到了一个涵盖了整个输入的句子，我们就为整个输入字符串找到了一个解析。</font><font id="352">最后的WFST状态如<a class="reference internal" href="./ch08.html#fig-chart-positions2">4.5</a>所示。</font></p>
+<p><font id="353">请注意，在这里我们没有使用任何内置的分析函数。</font><font id="354">我们已经从零开始实现了一个完整的初级图表分析器！</font></p>
+<p><font id="355">WFST有几个缺点。</font><font id="356">首先，正如你可以看到的，WFST本身不是一个分析树，所以该技术严格地说是<span class="termdef">认识</span>到一个句子被一个语法承认，而不是分析它。</font><font id="357">其次，它要求每个非词汇语法生产式是<span class="emphasis">二元的</span>。</font><font id="358">虽然可以将任意的CFG转换为这种形式，我们宁愿使用这种方法时没有这样的规定。</font><font id="359">第三，作为一个自下而上的语法，它潜在的存在浪费，它会在不符合文法的地方提出成分。</font></p>
+<p><font id="360">最后，WFST并不能表示句子中的结构歧义（</font><font id="361">如两个动词短语的读取）。</font><font id="362">(1, 7)单元中的<tt class="doctest"><span class="pre">VP</span></tt>实际上被输入了两次，一次是读取<tt class="doctest"><span class="pre">V NP</span></tt>，一次是读取<tt class="doctest"><span class="pre">VP PP</span></tt> 。</font><font id="363">这是不同的假设，第二个会覆盖第一个（虽然如此，这并不重要，因为左侧是相同的。）</font><font id="364">图表分析器使用稍微更丰富的数据结构和一些有趣的算法来解决这些问题（详细情况参见本章末尾的进一步阅读一节）。</font></p>
+<div class="note"><p class="first admonition-title"><font id="365">注意</font></p>
+<p class="last"><font id="366"><strong>轮到你来：</strong>尝试交互式图表分析器应用程序<tt class="doctest"><span class="pre">nltk.app.chartparser()</span></tt>。</font></p>
+</div>
+
+
+<div class="section" id="dependencies-and-dependency-grammar"><h2 class="sigil_not_in_toc"><font id="367">5 依存关系和依存文法</font></h2>
+<p><font id="368">短语结构文法是关于词和词序列如何<span class="emphasis">结合</span>起来形成句子成分的。</font><font id="369">一个独特的和互补的方式，依存语法，集中关注的是词与其他词之间的<span class="emphasis">关系</span>。</font><font id="370">依存关系是一个<span class="termdef">中心词</span>与它的<span class="termdef">依赖</span>之间的二元对称关系。</font><font id="371">一个句子的中心词通常是动词，所有其他词要么依赖于中心词，要么依赖路径与它联通。</font></p>
+<p><font id="372">一个句子的中心词通常是动词，所有其他词要么依赖于中心词，要么依赖路径与它联通。</font><font id="373"><a class="reference internal" href="./ch08.html#fig-depgraph0">5.1</a>显示一个依存关系图，箭头从中心词指出它们的依赖。</font></p>
+<div class="figure" id="fig-depgraph0"><img alt="Images/depgraph0.png" src="Images/ff868af58b8c1843c38287717b137f7c.jpg" style="width: 643.3px; height: 109.55px;"/><p class="caption"><font id="374"><span class="caption-label">图 5.1</span>：依存结构：箭头从中心词指向它们的依赖；标签表示依赖的语法功能如：主语、宾语或修饰语。</font></p>
+</div>
+<p><font id="375"><a class="reference internal" href="./ch08.html#fig-depgraph0">5.1</a>中的弧加了依赖与它的中心词之间的语法功能标签。</font><font id="376">例如，<span class="example">I</span>是<span class="example">shot</span>（这是整个句子的中心词）的<tt class="doctest"><span class="pre">SBJ</span></tt>（主语），<span class="example">in</span>是一个<tt class="doctest"><span class="pre">NMOD</span></tt>（<span class="example">elephant</span>的名词修饰语）。</font><font id="377">与短语结构语法相比，依存语法可以作为一种依存关系直接用来表示语法功能。</font></p>
+<p><font id="378">下面是NLTK为依存语法编码的一种方式——注意它只能捕捉依存关系信息，不能指定依存关系类型：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>groucho_dep_grammar = nltk.DependencyGrammar.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">'shot' -&gt; 'I' | 'elephant' | 'in'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">'elephant' -&gt; 'an' | 'in'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">'in' -&gt; 'pajamas'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">'pajamas' -&gt; 'my'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(groucho_dep_grammar)
+<span class="pysrc-output">Dependency grammar with 7 productions</span>
+<span class="pysrc-output">  'shot' -&gt; 'I'</span>
+<span class="pysrc-output">  'shot' -&gt; 'elephant'</span>
+<span class="pysrc-output">  'shot' -&gt; 'in'</span>
+<span class="pysrc-output">  'elephant' -&gt; 'an'</span>
+<span class="pysrc-output">  'elephant' -&gt; 'in'</span>
+<span class="pysrc-output">  'in' -&gt; 'pajamas'</span>
+<span class="pysrc-output">  'pajamas' -&gt; 'my'</span></pre>
+<p><font id="379">依存关系图是一个<span class="termdef">投影</span>，当所有的词都按线性顺序书写，边可以在词上绘制而不会交叉。</font><font id="380">这等于是说一个词及其所有后代依赖（依赖及其依赖的依赖，等等）</font><font id="381">在句子中形成一个连续的词序列。</font><font id="382"><a class="reference internal" href="./ch08.html#fig-depgraph0">5.1</a>是一个投影，我们可以使用投影依存关系分析器分析很多英语句子。</font><font id="383">下面的例子演示<tt class="doctest"><span class="pre">groucho_dep_grammar</span></tt>如何提供了一种替代的方法来捕捉附着歧义，我们之前在研究短语结构语法中遇到的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pdp = nltk.ProjectiveDependencyParser(groucho_dep_grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">'I shot an elephant in my pajamas'</span>.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>trees = pdp.parse(sent)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> trees:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(shot I (elephant an (in (pajamas my))))</span>
+<span class="pysrc-output">(shot I (elephant an) (in (pajamas my)))</span></pre>
+<p><font id="384">这些括号括起来的依存关系结构也可以显示为树，依赖被作为它们的中心词的孩子。</font></p>
+<p></p>
+<pre class="literal-block">VP -&gt; TV NP
+TV -&gt; 'chased' | 'saw'
+</pre>
+<div class="section" id="scaling-up"><h2 class="sigil_not_in_toc"><font id="477">5.2 扩大规模</font></h2>
+<p><font id="478">到目前为止，我们只考虑了“玩具语法”，演示分析的关键环节的少量的语法。</font><font id="479">但有一个明显的问题就是这种做法是否可以扩大到覆盖自然语言的大型语料库。</font><font id="480">手工构建这样的一套产生式有多么困难？</font><font id="481">一般情况下，答案是：<em>非常困难</em>。</font><font id="482">即使我们允许自己使用各种形式化的工具，它们可以提供语法产生式更简洁的表示，保持对覆盖一种语言的主要成分所需要的众多产生式之间的复杂的相互作用的控制，仍然是极其困难的。</font><font id="483">换句话说，很难将语法模块化，每部分语法可以独立开发。</font><font id="484">反过来这意味着，在一个语言学家团队中分配编写语法的任务是很困难的。</font><font id="485">另一个困难是当语法扩展到包括更加广泛的成分时，适用于任何一个句子的分析的数量也相应增加。</font><font id="486">换句话说，歧义随着覆盖而增加。</font></p>
+<p><font id="487">尽管存在这些问题，一些大的合作项目在为几种语言开发基于规则的语法上已取得了积极的和令人印象深刻的结果。</font><font id="488">例如，词汇功能语法（LFG）Pargram 项目、中心词驱动短语结构文法（HPSG）LinGO 矩阵框架和词汇化树邻接语法XTAG项目。</font></p>
+</div>
+</div>
+<div class="section" id="grammar-development"><h2 class="sigil_not_in_toc"><font id="489">6 语法开发</font></h2>
+<p><font id="490">分析器根据短语结构语法在句子上建立树。</font><font id="491">现在，我们上面给出的所有例子只涉及玩具语法包含少数的产生式。</font><font id="492">如果我们尝试扩大这种方法的规模来处理现实的语言语料库会发生什么？</font><font id="493">在本节中，我们将看到如何访问树库，并看看开发广泛覆盖的语法的挑战。</font></p>
+<div class="section" id="treebanks-and-grammars"><h2 class="sigil_not_in_toc"><font id="494">6.1 树库和语法</font></h2>
+<p><font id="495"><tt class="doctest"><span class="pre">corpus</span></tt>模块定义了<tt class="doctest"><span class="pre">treebank</span></tt>语料的阅读器，其中包含了宾州树库语料的10％的样本。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> treebank
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>t = treebank.parsed_sents(<span class="pysrc-string">'wsj_0001.mrg'</span>)[0]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(t)
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP-SBJ</span>
+<span class="pysrc-output">    (NP (NNP Pierre) (NNP Vinken))</span>
+<span class="pysrc-output">    (, ,)</span>
+<span class="pysrc-output">    (ADJP (NP (CD 61) (NNS years)) (JJ old))</span>
+<span class="pysrc-output">    (, ,))</span>
+<span class="pysrc-output">  (VP</span>
+<span class="pysrc-output">    (MD will)</span>
+<span class="pysrc-output">    (VP</span>
+<span class="pysrc-output">      (VB join)</span>
+<span class="pysrc-output">      (NP (DT the) (NN board))</span>
+<span class="pysrc-output">      (PP-CLR</span>
+<span class="pysrc-output">        (IN as)</span>
+<span class="pysrc-output">        (NP (DT a) (JJ nonexecutive) (NN director)))</span>
+<span class="pysrc-output">      (NP-TMP (NNP Nov.) (CD 29))))</span>
+<span class="pysrc-output">  (. .))</span></pre>
+<p><font id="496">我们可以利用这些数据来帮助开发一个语法。</font><font id="497">例如，<a class="reference internal" href="./ch08.html#code-sentential-complement">6.1</a>中的程序使用一个简单的过滤器找出带句子补语的动词。</font><font id="498">假设我们已经有一个形如<tt class="doctest"><span class="pre">VP -&gt; Vs S</span></tt>的产生式，这个信息使我们能够识别那些包括在<tt class="doctest"><span class="pre">Vs</span></tt>的扩张中的特别的动词。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">filter</span>(tree):
+    child_nodes = [child.label() <span class="pysrc-keyword">for</span> child <span class="pysrc-keyword">in</span> tree
+                   <span class="pysrc-keyword">if</span> isinstance(child, nltk.Tree)]
+    return  (tree.label() == <span class="pysrc-string">'VP'</span>) <span class="pysrc-keyword">and</span> (<span class="pysrc-string">'S'</span> <span class="pysrc-keyword">in</span> child_nodes)</pre>
+<p><font id="500">PP附着语料库<tt class="doctest"><span class="pre">nltk.corpus.ppattach</span></tt>是另一个有关特别动词配价的信息源。</font><font id="501">在这里，我们演示挖掘这个语料库的技术。</font><font id="502">它找出具有固定的介词和名词的介词短语对，其中介词短语附着到<tt class="doctest"><span class="pre">VP</span></tt>还是<tt class="doctest"><span class="pre">NP</span></tt>，由选择的动词决定。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> defaultdict
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>entries = nltk.corpus.ppattach.attachments(<span class="pysrc-string">'training'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>table = defaultdict(<span class="pysrc-keyword">lambda</span>: defaultdict(set))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> entries:
+<span class="pysrc-more">... </span>    key = entry.noun1 + <span class="pysrc-string">'-'</span> + entry.prep + <span class="pysrc-string">'-'</span> + entry.noun2
+<span class="pysrc-more">... </span>    table[key][entry.attachment].add(entry.verb)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> key <span class="pysrc-keyword">in</span> sorted(table):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(table[key]) &gt; 1:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(key, <span class="pysrc-string">'N:'</span>, sorted(table[key][<span class="pysrc-string">'N'</span>]), <span class="pysrc-string">'V:'</span>, sorted(table[key][<span class="pysrc-string">'V'</span>]))</pre>
+<p><font id="503">这个程序的输出行中我们发现<tt class="doctest"><span class="pre">offer-<span class="pysrc-keyword">from</span>-group N: [<span class="pysrc-string">'rejected'</span>] V: [<span class="pysrc-string">'received'</span>]</span></tt>，这表示<span class="example">received</span>期望一个单独的<tt class="doctest"><span class="pre">PP</span></tt>附着到<tt class="doctest"><span class="pre">VP</span></tt>而<span class="example">rejected</span>不是的。</font><font id="504">和以前一样，我们可以使用此信息来帮助构建语法。</font></p>
+<p><font id="505">NLTK语料库收集了来自PE08跨框架跨领域分析器评估共享任务的数据。</font><font id="506">一个更大的文法集合已准备好用于比较不同的分析器，它可以通过下载<tt class="doctest"><span class="pre">large_grammars</span></tt>包获得（如</font><font id="507"><tt class="doctest"><span class="pre">python -m nltk.downloader large_grammars</span></tt>）。</font></p>
+<p><font id="508">NLTK语料库也收集了<em>中央研究院树库语料</em>，包括10,000句已分析的句子，来自<em>现代汉语中央研究院平衡语料库</em>。</font><font id="509">让我们加载并显示这个语料库中的一棵树。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.sinica_treebank.parsed_sents()[3450].draw()               </pre>
+<img alt="Images/sinica-tree.png" src="Images/10a910dd6de117ab7a0ab352519f7297.jpg" style="width: 703.1999999999999px; height: 208.2px;"/>
+<div class="section" id="pernicious-ambiguity"><h2 class="sigil_not_in_toc"><font id="510">6.2 有害的歧义</font></h2>
+<p><font id="511">不幸的是，随着文法覆盖范围的增加和输入句子长度的增长，分析树的数量也迅速增长。</font><font id="512">事实上，它以天文数字的速度增长。</font></p>
+<p><font id="513">让我们在一个简单的例子帮助下来探讨这个问题。</font><font id="514">词<span class="example">fish</span>既是名词又是动词。</font><font id="515">我们可以造这样的句子<span class="example">fish fish fish</span>，意思是<em>fish like to fish for other fish</em>。</font><font id="516">（用<span class="example">police</span>尝试一下，如果你喜欢更有意思的东西。）</font><font id="517">下面是“fish”句子的玩具文法。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar = nltk.CFG.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">S -&gt; NP V NP</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">NP -&gt; NP Sbar</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">Sbar -&gt; NP V</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">NP -&gt; 'fish'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">V -&gt; 'fish'</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>)</pre>
+<p><font id="518">现在，我们可以尝试分析一个较长的句子，<span class="example">fish fish fish fish fish</span>，其中一个意思是：“fish that other fish fish are in the habit of fishing fish themselves”。</font><font id="519">我们使用NLTK的图表分析器，它在本章前面介绍过。</font><font id="520">这句话有两种读法。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = [<span class="pysrc-string">"fish"</span>] * 5
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.ChartParser(grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> cp.parse(tokens):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S (NP fish) (V fish) (NP (NP fish) (Sbar (NP fish) (V fish))))</span>
+<span class="pysrc-output">(S (NP (NP fish) (Sbar (NP fish) (V fish))) (V fish) (NP fish))</span></pre>
+<p><font id="521">随着句子长度增加到（3，5，7，...），我们得到的分析树的数量是：1; 2; 5; 14; 42; 132; 429; 1,430; 4,862; 16,796; 58,786; 208,012; ….（这是<span class="term">Catalan数</span>，我们在<a class="reference external" href="./ch04.html#chap-structured-programming">4</a>的练习中见过）。</font><font id="522">最后一个是句子长度为23的分析树的数目，这是宾州树库WSJ部分的句子的平均长度。</font><font id="523">对于一个长度为50的句子有超过10<sup>12</sup>的解析，这只是Piglet 句子长度的一半（<a class="reference internal" href="./ch08.html#sec-dilemmas">1</a>），这些句子小孩可以毫不费力的处理。</font><font id="524">没有实际的自然语言处理系统可以为一个句子构建数以百万计的树，并根据上下文选择一个合适的。</font><font id="525">很显然，人也不会这样做！</font></p>
+<p><font id="526">请注意，这个问题不是只在我们选择的例子中存在。</font><font id="527"><a class="reference external" href="./bibliography.html#church1982csa" id="id3">(Church &amp; Patil, 1982)</a>指出<tt class="doctest"><span class="pre">PP</span></tt>附着句法歧义在像<a class="reference internal" href="./ch08.html#ex-pp">(18)</a>这样的句子中也是按Catalan数的比例增长。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">give</span>(t):
+    return t.label() == <span class="pysrc-string">'VP'</span> <span class="pysrc-keyword">and</span> len(t) &gt; 2 <span class="pysrc-keyword">and</span> t[1].label() == <span class="pysrc-string">'NP'</span>\
+           <span class="pysrc-keyword">and</span> (t[2].label() == <span class="pysrc-string">'PP-DTV'</span> <span class="pysrc-keyword">or</span> t[2].label() == <span class="pysrc-string">'NP'</span>)\
+           <span class="pysrc-keyword">and</span> (<span class="pysrc-string">'give'</span> <span class="pysrc-keyword">in</span> t[0].leaves() <span class="pysrc-keyword">or</span> <span class="pysrc-string">'gave'</span> <span class="pysrc-keyword">in</span> t[0].leaves())
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">sent</span>(t):
+    return <span class="pysrc-string">' '</span>.join(token <span class="pysrc-keyword">for</span> token <span class="pysrc-keyword">in</span> t.leaves() <span class="pysrc-keyword">if</span> token[0] <span class="pysrc-keyword">not</span> <span class="pysrc-keyword">in</span> <span class="pysrc-string">'*-0'</span>)
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">print_node</span>(t, width):
+        output = <span class="pysrc-string">"%s %s: %s / %s: %s"</span> %\
+            (sent(t[0]), t[1].label(), sent(t[1]), t[2].label(), sent(t[2]))
+        <span class="pysrc-keyword">if</span> len(output) &gt; width:
+            output = output[:width] + <span class="pysrc-string">"..."</span>
+        <span class="pysrc-keyword">print</span>(output)</pre>
+<p><font id="572">我们可以观察到一种强烈的倾向就是最短的补语最先出现。</font><font id="573">然而，这并没有解释类似<tt class="doctest"><span class="pre">give NP: federal judges / NP: a raise</span></tt>的形式，其中有生性起了重要作用。</font><font id="574">事实上，根据<a class="reference external" href="./bibliography.html#bresnan2006gg" id="id5">(Bresnan &amp; Hay, 2006)</a>的调查，存在大量的影响因素。</font><font id="575">这些偏好可以用加权语法来表示。</font></p>
+<p><font id="576"><span class="termdef">概率上下文无关语法</span>（或<em>PCFG</em>）是一种上下文无关语法，它的每一个产生式关联一个概率。</font><font id="577">它会产生与相应的上下文无关语法相同的文本解析，并给每个解析分配一个概率。</font><font id="578">PCFG产生的一个解析的概率仅仅是它用到的产生式的概率的乘积。</font></p>
+<p><font id="579">最简单的方法定义一个PCFG 是从一个加权产生式序列组成的特殊格式的字符串加载它，其中权值出现在括号里，如<a class="reference internal" href="./ch08.html#code-pcfg1">6.4</a>所示。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar = nltk.PCFG.fromstring(<span class="pysrc-string">"""</span>
+<span class="pysrc-string">    S    -&gt; NP VP              [1.0]</span>
+<span class="pysrc-string">    VP   -&gt; TV NP              [0.4]</span>
+<span class="pysrc-string">    VP   -&gt; IV                 [0.3]</span>
+<span class="pysrc-string">    VP   -&gt; DatV NP NP         [0.3]</span>
+<span class="pysrc-string">    TV   -&gt; 'saw'              [1.0]</span>
+<span class="pysrc-string">    IV   -&gt; 'ate'              [1.0]</span>
+<span class="pysrc-string">    DatV -&gt; 'gave'             [1.0]</span>
+<span class="pysrc-string">    NP   -&gt; 'telescopes'       [0.8]</span>
+<span class="pysrc-string">    NP   -&gt; 'Jack'             [0.2]</span>
+<span class="pysrc-string">    """</span>)</pre>
+<p><font id="581">有时可以很方便的将多个产生式组合成一行，如</font><font id="582"><tt class="doctest"><span class="pre">VP -&gt; TV NP [0.4] | IV [0.3] | DatV NP NP [0.3]</span></tt>。</font><font id="583">为了确保由文法生成的树能形成概率分布，PCFG语法强加了约束，产生式所有给定的左侧的概率之和必须为1。</font><font id="584"><a class="reference internal" href="./ch08.html#code-pcfg1">6.4</a>中的语法符合这个约束：对<tt class="doctest"><span class="pre">S</span></tt>只有一个产生式，它的概率是1.0；对于<tt class="doctest"><span class="pre">VP</span></tt>，0.4+0.3+0.3=1.0；对于<tt class="doctest"><span class="pre">NP</span></tt>，0.8+0.2=1.0。</font><font id="585"><tt class="doctest"><span class="pre">parse()</span></tt>返回的分析树包含概率：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>viterbi_parser = nltk.ViterbiParser(grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tree <span class="pysrc-keyword">in</span> viterbi_parser.parse([<span class="pysrc-string">'Jack'</span>, <span class="pysrc-string">'saw'</span>, <span class="pysrc-string">'telescopes'</span>]):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tree)
+<span class="pysrc-output">(S (NP Jack) (VP (TV saw) (NP telescopes))) (p=0.064)</span></pre>
+<p><font id="586">现在，分析树被分配了概率，一个给定的句子可能有数量庞大的可能的解析就不再是问题。</font><font id="587">分析器将负责寻找最有可能的解析。</font></p>
+
+
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="588">7 小结</font></h2>
+<ul class="simple"><li><font id="589">句子都有内部组织结构，可以用一棵树表示。</font><font id="590">组成结构的显著特点是：递归、中心词、补语和修饰语。</font></li>
+<li><font id="591">语法是一个潜在的无限的句子集合的一个紧凑的特性；我们说，一棵树是符合语法规则的或语法树授权一棵树。</font></li>
+<li><font id="592">语法是用于描述一个给定的短语是否可以被分配一个特定的成分或依赖结构的一种形式化模型。</font></li>
+<li><font id="593">给定一组句法类别，上下文无关文法使用一组生产式表示某类型<em>A</em>的短语如何能够被分析成较小的序列α<sub>1</sub> ... α<sub>n</sub>。</font></li>
+<li><font id="594">依存语法使用产生式指定给定的中心词的依赖是什么。</font></li>
+<li><font id="595">一个句子有一个以上的句法分析就产生句法歧义（如</font><font id="596">介词短语附着歧义）。</font></li>
+<li><font id="597">分析器是一个过程，为符合语法规则的句子寻找一个或多个相应的树。</font></li>
+<li><font id="598">一个简单的自上而下分析器是递归下降分析器，在语法产生式的帮助下递归扩展开始符号（通常是<tt class="doctest"><span class="pre">S</span></tt>），尝试匹配输入的句子。</font><font id="599">这个分析器并不能处理左递归产生式（如<tt class="doctest"><span class="pre">NP -&gt; NP PP</span></tt>）。</font><font id="600">它盲目扩充类别而不检查它们是否与输入字符串兼容的方式效率低下，而且会重复扩充同样的非终结符然后丢弃结果。</font></li>
+<li><font id="601">一个简单的自下而上的分析器是移位-规约分析器，它把输入移到一个堆栈中，并尝试匹配堆栈顶部的项目和语法产生式右边的部分。</font><font id="602">这个分析器不能保证为输入找到一个有效的解析，即使它确实存在，它建立子结构而不检查它是否与全部语法一致。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="603">8 深入阅读</font></h2>
+<p><font id="604">本章的附加材料发布在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>，包括网络上免费提供的资源的链接。</font><font id="605">关于使用NLTK分析的更多的例子，请看在<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的分析HOWTO。</font></p>
+<p><font id="606">有许多关于句法的入门书籍。</font><font id="607"><a class="reference external" href="./bibliography.html#ogrady2004" id="id6">(O'Grady et al, 2004)</a>是一个语言学概论，而<a class="reference external" href="./bibliography.html#radford1988tg" id="id7">(Radford, 1988)</a>以容易接受的方式介绍转换语法，推荐其中的无限制依赖结构的转换文法。</font><font id="608">在形式语言学中最广泛使用的术语是<span class="termdef">生成语法</span>，虽然它与生成并没有关系<a class="reference external" href="./bibliography.html#chomsky1965" id="id8">(Chomsky, 1965)</a>。</font><font id="609">X-bar句法来自于<a class="reference external" href="./bibliography.html#chomsky1970rn" id="id9">(Jacobs &amp; Rosenbaum, 1970)</a>，并在<a class="reference external" href="./bibliography.html#jackendoff1977xs" id="id10">(Jackendoff, 1977)</a>得到更深的拓展（The primes we use replace Chomsky's typographically more demanding horizontal bars）。</font></p>
+<p><font id="610"><a class="reference external" href="./bibliography.html#burtonroberts1997as" id="id11">(Burton-Roberts, 1997)</a>是一本面向实践的关于如何分析英语成分的教科书，包含广泛的例子和练习。</font><font id="611"><a class="reference external" href="./bibliography.html#huddleston2002cge" id="id12">(Huddleston &amp; Pullum, 2002)</a>提供了一份最新的英语句法现象的综合分析。</font></p>
+<p><font id="612"><a class="reference external" href="./bibliography.html#jurafskymartin2008" id="id13">(Jurafsky &amp; Martin, 2008)</a>的第12章讲述英语的形式文法；13.1-3节讲述简单的分析算法和歧义处理技术；第14章讲述统计分析；第16章讲述乔姆斯基层次和自然语言的形式复杂性。</font><font id="613"><a class="reference external" href="./bibliography.html#levin1993" id="id14">(Levin, 1993)</a>根据它们的句法属性，将英语动词划分成更细的类。</font></p>
+<p><font id="614">有几个正在进行的建立大规模的基于规则的语法的项目，如</font><font id="615">LFG Pargram 项目<tt class="doctest"><span class="pre">http://www2.parc.com/istl/groups/nltt/pargram/</span></tt>，HPSG LinGO 矩阵框架<tt class="doctest"><span class="pre">http://www.delph-<span class="pysrc-keyword">in</span>.net/matrix/</span></tt>以及XTAG 项目<tt class="doctest"><span class="pre">http://www.cis.upenn.edu/~xtag/</span></tt>。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="616">9 练习</font></h2>
+<ol class="arabic"><li><p class="first"><font id="617">☼ 你能想出符合语法的却可能之前从来没有被说出的句子吗？</font><font id="618">（与伙伴轮流进行。）</font><font id="619">这告诉你关于人类语言的什么？</font></p></li>
+<li><p class="first"><font id="620">☼ 回想一下Strunk和White的禁止在句子开头使用<span class="example">however</span>表示“although”的意思。</font><font id="621">在网上搜索句子开头使用的<span class="example">however</span>。</font><font id="622">这个成分使用的有多广泛？</font></p></li>
+<li><p class="first"><font id="623">☼ 思考句子<cite>Kim arrived or Dana left and everyone cheered</cite>。</font><font id="624">用括号的形式表示<span class="example">and</span>和<span class="example">or</span>的相对范围。</font><font id="625">产生这两种解释对应的树结构。</font></p></li>
+<li><p class="first"><font id="626">☼ <tt class="doctest"><span class="pre">Tree</span></tt>类实现了各种其他有用的方法。</font><font id="627">请看<tt class="doctest"><span class="pre">Tree</span></tt>帮助文档查阅更多细节（如</font><font id="628">导入Tree类，然后输入<tt class="doctest"><span class="pre">help(Tree)</span></tt>）。</font></p></li>
+<li><p class="first"><font id="629">☼ 在本练习中，你将手动构造一些分析树。</font></p><ol class="loweralpha simple"><li><font id="630">编写代码产生两棵树，对应短语<span class="example">old men and women</span>的不同读法</font></li>
+<li><font id="631">将本章中表示的任一一颗树编码为加标签的括号括起的形式，使用<tt class="doctest"><span class="pre">nltk.Tree()</span></tt>检查它是否符合语法。</font><font id="632">使用<tt class="doctest"><span class="pre">draw()</span></tt>显示树。</font></li>
+<li><font id="633">如(a) 中那样，为<span class="example">The woman saw a man last Thursday</span>画一棵树。</font></li>
+</ol></li>
+<li><p class="first"><font id="634">☼ 写一个递归函数，遍历一颗树，返回树的深度，一颗只有一个节点的树的深度应为0。</font><font id="635">（提示：子树的深度是其子女的最大深度加1。）</font></p></li>
+<li><p class="first"><font id="636">☼ 分析A.A. Milne 关于Piglet 的句子，为它包含的所有句子画下划线，然后用<tt class="doctest"><span class="pre">S</span></tt>替换这些（如</font><font id="637">第一句话变为<tt class="doctest"><span class="pre">S</span></tt> <cite>when</cite>:lx` <tt class="doctest"><span class="pre">S</span></tt>）。</font><font id="638">为这种“压缩”的句子画一个树形结构。</font><font id="639">用于建立这样一个长句的主要的句法结构是什么？</font></p></li>
+<li><p class="first"><font id="640">☼ 在递归下降分析器的演示中，通过选择<em>Edit</em>菜单上的<em>Edit Text</em>改变实验句子。</font></p></li>
+<li><p class="first"><font id="641">☼ <tt class="doctest"><span class="pre">grammar1</span></tt>中的语法能被用来描述长度超过20 词的句子吗？</font></p></li>
+<li><p class="first"><font id="642">☼ 使用图形化图表分析器接口，尝试不同的规则调用策略做实验。</font><font id="643">拿出你自己的可以使用图形界面手动执行的策略。</font><font id="644">描述步骤，并报告它的任何效率的提高（例如</font><font id="645">用结果图表示大小）。</font><font id="646">这些改进取决于语法结构吗？</font><font id="647">你觉得一个更聪明的规则调用策略能显著提升性能吗？</font></p></li>
+<li><p class="first"><font id="648">☼ 对于一个你已经见过的或一个你自己设计的CFG，用笔和纸手动跟踪递归下降分析器和移位-规约分析器的执行。</font></p></li>
+<li><p class="first"><font id="649">☼ 我们已经看到图表分析器增加边而从来不从图表中删除的边。</font><font id="650">为什么？</font></p></li>
+<li><p class="first"><font id="651">☼ 思考词序列：<span class="example">Buffalo buffalo Buffalo buffalo buffalo buffalo Buffalo buffalo</span>。</font><font id="652">如<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Buffalo_buffalo_Buffalo_buffalo_buffalo_buffalo_Buffalo_buffalo</span></tt>解释的，这是一个语法正确的句子。</font><font id="653">思考此维基百科页面上表示的树形图，写一个合适的语法。</font><font id="654">正常情况下是小写，模拟听到这句话时听者会遇到的问题。</font><font id="655">你能为这句话找到其他的解析吗？</font><font id="656">当句子变长时分析树的数量如何增长？</font><font id="657">（这些句子的更多的例子可以在<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/List_of_homophonous_phrases</span></tt>找到。）</font></p></li>
+<li><p class="first"><font id="658">◑ 你可以通过选择<em>Edit</em> 菜单上的<em>Edit Grammar</em>修改递归下降分析器演示程序。</font><font id="659">改变第二次扩充产生式，即<tt class="doctest"><span class="pre">NP -&gt; Det N PP</span></tt>为<tt class="doctest"><span class="pre">NP -&gt; NP PP</span></tt>。</font><font id="660">使用<em>Step</em>按钮，尝试建立一个分析树。</font><font id="661">发生了什么？</font></p></li>
+<li><p class="first"><font id="662">◑ 扩展<tt class="doctest"><span class="pre">grammar2</span></tt>中的语法，将产生式中的介词扩展为不及物的，及物的和需要<tt class="doctest"><span class="pre">PP</span></tt>补语的。</font><font id="663">基于这些产生式，使用前面练习中的方法为句子<span class="example">Lee ran away home</span>画一棵树。</font></p></li>
+<li><p class="first"><font id="664">◑ 挑选一些常用动词，完成以下任务：</font></p><ol class="loweralpha simple"><li><font id="665">写一个程序在PP附着语料库<tt class="doctest"><span class="pre">nltk.corpus.ppattach</span></tt>找到那些动词。</font><font id="666">找出任何这样的情况，相同的动词有两种不同的附着，其中第一个是名词，或者第二个是名词，或者介词保持不变（正如我们在<a class="reference internal" href="./ch08.html#sec-whats-the-use-of-syntax">2</a>句法歧义中讨论过的）。</font></li>
+<li><font id="667">制定CFG语法产生式涵盖其中一些情况。</font></li>
+</ol></li>
+<li><p class="first"><font id="668">◑ 写一个程序，比较自上而下的图表分析器与递归下降分析器的效率（<a class="reference internal" href="./ch08.html#sec-parsing">4</a>）。</font><font id="669">使用相同的语法和输入的句子。</font><font id="670">使用<tt class="doctest"><span class="pre">timeit</span></tt>模块比较它们的性能（见<a class="reference external" href="./ch04.html#sec-algorithm-design">4.7</a>，如何做到这一点的一个例子）。</font></p></li>
+<li><p class="first"><font id="671">比较自上而下、自下而上和左角落分析器的性能，使用相同的语法和3个符合语法的测试句子。</font><font id="672">使用<tt class="doctest"><span class="pre">timeit</span></tt>记录每个分析器在同一个句子上花费的时间。</font><font id="673">写一个函数，在这三句话上运行这三个分析器，输出3×3格的时间，以及行和列的总计。</font><font id="674">讨论你的发现。</font></p></li>
+<li><p class="first"><font id="675">◑ 阅读“garden path”的句子。</font><font id="676">一个分析器的计算工作与人类处理这些句子的困难性有什么关系？</font><font id="677"><tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Garden_path_sentence</span></tt></font></p></li>
+<li><p class="first"><font id="678">◑ 若要在一个窗口比较多个树，我们可以使用<tt class="doctest"><span class="pre">draw_trees()</span></tt>方法。</font><font id="679">定义一些树，尝试一下：</font></p><pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.draw.tree <span class="pysrc-keyword">import</span> draw_trees
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>draw_trees(tree1, tree2, tree3)                    </pre></li>
+<li><p class="first"><font id="680">◑ 使用树中的位置，列出宾州树库前100个句子的主语；为了使结果更容易查看，限制从高度最高为2的子树提取主语。</font></p></li>
+<li><p class="first"><font id="681">◑ 查看PP附着语料库，尝试提出一些影响<tt class="doctest"><span class="pre">PP</span></tt>附着的因素。</font></p></li>
+<li><p class="first"><font id="682">◑ 在本节中，我们说过简单的用术语n-grams不能描述所有语言学规律。</font><font id="683">思考下面的句子，尤其是短语<span class="example">in his turn</span>的位置。</font><font id="684">这是基于n-grams 的方法的一个问题吗？</font></p><font id="685"> <blockquote> <p><cite>What was more, the in his turn somewhat youngish Nikolay Parfenovich also turned out to be the only person in the entire world to acquire a sincere liking to our "discriminated-against" public procurator.</cite> (Dostoevsky: The Brothers Karamazov)</p>
+ </blockquote></font></li>
+<li><p class="first"><font id="686">◑ 编写一个递归函数产生嵌套的括号括起的形式的一棵树，显示去掉叶节点之后的子树的非终结符。</font><font id="687">于是上面的关于Pierre Vinken 的例子会产生：<tt class="doctest"><span class="pre">[[[NNP NNP]NP , [ADJP [CD NNS]NP JJ]ADJP ,]NP-SBJ MD [VB [DT NN]NP [IN [DT JJ NN]NP]PP-CLR [NNP CD]NP-TMP]VP .]S</span></tt>。连续的类别应用空格分隔。</font></p></li>
+<li><p class="first"><font id="688">◑ 从古登堡工程下载一些电子图书。</font><font id="689">写一个程序扫描这些文本中任何极长的句子。</font><font id="690">你能找到的最长的句子是什么？</font><font id="691">这么长的句子的句法结构是什么？</font></p></li>
+<li><p class="first"><font id="692">◑ 修改函数<tt class="doctest"><span class="pre">init_wfst()</span></tt>和<tt class="doctest"><span class="pre">complete_wfst()</span></tt>，使WFST中每个单元的内容是一组非终端符而不是一个单独的非终结符。</font></p></li>
+<li><p class="first"><font id="693">◑ 思考<a class="reference internal" href="./ch08.html#code-wfst">4.4</a>中的算法。</font><font id="694">你能解释为什么分析上下文无关语法是与<cite>n</cite><sup>3</sup>成正比的，其中<em>n</em>是输入句子的长度。</font></p></li>
+<li><p class="first"><font id="695">◑ 处理宾州树库语料库样本<tt class="doctest"><span class="pre">nltk.corpus.treebank</span></tt>中的每棵树，在<tt class="doctest"><span class="pre">Tree.productions()</span></tt>的帮助下提取产生式。</font><font id="696">丢弃只出现一次的产生式。</font><font id="697">具有相同的左侧和类似的右侧的产生式可以被折叠，产生一个等价的却更紧凑的规则集。</font><font id="698">编写代码输出一个紧凑的语法。</font></p></li>
+<li><p class="first"><font id="699">★ 英语中定义句子<tt class="doctest"><span class="pre">S</span></tt>的主语的一种常见的方法是作为<tt class="doctest"><span class="pre">S</span></tt> <em>的名词短语孩子</em>和<tt class="doctest"><span class="pre">VP</span></tt>的<em>兄弟</em>。</font><font id="700">写一个函数，以一句话的树为参数，返回句子主语对应的子树。</font><font id="701">如果传递给这个函数的树的根节点不是<tt class="doctest"><span class="pre">S</span></tt>或它缺少一个主语，应该怎么做？</font></p></li>
+<li><p class="first"><font id="702">★ 写一个函数，以一个语法（如<a class="reference internal" href="./ch08.html#code-cfg1">3.1</a>定义的语法）为参数，返回由这个语法随机产生的一个句子。</font><font id="703">（使用<tt class="doctest"><span class="pre">grammar.start()</span></tt>找出语法的开始符号；<tt class="doctest"><span class="pre">grammar.productions(lhs)</span></tt>得到具有指定左侧的语法的产生式的列表；<tt class="doctest"><span class="pre">production.rhs()</span></tt>得到一个产生式的右侧。）</font></p></li>
+<li><p class="first"><font id="704">★ 使用回溯实现移位-规约分析器的一个版本，使它找出一个句子所有可能的解析，它可以被称为“递归上升分析器”。</font><font id="705">咨询维基百科关于回溯的条目<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Backtracking</span></tt></font></p></li>
+<li><p class="first"><font id="706">★ 正如我们在<a class="reference external" href="./ch07.html#chap-chunk">7.</a>中所看到的，可以将词块表示成它们的词块标签。</font><font id="707">当我们为包含<span class="example">gave</span>的句子做这个的时候，我们发现如以下模式：</font></p><pre class="literal-block">gave NP
+gave up NP in NP
+gave NP up
+gave NP NP
+gave NP to NP
+</pre>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+</body>
+</html>

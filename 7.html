@@ -1,0 +1,654 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="extracting-information-from-text"><h1 class="title"><font id="1">7. </font><font id="2">从文本提取信息</font></h1>
+<p><font id="3">对于任何给定的问题，很可能已经有人把答案写在某个地方了。</font><font id="4">以电子形式提供的自然语言文本的数量真的惊人，并且与日俱增。</font><font id="5">然而，自然语言的复杂性使访问这些文本中的信息非常困难。</font><font id="6">NLP目前的技术水平仍然有很长的路要走才能够从不受限制的文本对意义建立通用的表示。</font><font id="7">如果我们不是集中我们的精力在问题或“实体关系”的有限集合，例如：“不同的设施位于何处”或“谁被什么公司雇用”上，我们就能取得重大进展。</font><font id="8">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="9">我们如何能构建一个系统，从非结构化文本中提取结构化数据如表格？</font></li>
+<li><font id="10">有哪些稳健的方法识别一个文本中描述的实体和关系？</font></li>
+<li><font id="11">哪些语料库适合这项工作，我们如何使用它们来训练和评估我们的模型？</font></li>
+</ol>
+<p><font id="12">一路上，我们将应用前面两章中的技术来解决分块和命名实体识别。</font></p>
+<div class="section" id="information-extraction"><h2 class="sigil_not_in_toc"><font id="13">1 信息提取</font></h2>
+<p><font id="14">信息有很多种形状和大小。</font><font id="15">一个重要的形式是<span class="termdef">结构化数据</span>：实体和关系的可预测的规范的结构。</font><font id="16">例如，我们可能对公司和地点之间的关系感兴趣。</font><font id="17">给定一个公司，我们希望能够确定它做业务的位置；反过来，给定位置，我们会想发现哪些公司在该位置做业务。</font><font id="18">如果我们的数据是表格形式，如<a class="reference internal" href="./ch07.html#tab-db-locations">1.1</a>中的例子，那么回答这些问题就很简单了。</font></p>
+<p class="caption"><font id="19"><span class="caption-label">表 1.1</span>：</font></p>
+<p><font id="20">位置数据</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>locs = [(<span class="pysrc-string">'Omnicom'</span>, <span class="pysrc-string">'IN'</span>, <span class="pysrc-string">'New York'</span>),
+<span class="pysrc-more">... </span>        (<span class="pysrc-string">'DDB Needham'</span>, <span class="pysrc-string">'IN'</span>, <span class="pysrc-string">'New York'</span>),
+<span class="pysrc-more">... </span>        (<span class="pysrc-string">'Kaplan Thaler Group'</span>, <span class="pysrc-string">'IN'</span>, <span class="pysrc-string">'New York'</span>),
+<span class="pysrc-more">... </span>        (<span class="pysrc-string">'BBDO South'</span>, <span class="pysrc-string">'IN'</span>, <span class="pysrc-string">'Atlanta'</span>),
+<span class="pysrc-more">... </span>        (<span class="pysrc-string">'Georgia-Pacific'</span>, <span class="pysrc-string">'IN'</span>, <span class="pysrc-string">'Atlanta'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>query = [e1 <span class="pysrc-keyword">for</span> (e1, rel, e2) <span class="pysrc-keyword">in</span> locs <span class="pysrc-keyword">if</span> e2==<span class="pysrc-string">'Atlanta'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(query)
+<span class="pysrc-output">['BBDO South', 'Georgia-Pacific']</span></pre>
+<p class="caption"><font id="35"><span class="caption-label">表 1.2</span>：</font></p>
+<p><font id="36">在亚特兰大运营的公司</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">ie_preprocess</span>(document):
+<span class="pysrc-more">... </span>   sentences = nltk.sent_tokenize(document) <a href="./ch07.html#ref-ie-segment"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+<span class="pysrc-more">... </span>   sentences = [nltk.word_tokenize(sent) <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> sentences] <a href="./ch07.html#ref-ie-tokenize"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></a>
+<span class="pysrc-more">... </span>   sentences = [nltk.pos_tag(sent) <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> sentences] <a href="./ch07.html#ref-ie-postag"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a></pre>
+<div class="note"><p class="first admonition-title"><font id="67">注意</font></p>
+<p class="last"><font id="68">请记住我们的例子程序假设你以<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> nltk, re, pprint</span></tt>开始交互式会话或程序。</font></p>
+</div>
+<p><font id="69">接下来，命名实体识别中，我们分割和标注可能组成一个有趣关系的实体。</font><font id="70">通常情况下，这些将被定义为名词短语，例如<span class="example">the knights who say "ni"</span>或者适当的名称如<span class="example">Monty Python</span>。</font><font id="71">在一些任务中，同时考虑不明确的名词或名词块也是有用的，如<cite>every student</cite>或<cite>cats</cite>，这些不必要一定与确定的<tt class="doctest"><span class="pre">NP</span></tt>s和适当名称一样的方式指示实体。</font></p>
+<p><font id="72">最后，在提取关系时，我们搜索对文本中出现在附近的实体对之间的特殊模式，并使用这些模式建立元组记录实体之间的关系。</font></p>
+</div>
+</div>
+<div class="section" id="chunking"><h2 class="sigil_not_in_toc"><font id="73">2 词块划分</font></h2>
+<p><font id="74">我们将用于实体识别的基本技术是<span class="termdef">词块划分</span>，它分割和标注多词符的序列，如<a class="reference internal" href="./ch07.html#fig-chunk-segmentation">2.1</a>所示。</font><font id="75">小框显示词级分词和词性标注，大框显示高级别的词块划分。</font><font id="76">每个这种较大的框叫做一个<span class="termdef">词块</span>。</font><font id="77">就像分词忽略空白符，词块划分通常选择词符的一个子集。</font><font id="78">同样像分词一样，词块划分器生成的片段在源文本中不能重叠。</font></p>
+<div class="figure" id="fig-chunk-segmentation"><img alt="Images/chunk-segmentation.png" src="Images/0e768e8c4378c2b0b3290aab46dc770e.jpg" style="width: 493.75px; height: 101.25px;"/><p class="caption"><font id="79"><span class="caption-label">图 2.1</span>：词符和词块级别的分割与标注</font></p>
+</div>
+<p><font id="80">在本节中，我们将在较深的层面探讨词块划分，以词块的定义和表示开始。</font><font id="81">我们将看到正则表达式和N-gram的方法来词块划分，使用CoNLL-2000词块划分语料库开发和评估词块划分器。</font><font id="82">我们将在<a class="reference internal" href="./ch07.html#sec-ner">(5)</a>和<a class="reference internal" href="./ch07.html#sec-relextract">6</a>回到命名实体识别和关系抽取的任务。</font></p>
+<div class="section" id="noun-phrase-chunking"><h2 class="sigil_not_in_toc"><font id="83">2.1 名词短语词块划分</font></h2>
+<p><font id="84">我们将首先思考<span class="termdef">名词短语词块划分</span>或<span class="termdef">NP词块划分</span>任务，在那里我们寻找单独名词短语对应的词块。</font><font id="85">例如，这里是一些《华尔街日报》文本，其中的<tt class="doctest"><span class="pre">NP</span></tt>词块用方括号标记：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sentence = [(<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"little"</span>, <span class="pysrc-string">"JJ"</span>), (<span class="pysrc-string">"yellow"</span>, <span class="pysrc-string">"JJ"</span>), <a href="./ch07.html#ref-chunkex-sent"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+<span class="pysrc-more">... </span>(<span class="pysrc-string">"dog"</span>, <span class="pysrc-string">"NN"</span>), (<span class="pysrc-string">"barked"</span>, <span class="pysrc-string">"VBD"</span>), (<span class="pysrc-string">"at"</span>, <span class="pysrc-string">"IN"</span>),  (<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"cat"</span>, <span class="pysrc-string">"NN"</span>)]
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar = <span class="pysrc-string">"NP: {&lt;DT&gt;?&lt;JJ&gt;*&lt;NN&gt;}"</span> <a href="./ch07.html#ref-chunkex-grammar"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></a>
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(grammar) <a href="./ch07.html#ref-chunkex-cp"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>result = cp.parse(sentence) <a href="./ch07.html#ref-chunkex-test"><img alt="[4]" class="callout" src="Images/8b4bb6b0ec5bb337fdb00c31efcc1645.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(result) <a href="./ch07.html#ref-chunkex-print"><img alt="[5]" class="callout" src="Images/bcf758e8278f3295df58c6eace05152c.jpg"/></a>
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP the/DT little/JJ yellow/JJ dog/NN)</span>
+<span class="pysrc-output">  barked/VBD</span>
+<span class="pysrc-output">  at/IN</span>
+<span class="pysrc-output">  (NP the/DT cat/NN))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>result.draw() <a href="./ch07.html#ref-chunkex-draw"><img alt="[6]" class="callout" src="Images/7bbd845f6f0cf6246561d2859cbcecbf.jpg"/></a></pre>
+<img alt="tree_images/ch07-tree-1.png" class="align-top" src="Images/da516572f97daebe1be746abd7bd2268.jpg" style="width: 356.0px; height: 144.0px;"/>
+<div class="section" id="tag-patterns"><h2 class="sigil_not_in_toc"><font id="101">2.2 标记模式</font></h2>
+<p><font id="102">组成一个词块语法的规则使用<span class="termdef">标记模式</span>来描述已标注的词的序列。</font><font id="103">一个标记模式是一个词性标记序列，用尖括号分隔，如</font><font id="104"><tt class="doctest"><span class="pre">&lt;DT&gt;?&lt;JJ&gt;*&lt;NN&gt;</span></tt>。</font><font id="105">标记模式类似于正则表达式模式（<a class="reference external" href="./ch03.html#sec-regular-expressions-word-patterns">3.4</a>）。</font><font id="106">现在，思考下面的来自《华尔街日报》的名词短语：</font></p>
+<pre class="literal-block">another/DT sharp/JJ dive/NN
+trade/NN figures/NNS
+any/DT new/JJ policy/NN measures/NNS
+earlier/JJR stages/NNS
+Panamanian/JJ dictator/NN Manuel/NNP Noriega/NNP
+</pre>
+</div>
+<div class="section" id="chunking-with-regular-expressions"><h2 class="sigil_not_in_toc"><font id="115">2.3 用正则表达式进行词块划分</font></h2>
+<p><font id="116">要找到一个给定的句子的词块结构，<tt class="doctest"><span class="pre">RegexpParser</span></tt>词块划分器以一个没有词符被划分的平面结构开始。</font><font id="117">词块划分规则轮流应用，依次更新词块结构。</font><font id="118">一旦所有的规则都被调用，返回生成的词块结构。</font></p>
+<p><font id="119"><a class="reference internal" href="./ch07.html#code-chunker1">2.3</a>显示了一个由2个规则组成的简单的词块语法。</font><font id="120">第一条规则匹配一个可选的限定词或所有格代名词，零个或多个形容词，然后跟一个名词。</font><font id="121">第二条规则匹配一个或多个专有名词。</font><font id="122">我们还定义了一个进行词块划分的例句<a class="reference internal" href="./ch07.html#code-chunker1-ex"><span id="ref-code-chunker1-ex"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></span></a>，并在此输入上运行这个词块划分器<a class="reference internal" href="./ch07.html#code-chunker1-run"><span id="ref-code-chunker1-run"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></span></a>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar = r<span class="pysrc-string">"""</span>
+<span class="pysrc-string">  NP: {&lt;DT|PP\$&gt;?&lt;JJ&gt;*&lt;NN&gt;}   # chunk determiner/possessive, adjectives and noun</span>
+<span class="pysrc-string">      {&lt;NNP&gt;+}                # chunk sequences of proper nouns</span>
+<span class="pysrc-string">"""</span>
+cp = nltk.RegexpParser(grammar)
+sentence = [(<span class="pysrc-string">"Rapunzel"</span>, <span class="pysrc-string">"NNP"</span>), (<span class="pysrc-string">"let"</span>, <span class="pysrc-string">"VBD"</span>), (<span class="pysrc-string">"down"</span>, <span class="pysrc-string">"RP"</span>), <a href="./ch07.html#ref-code-chunker1-ex"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+                 (<span class="pysrc-string">"her"</span>, <span class="pysrc-string">"PP$"</span>), (<span class="pysrc-string">"long"</span>, <span class="pysrc-string">"JJ"</span>), (<span class="pysrc-string">"golden"</span>, <span class="pysrc-string">"JJ"</span>), (<span class="pysrc-string">"hair"</span>, <span class="pysrc-string">"NN"</span>)]</pre>
+<div class="note"><p class="first admonition-title"><font id="124">注意</font></p>
+<p class="last"><font id="125"><tt class="doctest"><span class="pre">$</span></tt>符号是正则表达式中的一个特殊字符，必须使用反斜杠转义来匹配<tt class="doctest"><span class="pre">PP$</span></tt>标记。</font></p>
+</div>
+<p><font id="126">如果标记模式匹配位置重叠，最左边的匹配优先。</font><font id="127">例如，如果我们应用一个匹配两个连续的名词文本的规则到一个包含三个连续的名词的文本，则只有前两个名词将被划分：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nouns = [(<span class="pysrc-string">"money"</span>, <span class="pysrc-string">"NN"</span>), (<span class="pysrc-string">"market"</span>, <span class="pysrc-string">"NN"</span>), (<span class="pysrc-string">"fund"</span>, <span class="pysrc-string">"NN"</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar = <span class="pysrc-string">"NP: {&lt;NN&gt;&lt;NN&gt;}  # Chunk two consecutive nouns"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cp.parse(nouns))
+<span class="pysrc-output">(S (NP money/NN market/NN) fund/NN)</span></pre>
+<p><font id="128">一旦我们创建了<span class="example">money market</span>词块，我们就已经消除了允许<span class="example">fund</span>被包含在一个词块中的上下文。</font><font id="129">这个问题可以避免，使用一种更加宽容的块规则，如</font><font id="130"><tt class="doctest"><span class="pre">NP: {&lt;NN&gt;+}</span></tt>。</font></p>
+<div class="note"><p class="first admonition-title"><font id="131">注意</font></p>
+<p class="last"><font id="132">我们已经为每个块规则添加了一个注释。</font><font id="133">这些是可选的；当它们的存在时，词块划分器将它作为其跟踪输出的一部分输出这些注释。</font></p>
+</div>
+
+<div class="section" id="exploring-text-corpora"><h2 class="sigil_not_in_toc"><font id="134">2.4 探索文本语料库</font></h2>
+<p><font id="135">在<a class="reference external" href="./ch05.html#sec-tagged-corpora">2</a>中，我们看到了我们如何在已标注的语料库中提取匹配的特定的词性标记序列的短语。</font><font id="136">我们可以使用词块划分器更容易的做同样的工作，如下：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(<span class="pysrc-string">'CHUNK: {&lt;V.*&gt; &lt;TO&gt; &lt;V.*&gt;}'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown = nltk.corpus.brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> brown.tagged_sents():
+<span class="pysrc-more">... </span>    tree = cp.parse(sent)
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> subtree <span class="pysrc-keyword">in</span> tree.subtrees():
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> subtree.label() == <span class="pysrc-string">'CHUNK'</span>: <span class="pysrc-keyword">print</span>(subtree)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">(CHUNK combined/VBN to/TO achieve/VB)</span>
+<span class="pysrc-output">(CHUNK continue/VB to/TO place/VB)</span>
+<span class="pysrc-output">(CHUNK serve/VB to/TO protect/VB)</span>
+<span class="pysrc-output">(CHUNK wanted/VBD to/TO wait/VB)</span>
+<span class="pysrc-output">(CHUNK allowed/VBN to/TO place/VB)</span>
+<span class="pysrc-output">(CHUNK expected/VBN to/TO become/VB)</span>
+<span class="pysrc-output">...</span>
+<span class="pysrc-output">(CHUNK seems/VBZ to/TO overtake/VB)</span>
+<span class="pysrc-output">(CHUNK want/VB to/TO buy/VB)</span></pre>
+<div class="note"><p class="first admonition-title"><font id="137">注意</font></p>
+<p class="last"><font id="138"><strong>轮到你来：</strong>将上面的例子封装在函数<tt class="doctest"><span class="pre">find_chunks()</span></tt>内，以一个如<tt class="doctest"><span class="pre"><span class="pysrc-string">"CHUNK: {&lt;V.*&gt; &lt;TO&gt; &lt;V.*&gt;}"</span></span></tt>的词块字符串作为参数。</font><font id="139">Use it to search the corpus for several other patterns, such as four or more nouns in a row, e.g. </font><font id="140"><tt class="doctest"><span class="pre"><span class="pysrc-string">"NOUNS: {&lt;N.*&gt;{4,}}"</span></span></tt></font></p>
+</div>
+</div>
+<div class="section" id="chinking"><h2 class="sigil_not_in_toc"><font id="141">2.5 词缝加塞</font></h2>
+<p><font id="142">有时定义我们想从一个词块中<span class="emphasis">排除</span>什么比较容易。</font><font id="143">我们可以定义<span class="termdef">词缝</span>为一个不包含在词块中的一个词符序列。</font><font id="144">在下面的例子中，<tt class="doctest"><span class="pre">barked/VBD at/IN</span></tt>是一个词缝：</font></p>
+<pre class="literal-block">[ the/DT little/JJ yellow/JJ dog/NN ] barked/VBD at/IN [ the/DT cat/NN ]
+</pre>
+</div>
+<div class="section" id="representing-chunks-tags-vs-trees"><h2 class="sigil_not_in_toc"><font id="173">2.6 词块的表示：标记与树</font></h2>
+<p><font id="174">作为标注和分析之间的中间状态（<a class="reference external" href="./ch08.html#chap-parse">8.</a></font><font id="175">，词块结构可以使用标记或树来表示。</font><font id="176">最广泛的文件表示使用<span class="termdef">IOB标记</span>。</font><font id="177">在这个方案中，每个词符被三个特殊的词块标记之一标注，<tt class="doctest"><span class="pre">I</span></tt>（内部），<tt class="doctest"><span class="pre">O</span></tt>（外部）或<tt class="doctest"><span class="pre">B</span></tt>（开始）。</font><font id="178">一个词符被标注为<tt class="doctest"><span class="pre">B</span></tt>，如果它标志着一个词块的开始。</font><font id="179">块内的词符子序列被标注为<tt class="doctest"><span class="pre">I</span></tt>。</font><font id="180">所有其他的词符被标注为<tt class="doctest"><span class="pre">O</span></tt>。</font><font id="181"><tt class="doctest"><span class="pre">B</span></tt>和<tt class="doctest"><span class="pre">I</span></tt>标记后面跟着词块类型，如</font><font id="182"><tt class="doctest"><span class="pre">B-NP</span></tt>, <tt class="doctest"><span class="pre">I-NP</span></tt>。</font><font id="183">当然，没有必要指定出现在词块外的词符类型，所以这些都只标注为<tt class="doctest"><span class="pre">O</span></tt>。</font><font id="184">这个方案的例子如<a class="reference internal" href="./ch07.html#fig-chunk-tagrep">2.5</a>所示。</font></p>
+<div class="figure" id="fig-chunk-tagrep"><img alt="Images/chunk-tagrep.png" src="Images/542fee25c56235c899312bed3d5ee9ba.jpg" style="width: 483.5px; height: 85.5px;"/><p class="caption"><font id="185"><span class="caption-label">图 2.5</span>：词块结构的标记表示形式</font></p>
+</div>
+<p><font id="186">IOB标记已成为文件中表示词块结构的标准方式，我们也将使用这种格式。</font><font id="187">下面是<a class="reference internal" href="./ch07.html#fig-chunk-tagrep">2.5</a>中的信息如何出现在一个文件中的：</font></p>
+<pre class="literal-block">We PRP B-NP
+saw VBD O
+the DT B-NP
+yellow JJ I-NP
+dog NN I-NP
+</pre>
+<div class="note"><p class="first admonition-title"><font id="194">注意</font></p>
+<p class="last"><font id="195">NLTK使用树作为词块的内部表示，并提供这些树与IOB格式互换的方法。</font></p>
+</div>
+</div>
+
+<div class="section" id="developing-and-evaluating-chunkers"><h2 class="sigil_not_in_toc"><font id="196">3 开发和评估词块划分器</font></h2>
+<p><font id="197">现在你对分块的作用有了一些了解，但我们并没有解释如何评估词块划分器。</font><font id="198">和往常一样，这需要一个合适的已标注语料库。</font><font id="199">我们一开始寻找将IOB格式转换成NLTK树的机制，然后是使用已化分词块的语料库如何在一个更大的规模上做这个。</font><font id="200">我们将看到如何为一个词块划分器相对一个语料库的准确性打分，再看看一些数据驱动方式搜索NP词块。</font><font id="201">我们整个的重点在于扩展一个词块划分器的覆盖范围。</font></p>
+<div class="section" id="reading-iob-format-and-the-conll-2000-corpus"><h2 class="sigil_not_in_toc"><font id="202">3.1 读取IOB格式与CoNLL2000语料库</font></h2>
+<p><font id="203">使用<tt class="doctest"><span class="pre">corpus</span></tt>模块，我们可以加载已经标注并使用IOB符号划分词块的《华尔街日报》文本。</font><font id="204">这个语料库提供的词块类型有<tt class="doctest"><span class="pre">NP</span></tt>，<tt class="doctest"><span class="pre">VP</span></tt>和<tt class="doctest"><span class="pre">PP</span></tt>。</font><font id="205">正如我们已经看到的，每个句子使用多行表示，如下所示：</font></p>
+<pre class="literal-block">he PRP B-NP
+accepted VBD B-VP
+the DT B-NP
+position NN I-NP
+...
+</pre>
+<img alt="tree_images/ch07-tree-2.png" class="align-top" src="Images/d167c4075a237573a350e298a184d4fb.jpg" style="width: 692.0px; height: 116.0px;"/><p><font id="208">我们可以使用NLTK的corpus模块访问较大量的已经划分词块的文本。</font><font id="209">CoNLL2000语料库包含27万词的《华尔街日报文本》，分为“训练”和“测试”两部分，标注有词性标记和IOB格式词块标记。</font><font id="210">我们可以使用<tt class="doctest"><span class="pre">nltk.corpus.conll2000</span></tt>访问这些数据。</font><font id="211">下面是一个读取语料库的“训练”部分的第100个句子的例子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> conll2000
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(conll2000.chunked_sents(<span class="pysrc-string">'train.txt'</span>)[99])
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (PP Over/IN)</span>
+<span class="pysrc-output">  (NP a/DT cup/NN)</span>
+<span class="pysrc-output">  (PP of/IN)</span>
+<span class="pysrc-output">  (NP coffee/NN)</span>
+<span class="pysrc-output">  ,/,</span>
+<span class="pysrc-output">  (NP Mr./NNP Stone/NNP)</span>
+<span class="pysrc-output">  (VP told/VBD)</span>
+<span class="pysrc-output">  (NP his/PRP$ story/NN)</span>
+<span class="pysrc-output">  ./.)</span></pre>
+<p><font id="212">正如你看到的，CoNLL2000语料库包含三种词块类型：<tt class="doctest"><span class="pre">NP</span></tt>词块，我们已经看到了；<tt class="doctest"><span class="pre">VP</span></tt>词块如<span class="example">has already delivered</span>；<tt class="doctest"><span class="pre">PP</span></tt>块如<span class="example">because of</span>。</font><font id="213">因为现在我们唯一感兴趣的是<tt class="doctest"><span class="pre">NP</span></tt>词块，我们可以使用<tt class="doctest"><span class="pre">chunk_types</span></tt>参数选择它们：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(conll2000.chunked_sents(<span class="pysrc-string">'train.txt'</span>, chunk_types=[<span class="pysrc-string">'NP'</span>])[99])
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  Over/IN</span>
+<span class="pysrc-output">  (NP a/DT cup/NN)</span>
+<span class="pysrc-output">  of/IN</span>
+<span class="pysrc-output">  (NP coffee/NN)</span>
+<span class="pysrc-output">  ,/,</span>
+<span class="pysrc-output">  (NP Mr./NNP Stone/NNP)</span>
+<span class="pysrc-output">  told/VBD</span>
+<span class="pysrc-output">  (NP his/PRP$ story/NN)</span>
+<span class="pysrc-output">  ./.)</span></pre>
+</div>
+<div class="section" id="simple-evaluation-and-baselines"><h2 class="sigil_not_in_toc"><font id="214">3.2 简单的评估和基准</font></h2>
+<p><font id="215">现在，我们可以访问一个已划分词块语料，可以评估词块划分器。</font><font id="216">我们开始为没有什么意义的词块解析器<tt class="doctest"><span class="pre">cp</span></tt>建立一个基准，它不划分任何词块：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> conll2000
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(<span class="pysrc-string">""</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>test_sents = conll2000.chunked_sents(<span class="pysrc-string">'test.txt'</span>, chunk_types=[<span class="pysrc-string">'NP'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cp.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  43.4%</span>
+<span class="pysrc-output">    Precision:      0.0%</span>
+<span class="pysrc-output">    Recall:         0.0%</span>
+<span class="pysrc-output">    F-Measure:      0.0%</span></pre>
+<p><font id="217">IOB标记准确性表明超过三分之一的词被标注为<tt class="doctest"><span class="pre">O</span></tt>，即</font><font id="218">没有在<tt class="doctest"><span class="pre">NP</span></tt>词块中。</font><font id="219">然而，由于我们的标注器没有找到<em>任何</em>词块，其精度、召回率和F-度量均为零。</font><font id="220">现在让我们尝试一个初级的正则表达式词块划分器，查找以名词短语标记的特征字母开头的标记（如</font><font id="221"><tt class="doctest"><span class="pre">CD</span></tt>, <tt class="doctest"><span class="pre">DT</span></tt>和<tt class="doctest"><span class="pre">JJ</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>grammar = r<span class="pysrc-string">"NP: {&lt;[CDJNP].*&gt;+}"</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(grammar)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cp.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  87.7%</span>
+<span class="pysrc-output">    Precision:     70.6%</span>
+<span class="pysrc-output">    Recall:        67.8%</span>
+<span class="pysrc-output">    F-Measure:     69.2%</span></pre>
+<p><font id="222">正如你看到的，这种方法达到相当好的结果。</font><font id="223">但是，我们可以采用更多数据驱动的方法改善它，在这里我们使用训练语料找到对每个词性标记最有可能的块标记（<tt class="doctest"><span class="pre">I</span></tt>, <tt class="doctest"><span class="pre">O</span></tt>或<tt class="doctest"><span class="pre">B</span></tt>）。</font><font id="224">换句话说，我们可以使用<em>一元标注器</em>（<a class="reference external" href="./ch05.html#sec-automatic-tagging">4</a>）建立一个词块划分器。</font><font id="225">但不是尝试确定每个词的正确的词性标记，而是根据每个词的词性标记，尝试确定正确的词块标记。</font></p>
+<p><font id="226">在<a class="reference internal" href="./ch07.html#code-unigram-chunker">3.1</a>中，我们定义了<tt class="doctest"><span class="pre">UnigramChunker</span></tt>类，使用一元标注器给句子加词块标记。</font><font id="227">这个类的大部分代码只是用来在NLTK 的<tt class="doctest"><span class="pre">ChunkParserI</span></tt>接口使用的词块树表示和嵌入式标注器使用的IOB表示之间镜像转换。</font><font id="228">类定义了两个方法：一个构造函数<a class="reference internal" href="./ch07.html#code-unigram-chunker-constructor"><span id="ref-code-unigram-chunker-constructor"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></span></a>，当我们建立一个新的UnigramChunker时调用；以及<tt class="doctest"><span class="pre">parse</span></tt>方法<a class="reference internal" href="./ch07.html#code-unigram-chunker-parse"><span id="ref-code-unigram-chunker-parse"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></span></a>，用来给新句子划分词块。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">class</span> <span class="pysrc-defname">UnigramChunker</span>(nltk.ChunkParserI):
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">__init__</span>(self, train_sents): <a href="./ch07.html#ref-code-unigram-chunker-constructor"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+        train_data = [[(t,c) <span class="pysrc-keyword">for</span> w,t,c <span class="pysrc-keyword">in</span> nltk.chunk.tree2conlltags(sent)]
+                      <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> train_sents]
+        self.tagger = nltk.UnigramTagger(train_data) <a href="./ch07.html#ref-code-unigram-chunker-buildit"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></a>
+
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">parse</span>(self, sentence): <a href="./ch07.html#ref-code-unigram-chunker-parse"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a>
+        pos_tags = [pos <span class="pysrc-keyword">for</span> (word,pos) <span class="pysrc-keyword">in</span> sentence]
+        tagged_pos_tags = self.tagger.tag(pos_tags)
+        chunktags = [chunktag <span class="pysrc-keyword">for</span> (pos, chunktag) <span class="pysrc-keyword">in</span> tagged_pos_tags]
+        conlltags = [(word, pos, chunktag) <span class="pysrc-keyword">for</span> ((word,pos),chunktag)
+                     <span class="pysrc-keyword">in</span> zip(sentence, chunktags)]
+        return nltk.chunk.conlltags2tree(conlltags)</pre>
+<p><font id="230">构造函数<a class="reference internal" href="./ch07.html#code-unigram-chunker-constructor"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>需要训练句子的一个列表，这将是词块树的形式。</font><font id="231">它首先将训练数据转换成适合训练标注器的形式，使用<tt class="doctest"><span class="pre">tree2conlltags</span></tt>映射每个词块树到一个<tt class="doctest"><span class="pre">word,tag,chunk</span></tt>三元组的列表。</font><font id="232">然后使用转换好的训练数据训练一个一元标注器，并存储在<tt class="doctest"><span class="pre">self.tagger</span></tt>供以后使用。</font></p>
+<p><font id="233"><tt class="doctest"><span class="pre">parse</span></tt>方法<a class="reference internal" href="./ch07.html#code-unigram-chunker-parse"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a>接收一个已标注的句子作为其输入，以从那句话提取词性标记开始。</font><font id="234">它然后使用在构造函数中训练过的标注器<tt class="doctest"><span class="pre">self.tagger</span></tt>，为词性标记标注IOB词块标记。</font><font id="235">接下来，它提取词块标记，与原句组合，产生<tt class="doctest"><span class="pre">conlltags</span></tt>。</font><font id="236">最后，它使用<tt class="doctest"><span class="pre">conlltags2tree</span></tt>将结果转换成一个词块树。</font></p>
+<p><font id="237">现在我们有了<tt class="doctest"><span class="pre">UnigramChunker</span></tt>，可以使用CoNLL2000语料库训练它，并测试其表现：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>test_sents = conll2000.chunked_sents(<span class="pysrc-string">'test.txt'</span>, chunk_types=[<span class="pysrc-string">'NP'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>train_sents = conll2000.chunked_sents(<span class="pysrc-string">'train.txt'</span>, chunk_types=[<span class="pysrc-string">'NP'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_chunker = UnigramChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(unigram_chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  92.9%</span>
+<span class="pysrc-output">    Precision:     79.9%</span>
+<span class="pysrc-output">    Recall:        86.8%</span>
+<span class="pysrc-output">    F-Measure:     83.2%</span></pre>
+<p><font id="238">这个分块器相当不错，达到整体F-度量83％的得分。</font><font id="239">让我们来看一看通过使用一元标注器分配一个标记给每个语料库中出现的词性标记，它学到了什么：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>postags = sorted(set(pos <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> train_sents
+<span class="pysrc-more">... </span>                     <span class="pysrc-keyword">for</span> (word,pos) <span class="pysrc-keyword">in</span> sent.leaves()))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(unigram_chunker.tagger.tag(postags))
+<span class="pysrc-output">[('#', 'B-NP'), ('$', 'B-NP'), ("''", 'O'), ('(', 'O'), (')', 'O'),</span>
+<span class="pysrc-output"> (',', 'O'), ('.', 'O'), (':', 'O'), ('CC', 'O'), ('CD', 'I-NP'),</span>
+<span class="pysrc-output"> ('DT', 'B-NP'), ('EX', 'B-NP'), ('FW', 'I-NP'), ('IN', 'O'),</span>
+<span class="pysrc-output"> ('JJ', 'I-NP'), ('JJR', 'B-NP'), ('JJS', 'I-NP'), ('MD', 'O'),</span>
+<span class="pysrc-output"> ('NN', 'I-NP'), ('NNP', 'I-NP'), ('NNPS', 'I-NP'), ('NNS', 'I-NP'),</span>
+<span class="pysrc-output"> ('PDT', 'B-NP'), ('POS', 'B-NP'), ('PRP', 'B-NP'), ('PRP$', 'B-NP'),</span>
+<span class="pysrc-output"> ('RB', 'O'), ('RBR', 'O'), ('RBS', 'B-NP'), ('RP', 'O'), ('SYM', 'O'),</span>
+<span class="pysrc-output"> ('TO', 'O'), ('UH', 'O'), ('VB', 'O'), ('VBD', 'O'), ('VBG', 'O'),</span>
+<span class="pysrc-output"> ('VBN', 'O'), ('VBP', 'O'), ('VBZ', 'O'), ('WDT', 'B-NP'),</span>
+<span class="pysrc-output"> ('WP', 'B-NP'), ('WP$', 'B-NP'), ('WRB', 'O'), ('``', 'O')]</span></pre>
+<p><font id="240">它已经发现大多数标点符号出现在NP词块外，除了两种货币符号<tt class="doctest"><span class="pre"><span class="pysrc-comment">#</span></span></tt>和<tt class="doctest"><span class="pre">$</span></tt>。</font><font id="241">它也发现限定词（<tt class="doctest"><span class="pre">DT</span></tt>）和所有格（<tt class="doctest"><span class="pre">PRP$</span></tt>和<tt class="doctest"><span class="pre">WP$</span></tt>）出现在NP词块的开头，而名词类型(<tt class="doctest"><span class="pre">NN</span></tt>, <tt class="doctest"><span class="pre">NNP</span></tt>, <tt class="doctest"><span class="pre">NNPS</span></tt>，<tt class="doctest"><span class="pre">NNS</span></tt>)大多出现在NP词块内。</font></p>
+<p><font id="242">建立了一个一元分块器，很容易建立一个二元分块器：我们只需要改变类的名称为<tt class="doctest"><span class="pre">BigramChunker</span></tt>，修改<a class="reference internal" href="./ch07.html#code-unigram-chunker">3.1</a>行<a class="reference internal" href="./ch07.html#code-unigram-chunker-buildit"><span id="ref-code-unigram-chunker-buildit"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></span></a>构造一个<tt class="doctest"><span class="pre">BigramTagger</span></tt>而不是<tt class="doctest"><span class="pre">UnigramTagger</span></tt>。</font><font id="243">由此产生的词块划分器的性能略高于一元词块划分器：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>bigram_chunker = BigramChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(bigram_chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  93.3%</span>
+<span class="pysrc-output">    Precision:     82.3%</span>
+<span class="pysrc-output">    Recall:        86.8%</span>
+<span class="pysrc-output">    F-Measure:     84.5%</span></pre>
+
+<div class="section" id="training-classifier-based-chunkers"><h2 class="sigil_not_in_toc"><font id="244">3.3 训练基于分类器的词块划分器</font></h2>
+<p><font id="245">无论是基于正则表达式的词块划分器还是n-gram词块划分器，决定创建什么词块完全基于词性标记。</font><font id="246">然而，有时词性标记不足以确定一个句子应如何划分词块。</font><font id="247">例如，考虑下面的两个语句：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-keyword">class</span> <span class="pysrc-defname">ConsecutiveNPChunkTagger</span>(nltk.TaggerI): <a href="./ch07.html#ref-consec-chunk-tagger"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">__init__</span>(self, train_sents):
+        train_set = []
+        <span class="pysrc-keyword">for</span> tagged_sent <span class="pysrc-keyword">in</span> train_sents:
+            untagged_sent = nltk.tag.untag(tagged_sent)
+            history = []
+            <span class="pysrc-keyword">for</span> i, (word, tag) <span class="pysrc-keyword">in</span> enumerate(tagged_sent):
+                featureset = npchunk_features(untagged_sent, i, history) <a href="./ch07.html#ref-consec-use-fe"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></a>
+                train_set.append( (featureset, tag) )
+                history.append(tag)
+        self.classifier = nltk.MaxentClassifier.train( <a href="./ch07.html#ref-consec-use-maxent"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a>
+            train_set, algorithm=<span class="pysrc-string">'megam'</span>, trace=0)
+
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">tag</span>(self, sentence):
+        history = []
+        <span class="pysrc-keyword">for</span> i, word <span class="pysrc-keyword">in</span> enumerate(sentence):
+            featureset = npchunk_features(sentence, i, history)
+            tag = self.classifier.classify(featureset)
+            history.append(tag)
+        return zip(sentence, history)
+
+<span class="pysrc-keyword">class</span> <span class="pysrc-defname">ConsecutiveNPChunker</span>(nltk.ChunkParserI): <a href="./ch07.html#ref-consec-chunker"><img alt="[4]" class="callout" src="Images/8b4bb6b0ec5bb337fdb00c31efcc1645.jpg"/></a>
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">__init__</span>(self, train_sents):
+        tagged_sents = [[((w,t),c) <span class="pysrc-keyword">for</span> (w,t,c) <span class="pysrc-keyword">in</span>
+                         nltk.chunk.tree2conlltags(sent)]
+                        <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> train_sents]
+        self.tagger = ConsecutiveNPChunkTagger(tagged_sents)
+
+    <span class="pysrc-keyword">def</span> <span class="pysrc-defname">parse</span>(self, sentence):
+        tagged_sents = self.tagger.tag(sentence)
+        conlltags = [(w,t,c) <span class="pysrc-keyword">for</span> ((w,t),c) <span class="pysrc-keyword">in</span> tagged_sents]
+        return nltk.chunk.conlltags2tree(conlltags)</pre>
+<p><font id="266">留下来唯一需要填写的是特征提取器。</font><font id="267">首先，我们定义一个简单的特征提取器，它只是提供了当前词符的词性标记。</font><font id="268">使用此特征提取器，我们的基于分类器的词块划分器的表现与一元词块划分器非常类似：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">npchunk_features</span>(sentence, i, history):
+<span class="pysrc-more">... </span>    word, pos = sentence[i]
+<span class="pysrc-more">... </span>    return {<span class="pysrc-string">"pos"</span>: pos}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chunker = ConsecutiveNPChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  92.9%</span>
+<span class="pysrc-output">    Precision:     79.9%</span>
+<span class="pysrc-output">    Recall:        86.7%</span>
+<span class="pysrc-output">    F-Measure:     83.2%</span></pre>
+<p><font id="269">我们还可以添加一个特征表示前面词的词性标记。</font><font id="270">添加此特征允许词块划分器模拟相邻标记之间的相互作用，由此产生的词块划分器与二元词块划分器非常接近。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">npchunk_features</span>(sentence, i, history):
+<span class="pysrc-more">... </span>    word, pos = sentence[i]
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> i == 0:
+<span class="pysrc-more">... </span>        prevword, prevpos = <span class="pysrc-string">"&lt;START&gt;"</span>, <span class="pysrc-string">"&lt;START&gt;"</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        prevword, prevpos = sentence[i-1]
+<span class="pysrc-more">... </span>    return {<span class="pysrc-string">"pos"</span>: pos, <span class="pysrc-string">"prevpos"</span>: prevpos}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chunker = ConsecutiveNPChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  93.6%</span>
+<span class="pysrc-output">    Precision:     81.9%</span>
+<span class="pysrc-output">    Recall:        87.2%</span>
+<span class="pysrc-output">    F-Measure:     84.5%</span></pre>
+<p><font id="271">下一步，我们将尝试为当前词增加特征，因为我们假设这个词的内容应该对词块划有用。</font><font id="272">我们发现这个特征确实提高了词块划分器的表现，大约1.5个百分点（相应的错误率减少大约10％）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">npchunk_features</span>(sentence, i, history):
+<span class="pysrc-more">... </span>    word, pos = sentence[i]
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> i == 0:
+<span class="pysrc-more">... </span>        prevword, prevpos = <span class="pysrc-string">"&lt;START&gt;"</span>, <span class="pysrc-string">"&lt;START&gt;"</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        prevword, prevpos = sentence[i-1]
+<span class="pysrc-more">... </span>    return {<span class="pysrc-string">"pos"</span>: pos, <span class="pysrc-string">"word"</span>: word, <span class="pysrc-string">"prevpos"</span>: prevpos}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chunker = ConsecutiveNPChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  94.5%</span>
+<span class="pysrc-output">    Precision:     84.2%</span>
+<span class="pysrc-output">    Recall:        89.4%</span>
+<span class="pysrc-output">    F-Measure:     86.7%</span></pre>
+<p><font id="273">最后，我们尝试用多种附加特征扩展特征提取器，例如预取特征<a class="reference internal" href="./ch07.html#chunk-fe-lookahead"><span id="ref-chunk-fe-lookahead"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></span></a>、配对特征<a class="reference internal" href="./ch07.html#chunk-fe-paired"><span id="ref-chunk-fe-paired"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></span></a>和复杂的语境特征<a class="reference internal" href="./ch07.html#chunk-fe-complex"><span id="ref-chunk-fe-complex"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></span></a>。</font><font id="274">这最后一个特征，称为<tt class="doctest"><span class="pre">tags-since-dt</span></tt>，创建一个字符串，描述自最近的限定词以来遇到的所有词性标记，或如果没有限定词则在索引<tt class="doctest"><span class="pre">i</span></tt>之前自语句开始以来遇到的所有词性标记。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">npchunk_features</span>(sentence, i, history):
+<span class="pysrc-more">... </span>    word, pos = sentence[i]
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> i == 0:
+<span class="pysrc-more">... </span>        prevword, prevpos = <span class="pysrc-string">"&lt;START&gt;"</span>, <span class="pysrc-string">"&lt;START&gt;"</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        prevword, prevpos = sentence[i-1]
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> i == len(sentence)-1:
+<span class="pysrc-more">... </span>        nextword, nextpos = <span class="pysrc-string">"&lt;END&gt;"</span>, <span class="pysrc-string">"&lt;END&gt;"</span>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>        nextword, nextpos = sentence[i+1]
+<span class="pysrc-more">... </span>    return {<span class="pysrc-string">"pos"</span>: pos,
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"word"</span>: word,
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"prevpos"</span>: prevpos,
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"nextpos"</span>: nextpos, <a href="./ch07.html#ref-chunk-fe-lookahead"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"prevpos+pos"</span>: <span class="pysrc-string">"%s+%s"</span> % (prevpos, pos),  <a href="./ch07.html#ref-chunk-fe-paired"><img alt="[2]" class="callout" src="Images/e5fb07e997b9718f18dbf677e3d6634d.jpg"/></a>
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"pos+nextpos"</span>: <span class="pysrc-string">"%s+%s"</span> % (pos, nextpos),
+<span class="pysrc-more">... </span>            <span class="pysrc-string">"tags-since-dt"</span>: tags_since_dt(sentence, i)}  <a href="./ch07.html#ref-chunk-fe-complex"><img alt="[3]" class="callout" src="Images/6372ba4f28e69f0b220c75a9b2f4decf.jpg"/></a></pre>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">tags_since_dt</span>(sentence, i):
+<span class="pysrc-more">... </span>    tags = set()
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> word, pos <span class="pysrc-keyword">in</span> sentence[:i]:
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> pos == <span class="pysrc-string">'DT'</span>:
+<span class="pysrc-more">... </span>            tags = set()
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">else</span>:
+<span class="pysrc-more">... </span>            tags.add(pos)
+<span class="pysrc-more">... </span>    return <span class="pysrc-string">'+'</span>.join(sorted(tags))</pre>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>chunker = ConsecutiveNPChunker(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(chunker.evaluate(test_sents))
+<span class="pysrc-output">ChunkParse score:</span>
+<span class="pysrc-output">    IOB Accuracy:  96.0%</span>
+<span class="pysrc-output">    Precision:     88.6%</span>
+<span class="pysrc-output">    Recall:        91.0%</span>
+<span class="pysrc-output">    F-Measure:     89.8%</span></pre>
+<div class="note"><p class="first admonition-title"><font id="275">注意</font></p>
+<p class="last"><font id="276"><strong>轮到你来：</strong>尝试为特征提取器函数<tt class="doctest"><span class="pre">npchunk_features</span></tt>增加不同的特征，看看是否可以进一步改善NP词块划分器的表现。</font></p>
+</div>
+
+
+<div class="section" id="recursion-in-linguistic-structure"><h2 class="sigil_not_in_toc"><font id="277">4 语言结构中的递归</font></h2>
+<div class="section" id="building-nested-structure-with-cascaded-chunkers"><h2 class="sigil_not_in_toc"><font id="278">4.1 用级联词块划分器构建嵌套结构</font></h2>
+<p><font id="279">到目前为止，我们的词块结构一直是相对平的。</font><font id="280">已标注词符组成的树在如<tt class="doctest"><span class="pre">NP</span></tt>这样的词块节点下任意组合。</font><font id="281">然而，只需创建一个包含递归规则的多级的词块语法，就可以建立任意深度的词块结构。</font><font id="282"><a class="reference internal" href="./ch07.html#code-cascaded-chunker">4.1</a>是名词短语、介词短语、动词短语和句子的模式。</font><font id="283">这是一个四级词块语法器，可以用来创建深度最多为4的结构。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest">grammar = r<span class="pysrc-string">"""</span>
+<span class="pysrc-string">  NP: {&lt;DT|JJ|NN.*&gt;+}          # Chunk sequences of DT, JJ, NN</span>
+<span class="pysrc-string">  PP: {&lt;IN&gt;&lt;NP&gt;}               # Chunk prepositions followed by NP</span>
+<span class="pysrc-string">  VP: {&lt;VB.*&gt;&lt;NP|PP|CLAUSE&gt;+$} # Chunk verbs and their arguments</span>
+<span class="pysrc-string">  CLAUSE: {&lt;NP&gt;&lt;VP&gt;}           # Chunk NP, VP</span>
+<span class="pysrc-string">  """</span>
+cp = nltk.RegexpParser(grammar)
+sentence = [(<span class="pysrc-string">"Mary"</span>, <span class="pysrc-string">"NN"</span>), (<span class="pysrc-string">"saw"</span>, <span class="pysrc-string">"VBD"</span>), (<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"cat"</span>, <span class="pysrc-string">"NN"</span>),
+    (<span class="pysrc-string">"sit"</span>, <span class="pysrc-string">"VB"</span>), (<span class="pysrc-string">"on"</span>, <span class="pysrc-string">"IN"</span>), (<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"mat"</span>, <span class="pysrc-string">"NN"</span>)]</pre>
+<p><font id="285">不幸的是，这一结果丢掉了<span class="example">saw</span>为首的<tt class="doctest"><span class="pre">VP</span></tt>。</font><font id="286">它还有其他缺陷。</font><font id="287">当我们将此词块划分器应用到一个有更深嵌套的句子时，让我们看看会发生什么。</font><font id="288">请注意，它无法识别<a class="reference internal" href="./ch07.html#saw-vbd"><span id="ref-saw-vbd"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></span></a>开始的<tt class="doctest"><span class="pre">VP</span></tt>词块。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sentence = [(<span class="pysrc-string">"John"</span>, <span class="pysrc-string">"NNP"</span>), (<span class="pysrc-string">"thinks"</span>, <span class="pysrc-string">"VBZ"</span>), (<span class="pysrc-string">"Mary"</span>, <span class="pysrc-string">"NN"</span>),
+<span class="pysrc-more">... </span>    (<span class="pysrc-string">"saw"</span>, <span class="pysrc-string">"VBD"</span>), (<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"cat"</span>, <span class="pysrc-string">"NN"</span>), (<span class="pysrc-string">"sit"</span>, <span class="pysrc-string">"VB"</span>),
+<span class="pysrc-more">... </span>    (<span class="pysrc-string">"on"</span>, <span class="pysrc-string">"IN"</span>), (<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"DT"</span>), (<span class="pysrc-string">"mat"</span>, <span class="pysrc-string">"NN"</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cp.parse(sentence))
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP John/NNP)</span>
+<span class="pysrc-output">  thinks/VBZ</span>
+<span class="pysrc-output">  (NP Mary/NN)</span>
+<span class="pysrc-output">  saw/VBD # [_saw-vbd]</span>
+<span class="pysrc-output">  (CLAUSE</span>
+<span class="pysrc-output">    (NP the/DT cat/NN)</span>
+<span class="pysrc-output">    (VP sit/VB (PP on/IN (NP the/DT mat/NN)))))</span></pre>
+<p><font id="289">这些问题的解决方案是让词块划分器在它的模式中循环：尝试完所有模式之后，重复此过程。</font><font id="290">我们添加一个可选的第二个参数<tt class="doctest"><span class="pre">loop</span></tt>指定这套模式应该循环的次数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cp = nltk.RegexpParser(grammar, loop=2)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cp.parse(sentence))
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  (NP John/NNP)</span>
+<span class="pysrc-output">  thinks/VBZ</span>
+<span class="pysrc-output">  (CLAUSE</span>
+<span class="pysrc-output">    (NP Mary/NN)</span>
+<span class="pysrc-output">    (VP</span>
+<span class="pysrc-output">      saw/VBD</span>
+<span class="pysrc-output">      (CLAUSE</span>
+<span class="pysrc-output">        (NP the/DT cat/NN)</span>
+<span class="pysrc-output">        (VP sit/VB (PP on/IN (NP the/DT mat/NN)))))))</span></pre>
+<div class="note"><p class="first admonition-title"><font id="291">注意</font></p>
+<p class="last"><font id="292">这个级联过程使我们能创建深层结构。</font><font id="293">然而，创建和调试级联过程是困难的，关键点是它能更有效地做全面的分析（见第<a class="reference external" href="./ch08.html#chap-parse">8.</a>章）。</font><font id="294">另外，级联过程只能产生固定深度的树（不超过级联级数），完整的句法分析这是不够的。</font></p>
+</div>
+
+<div class="section" id="trees"><h2 class="sigil_not_in_toc"><font id="295">4.2 Trees</font></h2>
+<p><font id="296"><span class="termdef">tree</span>是一组连接的加标签节点，从一个特殊的根节点沿一条唯一的路径到达每个节点。</font><font id="297">下面是一棵树的例子（注意它们标准的画法是颠倒的）：</font></p>
+<p></p>
+<pre class="doctest">(S
+   (NP Alice)
+   (VP
+      (V chased)
+      (NP
+         (Det the)
+         (N rabbit))))</pre>
+<p><font id="301">虽然我们将只集中关注语法树，树可以用来编码<span class="emphasis">任何</span>同构的超越语言形式序列的层次结构（如</font><font id="302">形态结构、篇章结构）。</font><font id="303">一般情况下，叶子和节点值不一定要是字符串。</font></p>
+<p><font id="304">在NLTK中，我们通过给一个节点添加标签和一系列的孩子创建一棵树：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree1 = nltk.Tree(<span class="pysrc-string">'NP'</span>, [<span class="pysrc-string">'Alice'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(tree1)
+<span class="pysrc-output">(NP Alice)</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree2 = nltk.Tree(<span class="pysrc-string">'NP'</span>, [<span class="pysrc-string">'the'</span>, <span class="pysrc-string">'rabbit'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(tree2)
+<span class="pysrc-output">(NP the rabbit)</span></pre>
+<p><font id="305">我们可以将这些不断合并成更大的树，如下所示：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree3 = nltk.Tree(<span class="pysrc-string">'VP'</span>, [<span class="pysrc-string">'chased'</span>, tree2])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tree4 = nltk.Tree(<span class="pysrc-string">'S'</span>, [tree1, tree3])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(tree4)
+<span class="pysrc-output">(S (NP Alice) (VP chased (NP the rabbit)))</span></pre>
+<p><font id="306">下面是树对象的一些的方法：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(tree4[1])
+<span class="pysrc-output">(VP chased (NP the rabbit))</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree4[1].label()
+<span class="pysrc-output">'VP'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree4.leaves()
+<span class="pysrc-output">['Alice', 'chased', 'the', 'rabbit']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree4[1][1][1]
+<span class="pysrc-output">'rabbit'</span></pre>
+<p><font id="307">复杂的树用括号表示难以阅读。</font><font id="308">在这些情况下，<tt class="doctest"><span class="pre">draw</span></tt>方法是非常有用的。</font><font id="309">它会打开一个新窗口，包含树的一个图形表示。</font><font id="310">树显示窗口可以放大和缩小，子树可以折叠和展开，并将图形表示输出为一个postscript文件（包含在一个文档中）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tree3.draw()                           </pre>
+<img alt="Images/parse_draw.png" src="Images/96fd8d34602a08c09a19f5b2c5c19380.jpg" style="width: 191.79999999999998px; height: 176.39999999999998px;"/></div>
+<div class="section" id="tree-traversal"><h2 class="sigil_not_in_toc"><font id="311">4.3 树遍历</font></h2>
+<p><font id="312">使用递归函数来遍历树是标准的做法。</font><font id="313"><a class="reference internal" href="./ch07.html#code-traverse">4.2</a>中的内容进行了演示。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">traverse</span>(t):
+    try:
+        t.label()
+    <span class="pysrc-keyword">except</span> AttributeError:
+        <span class="pysrc-keyword">print</span>(t, end=<span class="pysrc-string">" "</span>)
+    <span class="pysrc-keyword">else</span>:
+        <span class="pysrc-comment"># Now we know that t.node is defined</span>
+        <span class="pysrc-keyword">print</span>(<span class="pysrc-string">'('</span>, t.label(), end=<span class="pysrc-string">" "</span>)
+        <span class="pysrc-keyword">for</span> child <span class="pysrc-keyword">in</span> t:
+            traverse(child)
+        <span class="pysrc-keyword">print</span>(<span class="pysrc-string">')'</span>, end=<span class="pysrc-string">" "</span>)
+
+<span class="pysrc-prompt"> &gt;&gt;&gt; </span>t = nltk.Tree(<span class="pysrc-string">'(S (NP Alice) (VP chased (NP the rabbit)))'</span>)
+<span class="pysrc-prompt"> &gt;&gt;&gt; </span>traverse(t)
+ ( S ( NP Alice ) ( VP chased ( NP the rabbit ) ) )</pre>
+<div class="note"><p class="first admonition-title"><font id="315">注意</font></p>
+<p class="last"><font id="316">我们已经使用了一种叫做<span class="termdef">动态类型</span>的技术，检测<tt class="doctest"><span class="pre">t</span></tt>是一棵树（如</font><font id="317">定义了<tt class="doctest"><span class="pre">t.label()</span></tt>）。</font></p>
+</div>
+
+
+<div class="section" id="named-entity-recognition"><h2 class="sigil_not_in_toc"><font id="318">5 命名实体识别</font></h2>
+<p><font id="319">在本章开头，我们简要介绍了命名实体（NE）。</font><font id="320">命名实体是确切的名词短语，指示特定类型的个体，如组织、人、日期等。</font><font id="321"><a class="reference internal" href="./ch07.html#tab-ne-types">5.1</a>列出了一些较常用的NE类型。</font><font id="322">这些应该是不言自明的，除了“FACILITY”：建筑和土木工程领域的人造产品；以及“GPE”：地缘政治实体，如城市、州/省、国家。</font></p>
+<p class="caption"><font id="323"><span class="caption-label">表 5.1</span>：</font></p>
+<p><font id="324">常用命名实体类型</font></p>
+<p></p>
+<pre class="literal-block">Eddy N B-PER
+Bonte N I-PER
+is V O
+woordvoerder N O
+van Prep O
+diezelfde Pron O
+Hogeschool N B-ORG
+. Punc O
+</pre>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.ne_chunk(sent)) 
+<span class="pysrc-output">(S</span>
+<span class="pysrc-output">  The/DT</span>
+<span class="pysrc-output">  (GPE U.S./NNP)</span>
+<span class="pysrc-output">  is/VBZ</span>
+<span class="pysrc-output">  one/CD</span>
+<span class="pysrc-output">  ...</span>
+<span class="pysrc-output">  according/VBG</span>
+<span class="pysrc-output">  to/TO</span>
+<span class="pysrc-output">  (PERSON Brooke/NNP T./NNP Mossman/NNP)</span>
+<span class="pysrc-output">  ...)</span></pre>
+</div>
+<div class="section" id="relation-extraction"><h2 class="sigil_not_in_toc"><font id="379">6 关系抽取</font></h2>
+<p><font id="380">一旦文本中的命名实体已被识别，我们就可以提取它们之间存在的关系。</font><font id="381">如前所述，我们通常会寻找指定类型的命名实体之间的关系。</font><font id="382">进行这一任务的方法之一是首先寻找所有<em>X</em>, α, <em>Y</em>)形式的三元组，其中<em>X</em>和<em>Y</em>是指定类型的命名实体，α表示<em>X</em>和<em>Y</em>之间关系的字符串。</font><font id="383">然后我们可以使用正则表达式从α的实体中抽出我们正在查找的关系。</font><font id="384">下面的例子搜索包含词<span class="example">in</span>的字符串。</font><font id="385">特殊的正则表达式<tt class="doctest"><span class="pre">(?!\b.+ing\b)</span></tt>是一个否定预测先行断言，允许我们忽略如<span class="example">success in supervising the transition of</span>中的字符串，其中<span class="example">in</span>后面跟一个动名词。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>IN = re.compile(r<span class="pysrc-string">'.*\bin\b(?!\b.+ing)'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> doc <span class="pysrc-keyword">in</span> nltk.corpus.ieer.parsed_docs(<span class="pysrc-string">'NYT_19980315'</span>):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> rel <span class="pysrc-keyword">in</span> nltk.sem.extract_rels(<span class="pysrc-string">'ORG'</span>, <span class="pysrc-string">'LOC'</span>, doc,
+<span class="pysrc-more">... </span>                                     corpus=<span class="pysrc-string">'ieer'</span>, pattern = IN):
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(nltk.sem.rtuple(rel))
+<span class="pysrc-output">[ORG: 'WHYY'] 'in' [LOC: 'Philadelphia']</span>
+<span class="pysrc-output">[ORG: 'McGlashan &amp;AMP; Sarrail'] 'firm in' [LOC: 'San Mateo']</span>
+<span class="pysrc-output">[ORG: 'Freedom Forum'] 'in' [LOC: 'Arlington']</span>
+<span class="pysrc-output">[ORG: 'Brookings Institution'] ', the research group in' [LOC: 'Washington']</span>
+<span class="pysrc-output">[ORG: 'Idealab'] ', a self-described business incubator based in' [LOC: 'Los Angeles']</span>
+<span class="pysrc-output">[ORG: 'Open Text'] ', based in' [LOC: 'Waterloo']</span>
+<span class="pysrc-output">[ORG: 'WGBH'] 'in' [LOC: 'Boston']</span>
+<span class="pysrc-output">[ORG: 'Bastille Opera'] 'in' [LOC: 'Paris']</span>
+<span class="pysrc-output">[ORG: 'Omnicom'] 'in' [LOC: 'New York']</span>
+<span class="pysrc-output">[ORG: 'DDB Needham'] 'in' [LOC: 'New York']</span>
+<span class="pysrc-output">[ORG: 'Kaplan Thaler Group'] 'in' [LOC: 'New York']</span>
+<span class="pysrc-output">[ORG: 'BBDO South'] 'in' [LOC: 'Atlanta']</span>
+<span class="pysrc-output">[ORG: 'Georgia-Pacific'] 'in' [LOC: 'Atlanta']</span></pre>
+<p><font id="386">搜索关键字<span class="example">in</span>执行的相当不错，虽然它的检索结果也会误报，例如<tt class="doctest"><span class="pre">[ORG: House Transportation Committee] , secured the most money <span class="pysrc-keyword">in</span> the [LOC: New York]</span></tt>；一种简单的基于字符串的方法排除这样的填充字符串似乎不太可能。</font></p>
+<p><font id="387">如前文所示，<tt class="doctest"><span class="pre">conll2002</span></tt>命名实体语料库的荷兰语部分不只包含命名实体标注，也包含词性标注。</font><font id="388">这允许我们设计对这些标记敏感的模式，如下面的例子所示。</font><font id="389"><tt class="doctest"><span class="pre">clause()</span></tt>方法以分条形式输出关系，其中二元关系符号作为参数<tt class="doctest"><span class="pre">relsym</span></tt>的值被指定<a class="reference internal" href="./ch07.html#relsym"><span id="ref-relsym"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> conll2002
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vnv = <span class="pysrc-string">"""</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">(</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">is/V|    # 3rd sing present and</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">was/V|   # past forms of the verb zijn ('be')</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">werd/V|  # and also present</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">wordt/V  # past of worden ('become)</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">)</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">.*       # followed by anything</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">van/Prep # followed by van ('of')</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">"""</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>VAN = re.compile(vnv, re.VERBOSE)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> doc <span class="pysrc-keyword">in</span> conll2002.chunked_sents(<span class="pysrc-string">'ned.train'</span>):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">for</span> r <span class="pysrc-keyword">in</span> nltk.sem.extract_rels(<span class="pysrc-string">'PER'</span>, <span class="pysrc-string">'ORG'</span>, doc,
+<span class="pysrc-more">... </span>                                   corpus=<span class="pysrc-string">'conll2002'</span>, pattern=VAN):
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(nltk.sem.clause(r, relsym=<span class="pysrc-string">"VAN"</span>)) <a href="./ch07.html#ref-relsym"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>
+<span class="pysrc-output">VAN("cornet_d'elzius", 'buitenlandse_handel')</span>
+<span class="pysrc-output">VAN('johan_rottiers', 'kardinaal_van_roey_instituut')</span>
+<span class="pysrc-output">VAN('annie_lennox', 'eurythmics')</span></pre>
+<div class="note"><p class="first admonition-title"><font id="390">注意</font></p>
+<p class="last"><font id="391"><strong>轮到你来：</strong>替换最后一行<a class="reference internal" href="./ch07.html#relsym"><img alt="[1]" class="callout" src="Images/f4891d12ae20c39b685951ad3cddf1aa.jpg"/></a>为<tt class="doctest"><span class="pre"><span class="pysrc-keyword">print</span>(rtuple(rel, lcon=True, rcon=True))</span></tt>。</font><font id="392">这将显示实际的词表示两个NE之间关系以及它们左右的默认10个词的窗口的上下文。</font><font id="393">在一本荷兰语词典的帮助下，你也许能够找出为什么结果<tt class="doctest"><span class="pre">VAN(<span class="pysrc-string">'annie_lennox'</span>, <span class="pysrc-string">'eurythmics'</span>)</span></tt>是个误报。</font></p>
+</div>
+</div>
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="394">7 小结</font></h2>
+<ul class="simple"><li><font id="395">信息提取系统搜索大量非结构化文本，寻找特定类型的实体和关系，并用它们来填充有组织的数据库。</font><font id="396">这些数据库就可以用来寻找特定问题的答案。</font></li>
+<li><font id="397">信息提取系统的典型结构以断句开始，然后是分词和词性标注。</font><font id="398">接下来在产生的数据中搜索特定类型的实体。</font><font id="399">最后，信息提取系统着眼于文本中提到的相互临近的实体，并试图确定这些实体之间是否有指定的关系。</font></li>
+<li><font id="400">实体识别通常采用词块划分器，它分割多词符序列，并用适当的实体类型给它们加标签。</font><font id="401">常见的实体类型包括组织、人员、地点、日期、时间、货币、GPE（地缘政治实体）。</font></li>
+<li><font id="402">用基于规则的系统可以构建词块划分器，例如NLTK中提供的<tt class="doctest"><span class="pre">RegexpParser</span></tt>类；或使用机器学习技术，如本章介绍的<tt class="doctest"><span class="pre">ConsecutiveNPChunker</span></tt>。</font><font id="403">在这两种情况中，词性标记往往是搜索词块时的一个非常重要的特征。</font></li>
+<li><font id="404">虽然词块划分器专门用来建立相对平坦的数据结构，其中没有任何两个词块允许重叠，但它们可以被串联在一起，建立嵌套结构。</font></li>
+<li><font id="405">关系抽取可以使用基于规则的系统，它通常查找文本中的连结实体和相关的词的特定模式；或使用机器学习系统，通常尝试从训练语料自动学习这种模式。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="406">8 深入阅读</font></h2>
+<p><font id="407">本章的附加材料发布在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>，包括网络上免费提供的资源的链接。</font><font id="408">关于使用NLTK词块划分的更多的例子，请看在<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的词块划分HOWTO。</font></p>
+<p><font id="409">分块的普及很大一部分是由于Abney的开创性的工作，如<a class="reference external" href="./bibliography.html#abney1996pst" id="id1">(Church, Young, &amp; Bloothooft, 1996)</a>。</font><font id="410"><tt class="doctest"><span class="pre">http://www.vinartus.net/spa/97a.pdf</span></tt>中描述了Abney的Cass词块划分器器。</font></p>
+<p><font id="411">根据Ross和Tukey在1975年的论文<a class="reference external" href="./bibliography.html#abney1996pst" id="id2">(Church, Young, &amp; Bloothooft, 1996)</a>，单词<span class="termdef">词缝</span>最初的意思是一个停用词序列。</font></p>
+<p><font id="412">IOB格式（有时也称为<span class="termdef">BIO格式</span>）由<a class="reference external" href="./bibliography.html#ramshaw1995tcu" id="id3">(Ramshaw &amp; Marcus, 1995)</a>开发用来<tt class="doctest"><span class="pre">NP</span></tt>划分词块，并被由<em>Conference on Natural Language Learning</em>在1999年用于<tt class="doctest"><span class="pre">NP</span></tt>加括号共享任务。</font><font id="413">CoNLL 2000采用相同的格式标注了华尔街日报的文本作为一个<tt class="doctest"><span class="pre">NP</span></tt>词块划分共享任务的一部分。</font></p>
+<p><font id="414"><a class="reference external" href="./bibliography.html#jurafskymartin2008" id="id4">(Jurafsky &amp; Martin, 2008)</a>的13.5节包含有关词块划分的一个讨论。</font><font id="415">第22 章讲述信息提取，包括命名实体识别。</font><font id="416">有关生物学和医学中的文本挖掘的信息，请参阅<a class="reference external" href="./bibliography.html#ananiadou2006" id="id5">(Ananiadou &amp; McNaught, 2006)</a>。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="417">9 练习</font></h2>
+<ol class="arabic simple"><li><font id="418">☼ IOB 格式分类标注标识符为<tt class="doctest"><span class="pre">I</span></tt>、<tt class="doctest"><span class="pre">O</span></tt>和<tt class="doctest"><span class="pre">B</span></tt>。</font><font id="419">三个标签为什么是必要的？</font><font id="420">如果我们只使用<tt class="doctest"><span class="pre">I</span></tt>和<tt class="doctest"><span class="pre">O</span></tt>标记会造成什么问题？</font></li>
+<li><font id="421">☼ 写一个标记模式匹配包含复数中心名词在内的名词短语，如</font><font id="422">"many/JJ researchers/NNS", "two/CD weeks/NNS", "both/DT new/JJ positions/NNS"。</font><font id="423">通过泛化处理单数名词短语的标记模式，尝试做这个。</font></li>
+<li><font id="424">☼ 选择CoNLL语料库中三种词块类型之一。</font><font id="425">研究CoNLL语料库，并尝试观察组成这种类型词块的词性标记序列的任何模式。</font><font id="426">使用正则表达式词块划分器<tt class="doctest"><span class="pre">nltk.RegexpParser</span></tt>开发一个简单的词块划分器。</font><font id="427">讨论任何难以可靠划分词块的标记序列。</font></li>
+<li><font id="428">☼ <em>词块</em>的早期定义是出现在词缝之间的内容。</font><font id="429">开发一个词块划分器以将完整的句子作为一个单独的词块开始，然后其余的工作完全加塞词缝完成。</font><font id="430">在你自己的应用程序的帮助下，确定哪些标记（或标记序列）最有可能组成词缝。</font><font id="431">相对于完全基于词块规则的词块划分器，比较这种方法的表现和易用性。</font></li>
+<li><font id="432">◑ 写一个标记模式，涵盖包含动名词在内的名词短语，如</font><font id="433">"the/DT receiving/VBG end/NN", "assistant/NN managing/VBG editor/NN"。</font><font id="434">将这些模式加入到语法，每行一个。</font><font id="435">用自己设计的一些已标注的句子，测试你的工作。</font></li>
+<li><font id="436">◑ 写一个或多个标记模式处理有连接词的名词短语，如</font><font id="437">"July/NNP and/CC August/NNP", "all/DT your/PRP$ managers/NNS and/CC supervisors/NNS", "company/NN courts/NNS and/CC adjudicators/NNS"。</font></li>
+<li><font id="442">◑ 用任何你之前已经开发的词块划分器执行下列评估任务。</font><font id="443">（请注意，大多数词块划分语料库包含一些内部的不一致，以至于任何合理的基于规则的方法都将产生错误。）</font><ol class="loweralpha"><li><font id="438">在来自词块划分语料库的100个句子上评估你的词块划分器，报告精度、召回率和F-量度。</font></li>
+<li><font id="439">使用<tt class="doctest"><span class="pre">chunkscore.missed()</span></tt>和<tt class="doctest"><span class="pre">chunkscore.incorrect()</span></tt>方法识别你的词块划分器的错误。</font><font id="440">讨论。</font></li>
+<li><font id="441">与本章的评估部分讨论的基准词块划分器比较你的词块划分器的表现。</font></li>
+</ol></li>
+<li><font id="444">◑ 使用基于正则表达式的词块语法<tt class="doctest"><span class="pre">RegexpChunk</span></tt>，为CoNLL语料库中词块类型中的一个开发一个词块划分器。</font><font id="445">使用词块、词缝、合并或拆分规则的任意组合。</font></li>
+<li><font id="446">◑ 有时一个词的标注不正确，例如</font><font id="447">"12/CD or/CC so/RB cases/VBZ"中的中心名词。</font><font id="448">不用要求手工校正标注器的输出，好的词块划分器使用标注器的错误输出也能运作。</font><font id="449">查找使用不正确的标记正确为名词短语划分词块的其他例子。</font></li>
+<li><font id="450">◑ 二元词块划分器的准确性得分约为90％。</font><font id="451">研究它的错误，并试图找出它为什么不能获得100％的准确率。</font><font id="452">实验三元词块划分。</font><font id="453">你能够再提高准确性吗？</font></li>
+<li><font id="454">★ 在IOB词块标注上应用n-gram和Brill标注方法。</font><font id="455">不是给词分配词性标记，在这里我们给词性标记分配IOB标记。</font><font id="456">例如</font><font id="457">如果标记<tt class="doctest"><span class="pre">DT</span></tt>（限定符）经常出现在一个词块的开头，它会被标注为<tt class="doctest"><span class="pre">B</span></tt>（开始）。</font><font id="458">相对于本章中讲到的正则表达式词块划分方法，评估这些词块划分方法的表现。</font></li>
+<li><font id="459">★ 在<a class="reference external" href="./ch05.html#chap-tag">5.</a>中我们看到，通过查找有歧义的n-grams可以得到标注准确性的上限，即在训练数据中有多种可能的方式标注的n-grams。</font><font id="460">应用同样的方法来确定一个n-gram词块划分器的上限。</font></li>
+<li><font id="465">★ 挑选CoNLL语料库中三种词块类型之一。</font><font id="466">编写函数为你选择的类型做以下任务：</font><ol class="loweralpha"><li><font id="461">列出与此词块类型的每个实例一起出现的所有标记序列。</font></li>
+<li><font id="462">计数每个标记序列的频率，并产生一个按频率减少的顺序排列的列表；每行要包含一个整数（频率）和一个标记序列。</font></li>
+<li><font id="463">检查高频标记序列。</font><font id="464">使用这些作为开发一个更好的词块划分器的基础。</font></li>
+</ol></li>
+<li><font id="467">★ 在评估一节中提到的基准词块划分器往往会产生比它应该产生的块更大的词块。</font><font id="468">例如，短语<tt class="doctest"><span class="pre">[every/DT time/NN] [she/PRP] sees/VBZ [a/DT newspaper/NN]</span></tt>包含两个连续的词块，我们的基准词块划分器不正确地将前两个结合： <tt class="doctest"><span class="pre">[every/DT time/NN she/PRP]</span></tt>。</font><font id="469">写一个程序，找出这些通常出现在一个词块的开头的词块内部的标记有哪些，然后设计一个或多个规则分裂这些词块。</font><font id="470">将这些与现有的基准词块划分器组合，重新评估它，看看你是否已经发现了一个改进的基准。</font></li>
+<li><font id="471">★ 开发一个<tt class="doctest"><span class="pre">NP</span></tt>词块划分器，转换POS标注文本为元组的一个列表，其中每个元组由一个后面跟一个名词短语和介词的动词组成，如</font><font id="472"><tt class="doctest"><span class="pre">the little cat sat on the mat</span></tt>变成<tt class="doctest"><span class="pre">(<span class="pysrc-string">'sat'</span>, <span class="pysrc-string">'on'</span>, <span class="pysrc-string">'NP'</span>)</span></tt>...</font></li>
+<li><font id="477">★ 宾州树库样例包含一部分已标注的《华尔街日报》文本，已经按名词短语划分词块。</font><font id="478">其格式使用方括号，我们已经在本章遇到它了几次。</font><font id="479">该语料可以使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> nltk.corpus.treebank_chunk.chunked_sents(fileid)</span></tt>来访问。</font><font id="480">这些都是平坦的树，正如我们使用<tt class="doctest"><span class="pre">nltk.corpus.conll2000.chunked_sents()</span></tt>得到的一样。</font><ol class="loweralpha"><li><font id="473">函数<tt class="doctest"><span class="pre">nltk.tree.pprint()</span></tt>和<tt class="doctest"><span class="pre">nltk.chunk.tree2conllstr()</span></tt>可以用来从一棵树创建树库和IOB字符串。</font><font id="474">编写函数<tt class="doctest"><span class="pre">chunk2brackets()</span></tt>和<tt class="doctest"><span class="pre">chunk2iob()</span></tt>，以一个单独的词块树为它们唯一的参数，返回所需的多行字符串表示。</font></li>
+<li><font id="475">写命令行转换工具<tt class="doctest"><span class="pre">bracket2iob.py</span></tt>和<tt class="doctest"><span class="pre">iob2bracket.py</span></tt>，（分别）读取树库或CoNLL格式的一个文件，将它转换为其他格式。</font><font id="476">（从NLTK语料库获得一些原始的树库或CoNLL 数据，保存到一个文件，然后使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span> line <span class="pysrc-keyword">in</span> open(filename)</span></tt>从Python访问它。）</font></li>
+</ol></li>
+<li><font id="481">★ 一个n-gram词块划分器可以使用除当前词性标记和<span class="math">n-1</span>个前面的词块的标记以外其他信息。</font><font id="482">调查其他的上下文模型，如<span class="math">n-1</span>个前面的词性标记，或一个写前面词块标记连同前面和后面的词性标记的组合。</font></li>
+<li><font id="483">★ 思考一个n-gram标注器使用临近的标记的方式。</font><font id="484">现在观察一个词块划分器可能如何重新使用这个序列信息。</font><font id="485">例如：这两个任务将使用名词往往跟在形容词后面（英文中）的信息。</font><font id="486">这会出现相同的信息被保存在两个地方的情况。</font><font id="487">随着规则集规模增长，这会成为一个问题吗？</font><font id="488">如果是，推测可能会解决这个问题的任何方式。</font></li>
+</ol>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="489">关于本文档...</font></p>
+<p><font id="490">针对NLTK 3.0 作出更新。</font><font id="491">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="492">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="493">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</body>
+</html>

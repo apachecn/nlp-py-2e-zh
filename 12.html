@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="afterword-the-language-challenge"><h1 class="title"><font id="1">后记：语言的挑战</font></h1>
+<p><font id="2">自然语言抛出一些有趣的计算性挑战。</font><font id="3">我们已经在前面的章节探讨过许多这样的挑战，包括分词、标注、分类、信息提取和建立句法和语义表示。</font><font id="4">你现在应该已经准备好操作大型数据集，来创建语言现象的强健模型，并将它们扩展到实际语言技术的组件中。</font><font id="5">我们希望自然语言工具包（NLTK）对于开放令人振奋的实用自然语言处理的的努力到比以前更广泛的受众已经起作用。</font></p>
+<p><font id="6">尽管已经取得前面的所有成果，语言呈现给我们的远远不是计算上的临时挑战。</font><font id="7">考虑下面的句子，它们证实语言的丰富性：</font></p>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="8">(1)</font></td>
+<td width="15"></td>
+<td><p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="9">a.</font></td>
+<td width="15"></td>
+<td><font id="10">Overhead the day drives level and grey, hiding the sun by a flight of grey spears. </font><font id="11">(William Faulkner, <em>As I Lay Dying</em>, 1935)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="12">b.</font></td>
+<td width="15"></td>
+<td><font id="13">When using the toaster please ensure that the exhaust fan is turned on. </font><font id="14">(sign in dormitory kitchen)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="15">c.</font></td>
+<td width="15"></td>
+<td><font id="16">Amiodarone weakly inhibited CYP2C9, CYP2D6, and CYP3A4-mediated activities with Ki values of 45.1-271.6 μM (Medline, PMID: 10718780)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="17">d.</font></td>
+<td width="15"></td>
+<td><font id="18">Iraqi Head Seeks Arms (spoof news headline)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="19">e.</font></td>
+<td width="15"></td>
+<td><font id="20">The earnest prayer of a righteous man has great power and wonderful results. </font><font id="21">(James 5:16b)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="22">f.</font></td>
+<td width="15"></td>
+<td><font id="23">Twas brillig, and the slithy toves did gyre and gimble in the wabe (Lewis Carroll, <em>Jabberwocky</em>, 1872)</font></td>
+</tr>
+</tbody>
+</table>
+<p></p>
+<table border="0" cellpadding="0" cellspacing="0" class="example"><tbody><tr valign="top"><td align="right" width="30"><font id="24">g.</font></td>
+<td width="15"></td>
+<td><font id="25">There are two ways to do this, AFAIK :smile: (internet discussion archive)</font></td>
+</tr>
+</tbody>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+<p><font id="26">语言丰富性的其他证据是以语言为工作中心的学科的浩瀚阵容。</font><font id="27">一些明显的学科包括翻译、文学批评、哲学、人类学和心理学。</font><font id="28">许多不太明显的学科研究语言的使用，包括法律、诠释学、辩论术、电话学、教育学、考古学、密码分析学及言语病理学。</font><font id="29">它们分别应用不同的方法来收集观察资料、发展理论和测试假设。</font><font id="30">它们都有助于加深我们对语言和表现在语言中的智能的理解。</font></p>
+<p><font id="31">鉴于语言的复杂性和从不同的角度研究它的广泛的价值，很显然这里我们仅仅已经触及了表面。</font><font id="32">此外，在NLP本身，有许多我们没有提到的重要方法和应用。</font></p>
+<p><font id="33">在我们的后记中，我们将以更宽广的视角看待NLP，包括它的基础和你可能想要探索的进一步的方向。</font><font id="34">一些主题还没有得到NLTK很好的支持，你可能想通过为工具包贡献新的软件和数据来修正这些问题，。</font></p>
+<div class="section" id="language-processing-vs-symbol-processing"><h2 class="sigil_not_in_toc"><font id="35">语言处理与符号处理</font></h2>
+<p><font id="36">以计算方式处理自然语言的真正观念脱胎于一个研究项目，可以追溯到1900年代早期，使用逻辑重建数学推理，最清楚地表明是在Frege、Russell、Wittgenstein、Tarski、Lambek和Carnap的工作中。</font><font id="37">这项工作导致语言作为可以自动处理的形式化系统的概念。</font><font id="38">三个后来的发展奠定了自然语言处理的基础。</font><font id="39">第一个是<span class="termdef">形式语言理论</span>。</font><font id="40">它定义一个语言为被一类自动机接受的字符串的集合，如上下文无关语言和下推自动机，并提供计算句法的支柱。</font></p>
+<p><font id="41">第二个发展是<span class="termdef">符号逻辑</span>。</font><font id="42">它提供一个捕捉选定的自然语言的表达的逻辑证明的有关方面的形式化方法。</font><font id="43">符号逻辑中的形式化演算提供一种语言的句法和推理规则，并可能在一套理论模型中对规则进行解释；例子是命题逻辑和一阶逻辑。</font><font id="44">给定这样的演算和一个明确的句法和语义，通过将自然语言的表达翻译成形式化演算的表达式，联系语义与自然语言的表达成为可能。</font><font id="45">例如，如果我们翻译<span class="example">John saw Mary</span>为公式<tt class="doctest"><span class="pre">saw(j,m)</span></tt>，我们（或明或暗地）将英语动词<span class="example">saw</span>解释为一个二元关系，而<span class="example">John</span>和<span class="example">Mary</span>表示个体元素。</font><font id="46">更多的一般性的表达式如<span class="example">All birds fly</span>需要量词，在这个例子中是∀，意思是<span class="example">对所有的</span>：∀<span class="math">x (bird(x)</span> → <span class="math">fly(x))</span>。</font><font id="47">逻辑的使用提供了技术性的机制处理推理，而推理是语言理解的重要组成部分。</font></p>
+<p><font id="48">另一个密切相关的发展是<span class="termdef">组合原理</span>，即一个复杂表达式的意思由它的各个部分的意思和它们的组合模式组成（<a class="reference external" href="./ch10.html#chap-semantics">10.</a>）。</font><font id="49">这一原理提供了句法和语义之间的有用的对应，即一个复杂的表达式的含义可以递归的计算。</font><font id="50">考虑句子<span class="example">It is not true that</span> <span class="math">p</span>，其中<span class="math">p</span>是一个命题。</font><font id="51">我们可以表示这个句子的意思为<span class="math">not(p)</span>。</font><font id="52">同样，我们可以表示<span class="example">John saw Mary</span>的意思为<span class="math">saw(j, m)</span>。</font><font id="53">现在，我们可以使用上述信息递归地计算<span class="example">It is not true that John saw Mary</span>的表示，得到<span class="math">not(saw(j,m))</span>。</font></p>
+<p><font id="54">刚刚简要介绍的方法都有一个前提，自然语言计算关键依赖于操纵符号表示的规则。</font><font id="55">NLP发展的一个特定时期，特别是1980年代，这个前提为语言学家和NLP从业人员提供了一个共同的起点，导致一种被称为基于归一（基于特征）语法的形式化语法家族（参见</font><font id="56"><a class="reference external" href="./ch09.html#chap-featgram">9.</a></font><font id="57">），也导致了在Prolog 编程语言上实现NLP应用。</font><font id="58">虽然基于语法的自然语言处理仍然是一个研究的重要领域，由于多种因素在过去的15-20年它已经有些黯然失色。</font><font id="59">一个显著的影响因素来自于自动语音识别。</font><font id="60">虽然早期的语音处理采用一个模拟一类基于规则的音韵<span class="topic"></span>处理的模型，典型的如<em>Sound Pattern of English</em> <a class="reference external" href="./bibliography.html#chomskyhalle68" id="id1">(Chomsky &amp; Halle, 1968)</a>，结果远远不能够解决实时的识别实际的讲话这样困难的问题。</font><font id="61">相比之下，包含从大量语音数据中学习的模式的系统明显更准确、高效和稳健的。</font><font id="62">此外，言语社区发现建立对常见的测试数据的性能的定量测量的共享资源对建立更好的系统的过程有巨大帮助。</font><font id="63">最终，大部分的NLP社区拥抱面向<span class="termdef">数据密集型</span>的语言处理，配合机器学习技术和评价为主导的方法的越来越多地使用。</font></p>
+</div>
+<div class="section" id="contemporary-philosophical-divides"><h2 class="sigil_not_in_toc"><font id="64">当代哲学划分</font></h2>
+<p><font id="65">在上一节中描述的自然语言处理的两种方法的对比与在西方哲学的启蒙时期出现的关于<span class="termdef">理性主义</span>与<span class="termdef">经验主义</span>和<span class="termdef">现实主义</span>与<span class="termdef">理想主义</span>的早期形而上学的辩论有关。</font><font id="66">这些辩论出现在反对一切知识的来源被认为是神的启示的地方的正统思想的背景下。</font><font id="67">在十七和十八世纪期间，哲学家认为人类理性或感官经验优先了启示。</font><font id="68">笛卡尔和莱布尼兹以及其他人采取了理性的立场，声称所有的真理来源于人类思想，从出生起在我们的脑海中就植入的“天赋观念”的存在。</font><font id="69">例如，他们认为欧几里德几何原理是使用人的理性制定的，而不是超自然的启示或感官体验的结果。</font><font id="70">相比之下，洛克和其他人采取了经验主义的观点，认为我们的知识的主要来源是我们的感官经验，人类理性在翻译这些经验上起次要作用。</font><font id="71">这一立场经常引用的证据是伽利略的发现——基于对行星运动的仔细观察——太阳系是以太阳为中心，而不是地球为中心。</font><font id="72">在语言学的背景下，本次辩论导致以下问题：人类语言经验与我们先天的“语言能力”各自多大程度上作为我们的语言知识的基础？</font><font id="73">在NLP中这个问题表现为在计算模型构建中语料库数据与语言学反省之间的优先级。</font></p>
+<p><font id="74">还有一个问题，在现实主义和理想主义之间的辩论中被奉若神明的是理论结构的形而上学的地位。</font><font id="75">康德主张现象与我们可以体验的表现以及不能直接被认识的“事情本身”之间的相互区别。</font><font id="76">语言现实主义者会认为如<span class="termdef">名词短语</span>这样的理论建构是一个现实世界的实体，是人类看法和理由的独立存在，它实际<em>导致</em>观测到的语言现象。</font><font id="77">另一方面，语言理想主义者会说名词短语以及如语义表示这样更抽象的结构本质上无法观察到，只是担任有用的虚构的角色。</font><font id="78">语言学家写理论的方式往往与现实主义的立场相违背，而NLP 从业人员占据中立地位，不然就倾向于理想主义立场。</font><font id="79">因此，在NLP中，如果一个理论的抽象导致一个有用的结果往往就足够了；不管这个结果是否揭示了任何人类语言处理。</font></p>
+<p><font id="80">这些问题今天仍然存在，表现为符号与统计方法、深层与浅层处理、二元与梯度分类以及科学与工程目标之间的区别。</font><font id="81">然而，这样的反差现在已经非常细微，辩论不再像从前那样是两极化。</font><font id="82">事实上，大多数的讨论——大部分的进展——都包含一个“平衡协调”。</font><font id="83">例如，一种中间立场是假设人类天生被赋予基于类比和记忆的学习方法（弱理性主义），并使用这些方法确定他们的感官语言经验（经验主义）的有意义的模式。</font></p>
+<p><font id="84">整本书中，我们已经看到了这种方法的很多例子。</font><font id="85">每次语料统计指导上下文无关语法产生式的选择，统计方法就会给出符号模型，即</font><font id="86">“语法工程”。</font><font id="87">每次使用基于规则的方法创建的一个语料被用来作为特征来源训练统计语言模型时，符号方法都会给出统计模型，即</font><font id="88">“语法推理”。</font><font id="89">圆圈是封闭的。</font></p>
+</div>
+<div class="section" id="nltk-roadmap"><h2 class="sigil_not_in_toc"><font id="90">NLTK路线图</font></h2>
+<p><font id="91">自然语言工具包是在不断发展的，随着人们贡献代码而不断扩大。</font><font id="92">NLP 和语言学的一些领域（还）没有得到NLTK 很好的支持，特别欢迎在这些领域的贡献。</font><font id="93">有关这本书的出版之后的开发新闻，请查阅<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>。</font></p>
+<table class="docutils field-list" frame="void" rules="none"><tbody valign="top"><tr class="field"><th class="field-name" colspan="2"><font id="94">音韵学和形态学：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="95">研究声音模式和文字结构的计算方法，通常用一个有限状态机工具包。</font><font id="96">如不规则词形变化和非拼接形态这样的现象使用我们一直在学习的字符串处理方法很难解决。</font><font id="97">该技术面临的挑战不仅仅是连接NLTK到一个高性能的有限状态机工具包，而且要避免词典数据的重复以及链接形态分析器和语法分析器所需形态学特征。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="98">高性能模块：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="99">一些NLP任务的计算量太大，使纯Python实现不可行。</font><font id="100">然而，在某些情况下，耗时只出现在训练模型期间，不是在标注输入期间使用它们。</font><font id="101">NLTK中的包系统提供了一个方便的方式来发布训练好的模型，即使那些使用不能随意发布的语料库训练的模型。</font><font id="102">替代方法是开发高性能的机器学习工具的Python接口，或通过使用类似与MapReduce的并行编程技术扩展Python的能力。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="103">词汇语义学：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="104">这是一个充满活力的领域，目前的研究大多围绕词典、本体、多词表达式等的继承模型，大都在现在的NLTK的范围之外。</font><font id="105">一个保守的目标是从丰富的外部存储获得词汇信息，以支持词义消歧、解析和语义解释等任务。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="106">自然语言生成：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="107">从含义的内在表示生产连贯的文本是NLP的重要组成部分；用于NLP的基于归一的方法已经在NLTK中开发，在这一领域做出更大的贡献还有限制。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="108">语言实地调查：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="109">语言学家面临的一个重大挑战是记录数以千计的濒危语言，这项工作产生大量异构且快速变化的数据。</font><font id="110">更多的实地调查的数据格式，包括行间的文本格式和词汇交换格式，在NLTK 中得到支持，帮助语言学家维护和分析这些数据，解放他们，使他们能在数据提炼中花费尽可能多的时间。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="111">其他语言：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="112">对英语以外的语言的NLP改进支持包括两方面的工作：获准发布更多NLTK 中的收集的语料库；写特定语言的HOWTO文件发布到<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>，说明NLTK中的使用，讨论语言相关的NLP问题，包括字符编码、分词、形态。</font><font id="113">一个特定语言专长的NLP研究人员可以安排翻译这本书，并在NLTK的网站上保存一个副本；这将不仅仅是翻译讨论的内容，而要使用目标语言的数据提供等效的可行的例子，一项不平凡的事业。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="114">NLTK-Contrib:</font></th>
+<td class="field-body"><font id="115">许多NLTK中的核心组件都由NLP社区成员贡献，它们最初被安置在NLTK 中的“Contrib”包，<tt class="doctest"><span class="pre">nltk_contrib</span></tt>。</font><font id="116">对添加到这个包中的软件的唯一要求是它必须用Python编写，与NLP有关，并给予与NLTK中其他软件一样的开源许可。</font><font id="117">不完善的软件也是值得欢迎的，随着时间的推移可能会被NLP社区的其他成员改进。</font></td>
+</tr>
+<tr class="field"><th class="field-name" colspan="2"><font id="118">教材：</font></th>
+</tr>
+<tr class="field"><td></td>
+<td class="field-body"><font id="119">从NLTK开发的最初起，教材一直伴随着软件逐渐扩大填补这本书，也加上大量的网上材料。</font><font id="120">我们希望弄清楚提供这些材料包括：幻灯片、习题集、解答集、我们所覆盖的主题更详细的理解的教员的名字，并通知作者，我们可以为他们在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>上做链接。</font><font id="121">具有特殊价值的材料，帮助NLP 成为计算机科学和语言学系的本科主流课程，或者使NLP在二级本科课程中可以获得，在那里对语言、文学、计算机科学以及信息技术课程中的计算内容有明显的限制。</font></td>
+</tr>
+<tr class="field"><th class="field-name"><font id="122">只是一个工具包：</font></th>
+<td class="field-body"><font id="123">在序言中已经指出，NLTK 是一个<span class="emphasis">工具包</span>，而不是一个系统。</font><font id="124">在NLTK、Python、其他Python 库、外部NLP的工具和格式的接口集成中会有很多问题需要解决。</font></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="envoi"><h2 class="sigil_not_in_toc"><font id="125">Envoi...</font></h2>
+<p><font id="126">语言学家有时会被问到他们说多少种语言，不得不解释说这一领域实际上关注语言间共享的抽象结构的研究，一种比学说尽可能多的语言更深刻更难以捉摸的研究。</font><font id="127">同样的，计算机科学家有时会被问到他们懂多少种编程语言，不得不解释说计算机科学实际上关注能在任何编程语言中实施的数据结构和算法的研究，一种比争取学习尽可能多的编程语言更深刻更难以捉摸。</font></p>
+<p><font id="128">这本书涵盖了自然语言处理领域的许多主题。</font><font id="129">大多数的例子都使用Python和英语。</font><font id="130">不过，如果读者得出的结论是NLP是有关如何编写Python程序操纵英文文本，或者更广泛的，关于如何编写程序（以任何一种编程语言）处理（任何一种自然语言）文本的，这将是不幸的。</font><font id="131">我们选择Python和英语是权宜之计，仅此而已。</font><font id="132">即使我们关注编程本身也只是一种解决问题的手段：作为一种了解表示和操纵语言标注文本的集合的数据结构和算法的方式，作为一种方法来建立新的语言技术，更好地服务于信息社会的需求，并最终作为对人类语言极度丰富性的更深的理解的方法。</font></p>
+<p><font id="133"><em>但是目前为止，happy hacking!</em></font></p>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="134">关于本文档...</font></p>
+<p><font id="135">针对NLTK 3.0 作出更新。</font><font id="136">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="137">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="138">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="accessing-text-corpora-and-lexical-resources"><h1 class="title"><font id="1">2. </font><font id="2">获得文本语料和词汇资源</font></h1>
+<p><font id="3">在自然语言处理的实际项目中，通常要使用大量的语言数据或者<span class="termdef">语料库</span>。</font><font id="4">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="5">什么是有用的文本语料和词汇资源，我们如何使用Python 获取它们？</font></li>
+<li><font id="6">哪些Python 结构最适合这项工作？</font></li>
+<li><font id="7">编写Python 代码时我们如何避免重复的工作？</font></li>
+</ol>
+<p><font id="8">本章继续通过语言处理任务的例子展示编程概念。</font><font id="9">在系统的探索每一个Python 结构之前请耐心等待。</font><font id="10">如果你看到一个例子中含有一些不熟悉的东西，请不要担心。只需去尝试它，看看它做些什么——如果你很勇敢——通过使用不同的文本或词替换代码的某些部分来进行修改。</font><font id="11">这样，你会将任务与编程习惯用法关联起来，并在后续的学习中了解怎么会这样和为什么是这样。</font></p>
+<div class="section" id="accessing-text-corpora"><h2 class="sigil_not_in_toc"><font id="12">1 获取文本语料库</font></h2>
+<p><font id="13">正如刚才提到的，一个文本语料库是一大段文本。</font><font id="14">许多语料库的设计都要考虑一个或多个文体间谨慎的平衡。</font><font id="15">我们曾在第<a class="reference external" href="./ch01.html#chap-introduction">1.</a>章研究过一些小的文本集合，例如美国总统就职演说。</font><font id="16">这种特殊的语料库实际上包含了几十个单独的文本——每个人一个演讲——但为了处理方便，我们把它们头尾连接起来当做一个文本对待。</font><font id="17">第<a class="reference external" href="./ch01.html#chap-introduction">1.</a>章中也使用变量预先定义好了一些文本，我们通过输入<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *</span></tt>来访问它们。</font><font id="18">然而，因为我们希望能够处理其他文本，本节中将探讨各种文本语料库。</font><font id="19">我们将看到如何选择单个文本，以及如何处理它们。</font></p>
+<div class="section" id="gutenberg-corpus"><h2 class="sigil_not_in_toc"><font id="20">1.1 古腾堡语料库</font></h2>
+<p><font id="21">NLTK 包含古腾堡项目（Project Gutenberg）电子文本档案的经过挑选的一小部分文本，该项目大约有25,000本免费电子图书，放在<tt class="doctest"><span class="pre">http://www.gutenberg.org/</span></tt>上。</font><font id="22">我们先要用Python 解释器加载NLTK 包，然后尝试<tt class="doctest"><span class="pre">nltk.corpus.gutenberg.fileids()</span></tt>，下面是这个语料库中的文件标识符：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">import</span> nltk
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.gutenberg.fileids()
+<span class="pysrc-output">['austen-emma.txt', 'austen-persuasion.txt', 'austen-sense.txt', 'bible-kjv.txt',</span>
+<span class="pysrc-output">'blake-poems.txt', 'bryant-stories.txt', 'burgess-busterbrown.txt',</span>
+<span class="pysrc-output">'carroll-alice.txt', 'chesterton-ball.txt', 'chesterton-brown.txt',</span>
+<span class="pysrc-output">'chesterton-thursday.txt', 'edgeworth-parents.txt', 'melville-moby_dick.txt',</span>
+<span class="pysrc-output">'milton-paradise.txt', 'shakespeare-caesar.txt', 'shakespeare-hamlet.txt',</span>
+<span class="pysrc-output">'shakespeare-macbeth.txt', 'whitman-leaves.txt']</span></pre>
+<p><font id="23">让我们挑选这些文本的第一个——简·奥斯丁的<em>《爱玛》</em>——并给它一个简短的名称<tt class="doctest"><span class="pre">emma</span></tt>，然后找出它包含多少个词：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>emma = nltk.corpus.gutenberg.words(<span class="pysrc-string">'austen-emma.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>len(emma)
+<span class="pysrc-output">192427</span></pre>
+<div class="note"><p class="first admonition-title"><font id="24">注意</font></p>
+<p><font id="25">在第<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>章中，我们演示了如何使用<tt class="doctest"><span class="pre">text1.concordance()</span></tt>命令对<tt class="doctest"><span class="pre">text1</span></tt>这样的文本进行索引。</font><font id="26">然而，这是假设你正在使用由<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> nltk.book <span class="pysrc-keyword">import</span> *</span></tt>导入的9 个文本之一。</font><font id="27">现在你开始研究<tt class="doctest"><span class="pre">nltk.corpus</span></tt>中的数据，像前面的例子一样，你必须采用以下语句对来处理索引和第<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>章中的其它任务：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>emma = nltk.Text(nltk.corpus.gutenberg.words(<span class="pysrc-string">'austen-emma.txt'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>emma.concordance(<span class="pysrc-string">"surprize"</span>)</pre>
+</div>
+<p><font id="28">在我们定义<tt class="doctest"><span class="pre">emma</span></tt>, 时，我们调用了NLTK 中的<tt class="doctest"><span class="pre">corpus</span></tt>包中的<tt class="doctest"><span class="pre">gutenberg</span></tt>对象的<tt class="doctest"><span class="pre">words()</span></tt>函数。</font><font id="29">但因为总是要输入这么长的名字很繁琐，Python 提供了另一个版本的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>语句，示例如下：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> gutenberg
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>gutenberg.fileids()
+<span class="pysrc-output">['austen-emma.txt', 'austen-persuasion.txt', 'austen-sense.txt', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>emma = gutenberg.words(<span class="pysrc-string">'austen-emma.txt'</span>)</pre>
+<p><font id="30">让我们写一个简短的程序，通过循环遍历前面列出的<tt class="doctest"><span class="pre">gutenberg</span></tt>文件标识符列表相应的<tt class="doctest"><span class="pre">fileid</span></tt>，然后计算统计每个文本。</font><font id="31">为了使输出看起来紧凑，我们将使用<tt class="doctest"><span class="pre">round()</span></tt>舍入每个数字到最近似的整数。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> gutenberg.fileids():
+<span class="pysrc-more">... </span>    num_chars = len(gutenberg.raw(fileid)) <a href="./ch02.html#ref-raw-access"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>    num_words = len(gutenberg.words(fileid))
+<span class="pysrc-more">... </span>    num_sents = len(gutenberg.sents(fileid))
+<span class="pysrc-more">... </span>    num_vocab = len(set(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> gutenberg.words(fileid)))
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(round(num_chars/num_words), round(num_words/num_sents), round(num_words/num_vocab), fileid)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">5 25 26 austen-emma.txt</span>
+<span class="pysrc-output">5 26 17 austen-persuasion.txt</span>
+<span class="pysrc-output">5 28 22 austen-sense.txt</span>
+<span class="pysrc-output">4 34 79 bible-kjv.txt</span>
+<span class="pysrc-output">5 19 5 blake-poems.txt</span>
+<span class="pysrc-output">4 19 14 bryant-stories.txt</span>
+<span class="pysrc-output">4 18 12 burgess-busterbrown.txt</span>
+<span class="pysrc-output">4 20 13 carroll-alice.txt</span>
+<span class="pysrc-output">5 20 12 chesterton-ball.txt</span>
+<span class="pysrc-output">5 23 11 chesterton-brown.txt</span>
+<span class="pysrc-output">5 18 11 chesterton-thursday.txt</span>
+<span class="pysrc-output">4 21 25 edgeworth-parents.txt</span>
+<span class="pysrc-output">5 26 15 melville-moby_dick.txt</span>
+<span class="pysrc-output">5 52 11 milton-paradise.txt</span>
+<span class="pysrc-output">4 12 9 shakespeare-caesar.txt</span>
+<span class="pysrc-output">4 12 8 shakespeare-hamlet.txt</span>
+<span class="pysrc-output">4 12 7 shakespeare-macbeth.txt</span>
+<span class="pysrc-output">5 36 12 whitman-leaves.txt</span></pre>
+<p><font id="32">这个程序显示每个文本的三个统计量：平均词长、平均句子长度和本文中每个词出现的平均次数（我们的词汇多样性得分）。</font><font id="33">请看，平均词长似乎是英语的一个一般属性，因为它的值总是<tt class="doctest"><span class="pre">4</span></tt>。</font><font id="34">（事实上，平均词长是<tt class="doctest"><span class="pre">3</span></tt>而不是<tt class="doctest"><span class="pre">4</span></tt>，因为<tt class="doctest"><span class="pre">num_chars</span></tt>变量计数了空白字符。）</font><font id="35">相比之下，平均句子长度和词汇多样性看上去是作者个人的特点。</font></p>
+<p><font id="36">前面的例子也表明我们怎样才能获取“原始”文本<a class="reference internal" href="./ch02.html#raw-access"><span id="ref-raw-access"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>而不用把它分割成词符。</font><font id="37"><tt class="doctest"><span class="pre">raw()</span></tt>函数给我们没有进行过任何语言学处理的文件的内容。</font><font id="38">因此，例如<tt class="doctest"><span class="pre">len(gutenberg.raw(<span class="pysrc-string">'blake-poems.txt'</span>))</span></tt>告诉我们文本中出现的<em>字符</em>个数，包括词之间的空格。</font><font id="39"><tt class="doctest"><span class="pre">sents()</span></tt>函数把文本划分成句子，其中每一个句子是一个单词列表：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>macbeth_sentences = gutenberg.sents(<span class="pysrc-string">'shakespeare-macbeth.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>macbeth_sentences
+<span class="pysrc-output">[['[', 'The', 'Tragedie', 'of', 'Macbeth', 'by', 'William', 'Shakespeare',</span>
+<span class="pysrc-output">'1603', ']'], ['Actus', 'Primus', '.'], ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>macbeth_sentences[1116]
+<span class="pysrc-output">['Double', ',', 'double', ',', 'toile', 'and', 'trouble', ';',</span>
+<span class="pysrc-output">'Fire', 'burne', ',', 'and', 'Cauldron', 'bubble']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>longest_len = max(len(s) <span class="pysrc-keyword">for</span> s <span class="pysrc-keyword">in</span> macbeth_sentences)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[s <span class="pysrc-keyword">for</span> s <span class="pysrc-keyword">in</span> macbeth_sentences <span class="pysrc-keyword">if</span> len(s) == longest_len]
+<span class="pysrc-output">[['Doubtfull', 'it', 'stood', ',', 'As', 'two', 'spent', 'Swimmers', ',', 'that',</span>
+<span class="pysrc-output">'doe', 'cling', 'together', ',', 'And', 'choake', 'their', 'Art', ':', 'The',</span>
+<span class="pysrc-output">'mercilesse', 'Macdonwald', ...]]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="40">注意</font></p>
+<p class="last"><font id="41">除了<tt class="doctest"><span class="pre">words()</span></tt>, <tt class="doctest"><span class="pre">raw()</span></tt>和<tt class="doctest"><span class="pre">sents()</span></tt>之外，大多数NLTK 语料库阅读器还包括多种访问方法。</font><font id="42">一些语料库提供更加丰富的语言学内容，例如：词性标注，对话标记，语法树等；在后面的章节中，我们将看到这些。</font></p>
+</div>
+</div>
+<div class="section" id="web-and-chat-text"><h2 class="sigil_not_in_toc"><font id="43">1.2 网络和聊天文本</font></h2>
+<p><font id="44">虽然古腾堡项目包含成千上万的书籍，它代表既定的文学。</font><font id="45">考虑较不正式的语言也是很重要的。</font><font id="46">NLTK 的网络文本小集合的内容包括Firefox 交流论坛，在纽约无意听到的对话， <em>加勒比海盗</em>的电影剧本，个人广告和葡萄酒的评论：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> webtext
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> webtext.fileids():
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(fileid, webtext.raw(fileid)[:65], <span class="pysrc-string">'...'</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">firefox.txt Cookie Manager: "Don't allow sites that set removed cookies to se...</span>
+<span class="pysrc-output">grail.txt SCENE 1: [wind] [clop clop clop] KING ARTHUR: Whoa there!  [clop...</span>
+<span class="pysrc-output">overheard.txt White guy: So, do you have any plans for this evening? Asian girl...</span>
+<span class="pysrc-output">pirates.txt PIRATES OF THE CARRIBEAN: DEAD MAN'S CHEST, by Ted Elliott &amp; Terr...</span>
+<span class="pysrc-output">singles.txt 25 SEXY MALE, seeks attrac older single lady, for discreet encoun...</span>
+<span class="pysrc-output">wine.txt Lovely delicate, fragrant Rhone wine. Polished leather and strawb...</span></pre>
+<p><font id="47">还有一个即时消息聊天会话语料库，最初由美国海军研究生院为研究自动检测互联网幼童虐待癖而收集的。</font><font id="48">语料库包含超过10,000 张帖子，以“UserNNN”形式的通用名替换掉用户名，手工编辑消除任何其他身份信息，制作而成。</font><font id="49">语料库被分成15 个文件，每个文件包含几百个按特定日期和特定年龄的聊天室（青少年、20 岁、30 岁、40 岁、再加上一个通用的成年人聊天室）收集的帖子。</font><font id="50">文件名中包含日期、聊天室和帖子数量，例如<tt class="doctest"><span class="pre">10-19-20s_706posts.xml</span></tt>包含2006 年10 月19 日从20 多岁聊天室收集的706 个帖子。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> nps_chat
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chatroom = nps_chat.posts(<span class="pysrc-string">'10-19-20s_706posts.xml'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>chatroom[123]
+<span class="pysrc-output">['i', 'do', "n't", 'want', 'hot', 'pics', 'of', 'a', 'female', ',',</span>
+<span class="pysrc-output">'I', 'can', 'look', 'in', 'a', 'mirror', '.']</span></pre>
+</div>
+<div class="section" id="brown-corpus"><h2 class="sigil_not_in_toc"><font id="51">1.3 布朗语料库</font></h2>
+<p><font id="52">布朗语料库是第一个百万词级的英语电子语料库的，由布朗大学于1961 年创建。</font><font id="53">这个语料库包含500 个不同来源的文本，按照文体分类，如：<em>新闻</em>、<em>社论</em>等。</font><font id="54">表<a class="reference internal" href="./ch02.html#tab-brown-sources">1.1</a>给出了各个文体的例子（完整列表，请参阅<tt class="doctest"><span class="pre">http://icame.uib.no/brown/bcm-los.html</span></tt>）。</font></p>
+<p class="caption"><font id="55"><span class="caption-label">表 1.1</span>：</font></p>
+<p><font id="56">布朗语料库每一部分的示例文档</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown.categories()
+<span class="pysrc-output">['adventure', 'belles_lettres', 'editorial', 'fiction', 'government', 'hobbies',</span>
+<span class="pysrc-output">'humor', 'learned', 'lore', 'mystery', 'news', 'religion', 'reviews', 'romance',</span>
+<span class="pysrc-output">'science_fiction']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown.words(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-output">['The', 'Fulton', 'County', 'Grand', 'Jury', 'said', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown.words(fileids=[<span class="pysrc-string">'cg22'</span>])
+<span class="pysrc-output">['Does', 'our', 'society', 'have', 'a', 'runaway', ',', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown.sents(categories=[<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'editorial'</span>, <span class="pysrc-string">'reviews'</span>])
+<span class="pysrc-output">[['The', 'Fulton', 'County'...], ['The', 'jury', 'further'...], ...]</span></pre>
+<p><font id="124">布朗语料库是一个研究文体之间的系统性差异——一种叫做<span class="termdef">文体学</span>的语言学研究——很方便的资源。</font><font id="125">让我们来比较不同文体中的情态动词的用法。</font><font id="126">第一步是产生特定文体的计数。</font><font id="127">记住做下面的实验之前要<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> nltk</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>news_text = brown.words(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist = nltk.FreqDist(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> news_text)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>modals = [<span class="pysrc-string">'can'</span>, <span class="pysrc-string">'could'</span>, <span class="pysrc-string">'may'</span>, <span class="pysrc-string">'might'</span>, <span class="pysrc-string">'must'</span>, <span class="pysrc-string">'will'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> m <span class="pysrc-keyword">in</span> modals:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(m + <span class="pysrc-string">':'</span>, fdist[m], end=<span class="pysrc-string">' '</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">can: 94 could: 87 may: 93 might: 38 must: 53 will: 389</span></pre>
+<div class="note"><p class="first admonition-title"><font id="128">注意</font></p>
+<p class="last"><font id="129">我们需要包包含<tt class="doctest"><span class="pre">结束 = <span class="pysrc-string">' '</span></span></tt> 以让print函数将其输出放在单独的一行。</font></p>
+</div>
+<div class="note"><p class="first admonition-title"><font id="130">注意</font></p>
+<p class="last"><font id="131"><strong>轮到你来：</strong> 选择布朗语料库的不同部分，修改前面的例子，计数包含<span class="example">wh</span>的词，如：<span class="example">what</span>, <span class="example">when</span>, <span class="example">where</span>, <span class="example">who</span>和 <span class="example">why</span>。</font></p>
+</div>
+<p><font id="132">下面，我们来统计每一个感兴趣的文体。</font><font id="133">我们使用NLTK 提供的带条件的频率分布函数。</font><font id="134">在第<a class="reference internal" href="./ch02.html#sec-conditional-frequency-distributions">2</a>节中会系统的把下面的代码一行行拆开来讲解。</font><font id="135">现在，你可以忽略细节，只看输出。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (genre, word)
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> genre <span class="pysrc-keyword">in</span> brown.categories()
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> brown.words(categories=genre))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>genres = [<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'religion'</span>, <span class="pysrc-string">'hobbies'</span>, <span class="pysrc-string">'science_fiction'</span>, <span class="pysrc-string">'romance'</span>, <span class="pysrc-string">'humor'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>modals = [<span class="pysrc-string">'can'</span>, <span class="pysrc-string">'could'</span>, <span class="pysrc-string">'may'</span>, <span class="pysrc-string">'might'</span>, <span class="pysrc-string">'must'</span>, <span class="pysrc-string">'will'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.tabulate(conditions=genres, samples=modals)
+<span class="pysrc-output">                 can could  may might must will</span>
+<span class="pysrc-output">           news   93   86   66   38   50  389</span>
+<span class="pysrc-output">       religion   82   59   78   12   54   71</span>
+<span class="pysrc-output">        hobbies  268   58  131   22   83  264</span>
+<span class="pysrc-output">science_fiction   16   49    4   12    8   16</span>
+<span class="pysrc-output">        romance   74  193   11   51   45   43</span>
+<span class="pysrc-output">          humor   16   30    8    8    9   13</span></pre>
+<p><font id="136">请看，新闻文体中最常见的情态动词是<span class="example">will</span>，而言情文体中最常见的情态动词是<span class="example">could</span>。</font><font id="137">你能预言这些吗？</font><font id="138">这种可以区分文体的词计数方法将在<a class="reference external" href="./ch06.html#chap-data-intensive">chap-data-intensive</a>中再次谈及。</font></p>
+</div>
+<div class="section" id="reuters-corpus"><h2 class="sigil_not_in_toc"><font id="139">1.4 路透社语料库</font></h2>
+<p><font id="140">路透社语料库包含10,788 个新闻文档，共计130 万字。</font><font id="141">这些文档分成90 个主题，按照“训练”和“测试”分为两组；因此，fileid 为<tt class="doctest"><span class="pre"><span class="pysrc-string">'test/14826'</span></span></tt>的文档属于测试组。</font><font id="142">这样分割是为了训练和测试算法的，这种算法自动检测文档的主题，我们将在<a class="reference external" href="./ch06.html#chap-data-intensive">chap-data-intensive</a>中看到。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> reuters
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.fileids()
+<span class="pysrc-output">['test/14826', 'test/14828', 'test/14829', 'test/14832', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.categories()
+<span class="pysrc-output">['acq', 'alum', 'barley', 'bop', 'carcass', 'castor-oil', 'cocoa',</span>
+<span class="pysrc-output">'coconut', 'coconut-oil', 'coffee', 'copper', 'copra-cake', 'corn',</span>
+<span class="pysrc-output">'cotton', 'cotton-oil', 'cpi', 'cpu', 'crude', 'dfl', 'dlr', ...]</span></pre>
+<p><font id="143">与布朗语料库不同，路透社语料库的类别是有互相重叠的，只是因为新闻报道往往涉及多个主题。</font><font id="144">我们可以查找由一个或多个文档涵盖的主题，也可以查找包含在一个或多个类别中的文档。</font><font id="145">为方便起见，语料库方法既接受单个的fileid 也接受fileids 列表作为参数。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.categories(<span class="pysrc-string">'training/9865'</span>)
+<span class="pysrc-output">['barley', 'corn', 'grain', 'wheat']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.categories([<span class="pysrc-string">'training/9865'</span>, <span class="pysrc-string">'training/9880'</span>])
+<span class="pysrc-output">['barley', 'corn', 'grain', 'money-fx', 'wheat']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.fileids(<span class="pysrc-string">'barley'</span>)
+<span class="pysrc-output">['test/15618', 'test/15649', 'test/15676', 'test/15728', 'test/15871', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.fileids([<span class="pysrc-string">'barley'</span>, <span class="pysrc-string">'corn'</span>])
+<span class="pysrc-output">['test/14832', 'test/14858', 'test/15033', 'test/15043', 'test/15106',</span>
+<span class="pysrc-output">'test/15287', 'test/15341', 'test/15618', 'test/15648', 'test/15649', ...]</span></pre>
+<p><font id="146">类似的，我们可以以文档或类别为单位查找我们想要的词或句子。</font><font id="147">这些文本中最开始的几个词是标题，按照惯例以大写字母存储。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.words(<span class="pysrc-string">'training/9865'</span>)[:14]
+<span class="pysrc-output">['FRENCH', 'FREE', 'MARKET', 'CEREAL', 'EXPORT', 'BIDS',</span>
+<span class="pysrc-output">'DETAILED', 'French', 'operators', 'have', 'requested', 'licences', 'to', 'export']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.words([<span class="pysrc-string">'training/9865'</span>, <span class="pysrc-string">'training/9880'</span>])
+<span class="pysrc-output">['FRENCH', 'FREE', 'MARKET', 'CEREAL', 'EXPORT', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.words(categories=<span class="pysrc-string">'barley'</span>)
+<span class="pysrc-output">['FRENCH', 'FREE', 'MARKET', 'CEREAL', 'EXPORT', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>reuters.words(categories=[<span class="pysrc-string">'barley'</span>, <span class="pysrc-string">'corn'</span>])
+<span class="pysrc-output">['THAI', 'TRADE', 'DEFICIT', 'WIDENS', 'IN', 'FIRST', ...]</span></pre>
+</div>
+<div class="section" id="inaugural-address-corpus"><h2 class="sigil_not_in_toc"><font id="148">1.5 就职演说语料库</font></h2>
+<p><font id="149">在第<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>章，我们看到了就职演说语料库，但是把它当作一个单独的文本对待。</font><font id="150">图<a class="reference external" href="./ch01.html#fig-inaugural">fig-inaugural</a>中使用的“词偏移”就像是一个坐标轴；它是语料库中词的索引数，从第一个演讲的第一个词开始算起。</font><font id="151">然而，语料库实际上是55 个文本的集合，每个文本都是一个总统的演说。</font><font id="152">这个集合的一个有趣特性是它的时间维度：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> inaugural
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>inaugural.fileids()
+<span class="pysrc-output">['1789-Washington.txt', '1793-Washington.txt', '1797-Adams.txt', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[fileid[:4] <span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> inaugural.fileids()]
+<span class="pysrc-output">['1789', '1793', '1797', '1801', '1805', '1809', '1813', '1817', '1821', ...]</span></pre>
+<p><font id="153">请注意，每个文本的年代都出现在它的文件名中。</font><font id="154">要从文件名中获得年代，我们使用<tt class="doctest"><span class="pre">fileid[:4]</span></tt>提取前四个字符。</font></p>
+<p><font id="155">让我们来看看词汇<span class="example">America</span> 和<span class="example">citizen</span>随时间推移的使用情况。</font><font id="156">下面的代码使用<tt class="doctest"><span class="pre">w.lower()</span></tt> <a class="reference internal" href="./ch02.html#lowercase-startswith"><span id="ref-lowercase-startswith"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>将就职演说语料库中的词汇转换成小写，然后用<tt class="doctest"><span class="pre">startswith()</span></tt> <a class="reference internal" href="./ch02.html#lowercase-startswith"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>检查它们是否以“目标”词汇<tt class="doctest"><span class="pre">america</span></tt> 或<tt class="doctest"><span class="pre">citizen</span></tt>开始。</font><font id="157">因此，它会计算如<span class="example">American's</span> 和<span class="example">Citizens</span>等词。</font><font id="158">我们将在第<a class="reference internal" href="./ch02.html#sec-conditional-frequency-distributions">2</a>节学习条件频率分布，现在只考虑输出，如图<a class="reference internal" href="./ch02.html#fig-inaugural2">1.1</a>所示。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (target, fileid[:4])
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> inaugural.fileids()
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> inaugural.words(fileid)
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> target <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'america'</span>, <span class="pysrc-string">'citizen'</span>]
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">if</span> w.lower().startswith(target)) <a href="./ch02.html#ref-lowercase-startswith"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.plot()</pre>
+<div class="figure" id="fig-inaugural2"><img alt="Images/4cdc400cf76b0354304e01aeb894877b.jpg" src="Images/4cdc400cf76b0354304e01aeb894877b.jpg" style="width: 646.74px; height: 292.32px;"/><p class="caption"><font id="159"><span class="caption-label">图 1.1</span>：条件频率分布图：计数就职演说语料库中所有以<tt class="doctest"><span class="pre">america</span></tt> 或<tt class="doctest"><span class="pre">citizen</span></tt>开始的词；每个演讲单独计数；这样就能观察出随时间变化用法上的演变趋势；计数没有与文档长度进行归一化处理。</font></p>
+</div>
+</div>
+<div class="section" id="annotated-text-corpora"><h2 class="sigil_not_in_toc"><font id="160">1.6 标注文本语料库</font></h2>
+<p><font id="161">许多文本语料库都包含语言学标注，有词性标注、命名实体、句法结构、语义角色等。</font><font id="162">NLTK 中提供了很方便的方式来访问这些语料库中的几个，还有一个包含语料库和语料样本的数据包，用于教学和科研的话可以免费下载。</font><font id="163">表<a class="reference internal" href="./ch02.html#tab-corpora">1.2</a>列出了其中一些语料库。</font><font id="164">有关下载信息请参阅<tt class="doctest"><span class="pre">http://nltk.org/data</span></tt>。</font><font id="165">关于如何访问NLTK 语料库的其它例子，请在<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>查阅语料库的HOWTO。</font></p>
+<p class="caption"><font id="166"><span class="caption-label">表 1.2</span>：</font></p>
+<p><font id="167">NLTK 中的一些语料库和语料库样本：关于下载和使用它们，请参阅 NLTK 网站的信息。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.cess_esp.words()
+<span class="pysrc-output">['El', 'grupo', 'estatal', 'Electricit\xe9_de_France', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.floresta.words()
+<span class="pysrc-output">['Um', 'revivalismo', 'refrescante', 'O', '7_e_Meio', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.indian.words(<span class="pysrc-string">'hindi.pos'</span>)
+<span class="pysrc-output">['पूर्ण', 'प्रतिबंध', 'हटाओ', ':', 'इराक', 'संयुक्त', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.udhr.fileids()
+<span class="pysrc-output">['Abkhaz-Cyrillic+Abkh', 'Abkhaz-UTF8', 'Achehnese-Latin1', 'Achuar-Shiwiar-Latin1',</span>
+<span class="pysrc-output">'Adja-UTF8', 'Afaan_Oromo_Oromiffa-Latin1', 'Afrikaans-Latin1', 'Aguaruna-Latin1',</span>
+<span class="pysrc-output">'Akuapem_Twi-UTF8', 'Albanian_Shqip-Latin1', 'Amahuaca', 'Amahuaca-Latin1', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.udhr.words(<span class="pysrc-string">'Javanese-Latin1'</span>)[11:]
+<span class="pysrc-output">['Saben', 'umat', 'manungsa', 'lair', 'kanthi', 'hak', ...]</span></pre>
+<p><font id="299">这些语料库的最后，<tt class="doctest"><span class="pre">udhr</span></tt>，是超过300 种语言的世界人权宣言。</font><font id="300">这个语料库的fileids包括有关文件所使用的字符编码，如<tt class="doctest"><span class="pre">UTF8</span></tt>或者<tt class="doctest"><span class="pre">Latin1</span></tt>。</font><font id="301">让我们用条件频率分布来研究<tt class="doctest"><span class="pre">udhr</span></tt>语料库中不同语言版本中的字长差异。</font><font id="302">图<a class="reference internal" href="./ch02.html#fig-word-len-dist">1.2</a> 中所示的输出（自己运行程序可以看到一个彩色图）。</font><font id="303">注意，<tt class="doctest"><span class="pre">True</span></tt>和<tt class="doctest"><span class="pre">False</span></tt>是Python 内置的布尔值。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> udhr
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>languages = [<span class="pysrc-string">'Chickasaw'</span>, <span class="pysrc-string">'English'</span>, <span class="pysrc-string">'German_Deutsch'</span>,
+<span class="pysrc-more">... </span>    <span class="pysrc-string">'Greenlandic_Inuktikut'</span>, <span class="pysrc-string">'Hungarian_Magyar'</span>, <span class="pysrc-string">'Ibibio_Efik'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (lang, len(word))
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> lang <span class="pysrc-keyword">in</span> languages
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> udhr.words(lang + <span class="pysrc-string">'-Latin1'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.plot(cumulative=True)</pre>
+<div class="figure" id="fig-word-len-dist"><img alt="Images/da1752497a2a17be12b2acb282918a7a.jpg" src="Images/da1752497a2a17be12b2acb282918a7a.jpg" style="width: 613.0px; height: 463.0px;"/><p class="caption"><font id="304"><span class="caption-label">图 1.2</span>：累积字长分布：世界人权宣言的6个翻译版本；此图显示，5个或5个以下字母组成的词在Ibibio语言的文本中占约80％，在德语文本中占60％，在Inuktitut文本中占25%。</font></p>
+</div>
+<div class="note"><p class="first admonition-title"><font id="305">注意</font></p>
+<p class="last"><font id="306"><strong>轮到你来：</strong>在<tt class="doctest"><span class="pre">udhr.fileids()</span></tt>中选择一种感兴趣的语言，定义一个变量<tt class="doctest"><span class="pre">raw_text = udhr.raw(</span></tt><em>Language-Latin1</em><tt class="doctest"><span class="pre">)</span></tt>。</font><font id="307">使用<tt class="doctest"><span class="pre">nltk.FreqDist(raw_text).plot()</span></tt>画出此文本的字母频率分布图。</font></p>
+</div>
+<p><font id="308">不幸的是，许多语言没有大量的语料库。</font><font id="309">通常是政府或工业对发展语言资源的支持不够，个人的努力是零碎的，难以发现或重用。</font><font id="310">有些语言没有既定的书写系统，或濒临灭绝。</font><font id="311">（见第<a class="reference internal" href="./ch02.html#sec-further-reading-corpora">7</a>节有关如何寻找语言资源的建议。）</font></p>
+</div>
+<div class="section" id="text-corpus-structure"><h2 class="sigil_not_in_toc"><font id="312">1.8 文本语料库的结构</font></h2>
+<p><font id="313">到目前为止，我们已经看到了大量的语料库结构；<a class="reference internal" href="./ch02.html#fig-text-corpus-structure">1.3</a>总结了它们。</font><font id="314">最简单的一种没有任何结构，仅仅是一个文本集合。</font><font id="315">通常，文本会按照其可能对应的文体、来源、作者、语言等分类。</font><font id="316">有时，这些类别会重叠，尤其是在按主题分类的情况下，因为一个文本可能与多个主题相关。</font><font id="317">偶尔的，文本集有一个时间结构，新闻集合是最常见的例子。</font></p>
+<div class="figure" id="fig-text-corpus-structure"><img alt="Images/7f97e7ac70a7c865fb1020795f6e7236.jpg" src="Images/7f97e7ac70a7c865fb1020795f6e7236.jpg" style="width: 607.1999999999999px; height: 129.6px;"/><p class="caption"><font id="318"><span class="caption-label">图 1.3</span>：文本语料库的常见结构：最简单的一种语料库是一些孤立的没有什么特别的组织的文本集合；一些语料库按如文体（布朗语料库）等分类组织结构；一些分类会重叠，如主题类别（路透社语料库）；另外一些语料库可以表示随时间变化语言用法的改变（就职演说语料库）。</font></p>
+</div>
+<p class="caption"><font id="319"><span class="caption-label">表 1.3</span>：</font></p>
+<p><font id="320">NLTK 中定义的基本语料库函数：使用<tt class="doctest"><span class="pre">help(nltk.corpus.reader)</span></tt>可以找到更多的文档，也可以阅读<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的在线语料库的HOWTO。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>raw = gutenberg.raw(<span class="pysrc-string">"burgess-busterbrown.txt"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>raw[1:20]
+<span class="pysrc-output">'The Adventures of B'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>words = gutenberg.words(<span class="pysrc-string">"burgess-busterbrown.txt"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words[1:20]
+<span class="pysrc-output">['The', 'Adventures', 'of', 'Buster', 'Bear', 'by', 'Thornton', 'W', '.',</span>
+<span class="pysrc-output">'Burgess', '1920', ']', 'I', 'BUSTER', 'BEAR', 'GOES', 'FISHING', 'Buster',</span>
+<span class="pysrc-output">'Bear']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sents = gutenberg.sents(<span class="pysrc-string">"burgess-busterbrown.txt"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sents[1:20]
+<span class="pysrc-output">[['I'], ['BUSTER', 'BEAR', 'GOES', 'FISHING'], ['Buster', 'Bear', 'yawned', 'as',</span>
+<span class="pysrc-output">'he', 'lay', 'on', 'his', 'comfortable', 'bed', 'of', 'leaves', 'and', 'watched',</span>
+<span class="pysrc-output">'the', 'first', 'early', 'morning', 'sunbeams', 'creeping', 'through', ...], ...]</span></pre>
+</div>
+<div class="section" id="loading-your-own-corpus"><h2 class="sigil_not_in_toc"><font id="362">1.9 加载你自己的语料库</font></h2>
+<p><font id="363">如果你有自己收集的文本文件，并且想使用前面讨论的方法访问它们，你可以很容易地在NLTK 中的<tt class="doctest"><span class="pre">PlaintextCorpusReader</span></tt>帮助下加载它们。</font><font id="364">检查你的文件在文件系统中的位置；在下面的例子中，我们假定你的文件在<tt class="doctest"><span class="pre">/usr/share/dict</span></tt>目录下。</font><font id="365">不管是什么位置，将变量<tt class="doctest"><span class="pre">corpus_root</span></tt> <a class="reference internal" href="./ch02.html#corpus-root-dict"><span id="ref-corpus-root-dict"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>的值设置为这个目录。</font><font id="366"><tt class="doctest"><span class="pre">PlaintextCorpusReader</span></tt>初始化函数<a class="reference internal" href="./ch02.html#corpus-reader"><span id="ref-corpus-reader"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>的第二个参数可以是一个如<tt class="doctest"><span class="pre">[<span class="pysrc-string">'a.txt'</span>, <span class="pysrc-string">'test/b.txt'</span>]</span></tt>这样的fileids列表，或者一个匹配所有fileids 的模式，如<tt class="doctest"><span class="pre"><span class="pysrc-string">'[abc]/.*\.txt'</span></span></tt>（关于正则表达式的信息见<a class="reference external" href="./ch03.html#sec-regular-expressions-word-patterns">3.4</a>节）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> PlaintextCorpusReader
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>corpus_root = <span class="pysrc-string">'/usr/share/dict'</span> <a href="./ch02.html#ref-corpus-root-dict"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlists = PlaintextCorpusReader(corpus_root, <span class="pysrc-string">'.*'</span>) <a href="./ch02.html#ref-corpus-reader"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlists.fileids()
+<span class="pysrc-output">['README', 'connectives', 'propernames', 'web2', 'web2a', 'words']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlists.words(<span class="pysrc-string">'connectives'</span>)
+<span class="pysrc-output">['the', 'of', 'and', 'to', 'a', 'in', 'that', 'is', ...]</span></pre>
+<p><font id="367">举另一个例子，假设你在本地硬盘上有自己的宾州树库（第3 版）的拷贝，放在<tt class="doctest"><span class="pre">C:\corpora</span></tt>。</font><font id="368">我们可以使用<tt class="doctest"><span class="pre">BracketParseCorpusReader</span></tt>访问这些语料。</font><font id="369">我们指定<tt class="doctest"><span class="pre">corpus_root</span></tt>为存放语料库中解析过的《华尔街日报》部分<a class="reference internal" href="./ch02.html#corpus-root-treebank"><span id="ref-corpus-root-treebank"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>的位置，并指定<tt class="doctest"><span class="pre">file_pattern</span></tt>与它的子文件夹中包含的文件匹配<a class="reference internal" href="./ch02.html#file-pattern"><span id="ref-file-pattern"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>（用前斜杠）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> BracketParseCorpusReader
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>corpus_root = r<span class="pysrc-string">"C:\corpora\penntreebank\parsed\mrg\wsj"</span> <a href="./ch02.html#ref-corpus-root-treebank"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>file_pattern = r<span class="pysrc-string">".*/wsj_.*\.mrg"</span> <a href="./ch02.html#ref-file-pattern"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>ptb = BracketParseCorpusReader(corpus_root, file_pattern)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>ptb.fileids()
+<span class="pysrc-output">['00/wsj_0001.mrg', '00/wsj_0002.mrg', '00/wsj_0003.mrg', '00/wsj_0004.mrg', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(ptb.sents())
+<span class="pysrc-output">49208</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>ptb.sents(fileids=<span class="pysrc-string">'20/wsj_2013.mrg'</span>)[19]
+<span class="pysrc-output">['The', '55-year-old', 'Mr.', 'Noriega', 'is', "n't", 'as', 'smooth', 'as', 'the',</span>
+<span class="pysrc-output">'shah', 'of', 'Iran', ',', 'as', 'well-born', 'as', 'Nicaragua', "'s", 'Anastasio',</span>
+<span class="pysrc-output">'Somoza', ',', 'as', 'imperial', 'as', 'Ferdinand', 'Marcos', 'of', 'the', 'Philippines',</span>
+<span class="pysrc-output">'or', 'as', 'bloody', 'as', 'Haiti', "'s", 'Baby', Doc', 'Duvalier', '.']</span></pre>
+</div>
+</div>
+<div class="section" id="conditional-frequency-distributions"><h2 class="sigil_not_in_toc"><font id="370">2 条件频率分布</font></h2>
+<p><font id="371">我们在第<a class="reference external" href="./ch01.html#sec-computing-with-language-simple-statistics">3</a>节介绍了频率分布。</font><font id="372">我们看到给定某个词汇或其他元素的列表<tt class="doctest"><span class="pre">mylist</span></tt>，<tt class="doctest"><span class="pre">FreqDist(mylist)</span></tt>会计算列表中每个元素项目出现的次数。</font><font id="373">在这里，我们将推广这一想法。</font></p>
+<p><font id="374">当语料文本被分为几类，如文体、主题、作者等时，我们可以计算每个类别独立的频率分布。</font><font id="375">这将允许我们研究类别之间的系统性差异。</font><font id="376">在上一节中，我们是用NLTK 的<tt class="doctest"><span class="pre">ConditionalFreqDist</span></tt>数据类型实现的。</font><font id="377"><span class="termdef">条件频率分布</span>是频率分布的集合，每个频率分布有一个不同的“条件”。</font><font id="378">这个条件通常是文本的类别。</font><font id="379"><a class="reference internal" href="./ch02.html#fig-tally2">2.1</a>描绘了一个带两个条件的条件频率分布的片段，一个是新闻文本，一个是言情文本。</font></p>
+<div class="figure" id="fig-tally2"><img alt="Images/b1aad2b60635723f14976fb5cb9ca372.jpg" src="Images/b1aad2b60635723f14976fb5cb9ca372.jpg" style="width: 412.29999999999995px; height: 130.2px;"/><p class="caption"><font id="380"><span class="caption-label">图 2.1</span>：计数文本集合中单词出现次数（条件频率分布）</font></p>
+</div>
+<div class="section" id="conditions-and-events"><h2 class="sigil_not_in_toc"><font id="381">2.1 条件和事件</font></h2>
+<p><font id="382">频率分布计算观察到的事件，如文本中出现的词汇。</font><font id="383">条件频率分布需要给每个事件关联一个条件。</font><font id="384">所以不是处理一个单词词序列<a class="reference internal" href="./ch02.html#seq-words"><span id="ref-seq-words"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>，我们必须处理的是一个配对序列<a class="reference internal" href="./ch02.html#seq-pairs"><span id="ref-seq-pairs"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = [<span class="pysrc-string">'The'</span>, <span class="pysrc-string">'Fulton'</span>, <span class="pysrc-string">'County'</span>, <span class="pysrc-string">'Grand'</span>, <span class="pysrc-string">'Jury'</span>, <span class="pysrc-string">'said'</span>, ...] <a href="./ch02.html#ref-seq-words"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pairs = [(<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'The'</span>), (<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'Fulton'</span>), (<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'County'</span>), ...] <a href="./ch02.html#ref-seq-pairs"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a></pre>
+<p><font id="385">每个配对的形式是：<tt class="doctest"><span class="pre">(条件, 事件)</span></tt>。</font><font id="386">如果我们按文体处理整个布朗语料库，将有15 个条件（每个文体一个条件）和1,161,192 个事件（每一个词一个事件）。</font></p>
+</div>
+<div class="section" id="counting-words-by-genre"><h2 class="sigil_not_in_toc"><font id="387">2.2 按文体计数词汇</font></h2>
+<p><font id="388">在<a class="reference internal" href="./ch02.html#sec-extracting-text-from-corpora">1</a>中，我们看到一个条件频率分布，其中条件为布朗语料库的每一节，并对每节计数词汇。</font><font id="389"><tt class="doctest"><span class="pre">FreqDist()</span></tt>以一个简单的列表作为输入，<tt class="doctest"><span class="pre">ConditionalFreqDist()</span></tt> 以一个配对列表作为输入。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (genre, word)
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> genre <span class="pysrc-keyword">in</span> brown.categories()
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> brown.words(categories=genre))</pre>
+<p><font id="390">让我们拆开来看，只看两个文体，新闻和言情。</font><font id="391">对于每个文体<a class="reference internal" href="./ch02.html#each-genre"><span id="ref-each-genre"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>，我们遍历文体中的每个词<a class="reference internal" href="./ch02.html#each-word"><span id="ref-each-word"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></span></a>，以产生文体与词的配对<a class="reference internal" href="./ch02.html#genre-word-pairs"><span id="ref-genre-word-pairs"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a> ：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>genre_word = [(genre, word) <a href="./ch02.html#ref-genre-word-pairs"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>              <span class="pysrc-keyword">for</span> genre <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'news'</span>, <span class="pysrc-string">'romance'</span>] <a href="./ch02.html#ref-each-genre"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-more">... </span>              <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> brown.words(categories=genre)] <a href="./ch02.html#ref-each-word"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>len(genre_word)
+<span class="pysrc-output">170576</span></pre>
+<p><font id="392">因此，在下面的代码中我们可以看到，列表<tt class="doctest"><span class="pre">genre_word</span></tt>的前几个配对将是 (<tt class="doctest"><span class="pre"><span class="pysrc-string">'news'</span></span></tt>, <em>word</em>) <a class="reference internal" href="./ch02.html#start-genre"><span id="ref-start-genre"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>的形式，而最后几个配对将是 (<tt class="doctest"><span class="pre"><span class="pysrc-string">'romance'</span></span></tt>, <em>word</em>) <a class="reference internal" href="./ch02.html#end-genre"><span id="ref-end-genre"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>的形式。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>genre_word[:4]
+<span class="pysrc-output">[('news', 'The'), ('news', 'Fulton'), ('news', 'County'), ('news', 'Grand')] # [_start-genre]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>genre_word[-4:]
+<span class="pysrc-output">[('romance', 'afraid'), ('romance', 'not'), ('romance', "''"), ('romance', '.')] # [_end-genre]</span></pre>
+<p><font id="393">现在，我们可以使用此配对列表创建一个<tt class="doctest"><span class="pre">ConditionalFreqDist</span></tt>，并将它保存在一个变量<tt class="doctest"><span class="pre">cfd</span></tt>中。</font><font id="394">像往常一样，我们可以输入变量的名称来检查它<a class="reference internal" href="./ch02.html#inspect-cfd"><span id="ref-inspect-cfd"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>，并确认它有两个条件<a class="reference internal" href="./ch02.html#conditions-cfd"><span id="ref-conditions-cfd"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(genre_word)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd <a href="./ch02.html#ref-inspect-cfd"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-output">&lt;ConditionalFreqDist with 2 conditions&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.conditions()
+<span class="pysrc-output">['news', 'romance'] # [_conditions-cfd]</span></pre>
+<p><font id="395">让我们访问这两个条件，它们每一个都只是一个频率分布：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cfd[<span class="pysrc-string">'news'</span>])
+<span class="pysrc-output">&lt;FreqDist with 14394 samples and 100554 outcomes&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(cfd[<span class="pysrc-string">'romance'</span>])
+<span class="pysrc-output">&lt;FreqDist with 8452 samples and 70022 outcomes&gt;</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd[<span class="pysrc-string">'romance'</span>].most_common(20)
+<span class="pysrc-output">[(',', 3899), ('.', 3736), ('the', 2758), ('and', 1776), ('to', 1502),</span>
+<span class="pysrc-output">('a', 1335), ('of', 1186), ('``', 1045), ("''", 1044), ('was', 993),</span>
+<span class="pysrc-output">('I', 951), ('in', 875), ('he', 702), ('had', 692), ('?', 690),</span>
+<span class="pysrc-output">('her', 651), ('that', 583), ('it', 573), ('his', 559), ('she', 496)]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd[<span class="pysrc-string">'romance'</span>][<span class="pysrc-string">'could'</span>]
+<span class="pysrc-output">193</span></pre>
+</div>
+<div class="section" id="plotting-and-tabulating-distributions"><h2 class="sigil_not_in_toc"><font id="396">2.3 绘制分布图和分布表</font></h2>
+<p><font id="397">除了组合两个或两个以上的频率分布和更容易初始化之外，<tt class="doctest"><span class="pre">ConditionalFreqDist</span></tt>还为制表和绘图提供了一些有用的方法。</font></p>
+<p><font id="398"><a class="reference internal" href="./ch02.html#fig-inaugural2">1.1</a>是基于下面的代码产生的一个条件频率分布绘制的。</font><font id="399">条件是词<span class="example">america</span>或<span class="example">citizen</span><a class="reference internal" href="./ch02.html#america-citizen"><span id="ref-america-citizen"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>，被绘图的计数是在特定演讲中出现的词的次数。</font><font id="400">它利用了每个演讲的文件名——例如<tt class="doctest"><span class="pre">1865-Lincoln.txt</span></tt> ——的前4 个字符包含年代的事实<a class="reference internal" href="./ch02.html#first-four-chars"><span id="ref-first-four-chars"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>。</font><font id="401">这段代码为文件<tt class="doctest"><span class="pre">1865-Lincoln.txt</span></tt>中每个小写形式以<span class="example">america</span>开头的词——如<span class="example">Americans</span>——产生一个配对<tt class="doctest"><span class="pre">(<span class="pysrc-string">'america'</span>, <span class="pysrc-string">'1865'</span>)</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> inaugural
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (target, fileid[:4]) <a href="./ch02.html#ref-first-four-chars"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> inaugural.fileids()
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> inaugural.words(fileid)
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> target <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'america'</span>, <span class="pysrc-string">'citizen'</span>] <a href="./ch02.html#ref-america-citizen"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">if</span> w.lower().startswith(target))</pre>
+<p><font id="402">图<a class="reference internal" href="./ch02.html#fig-word-len-dist">1.2</a>也是基于下面的代码产生的一个条件频率分布绘制的。</font><font id="403">这次的条件是语言的名称，图中的计数来源于词长<a class="reference internal" href="./ch02.html#lang-len-word"><span id="ref-lang-len-word"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>。</font><font id="404">它利用了每一种语言的文件名是语言名称后面跟<tt class="doctest"><span class="pre"><span class="pysrc-string">'-Latin1'</span></span></tt>（字符编码）的事实。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> udhr
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>languages = [<span class="pysrc-string">'Chickasaw'</span>, <span class="pysrc-string">'English'</span>, <span class="pysrc-string">'German_Deutsch'</span>,
+<span class="pysrc-more">... </span>    <span class="pysrc-string">'Greenlandic_Inuktikut'</span>, <span class="pysrc-string">'Hungarian_Magyar'</span>, <span class="pysrc-string">'Ibibio_Efik'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (lang, len(word)) <a href="./ch02.html#ref-lang-len-word"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> lang <span class="pysrc-keyword">in</span> languages
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> udhr.words(lang + <span class="pysrc-string">'-Latin1'</span>))</pre>
+<p><font id="405">在<tt class="doctest"><span class="pre">plot()</span></tt>和<tt class="doctest"><span class="pre">tabulate()</span></tt>方法中，我们可以使用<tt class="doctest"><span class="pre">conditions=</span></tt>来选择指定哪些条件显示。</font><font id="406">如果我们忽略它，所有条件都会显示。</font><font id="407">同样，我们可以使用<tt class="doctest"><span class="pre">samples=</span></tt>parameter 来限制要显示的样本。</font><font id="408">这使得载入大量数据到一个条件频率分布，然后通过选定条件和样品，绘图或制表的探索成为可能。</font><font id="409">这也使我们能全面控制条件和样本的显示顺序。</font><font id="410">例如：我们可以为两种语言和长度少于10 个字符的词汇绘制累计频率数据表，如下所示。</font><font id="411">我们解释一下上排最后一个单元格中数值的含义是英文文本中9 个或少于9 个字符长的词有1,638 个。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.tabulate(conditions=[<span class="pysrc-string">'English'</span>, <span class="pysrc-string">'German_Deutsch'</span>],
+<span class="pysrc-more">... </span>             samples=range(10), cumulative=True)
+<span class="pysrc-output">                  0    1    2    3    4    5    6    7    8    9</span>
+<span class="pysrc-output">       English    0  185  525  883  997 1166 1283 1440 1558 1638</span>
+<span class="pysrc-output">German_Deutsch    0  171  263  614  717  894 1013 1110 1213 1275</span></pre>
+<div class="note"><p class="first admonition-title"><font id="412">注意</font></p>
+<p class="last"><font id="413"><strong>轮到你来：</strong> 处理布朗语料库的新闻和言情文体，找出一周中最有新闻价值并且是最浪漫的日子。</font><font id="414">定义一个变量<tt class="doctest"><span class="pre">days</span></tt>，包含星期的列表，如</font><font id="415"><tt class="doctest"><span class="pre">[<span class="pysrc-string">'Monday'</span>, ...]</span></tt>。</font><font id="416">然后使用<tt class="doctest"><span class="pre">cfd.tabulate(samples=days)</span></tt>为这些词的计数制表。</font><font id="417">接下来用<tt class="doctest"><span class="pre">plot</span></tt>替代<tt class="doctest"><span class="pre">tabulate</span></tt>尝试同样的事情。</font><font id="418">你可以在额外的参数<tt class="doctest"><span class="pre">samples=[<span class="pysrc-string">'Monday'</span>, ...]</span></tt>的帮助下控制星期输出的顺序。</font></p>
+</div>
+<p><font id="419">你可能已经注意到：我们已经在使用的条件频率分布看上去像列表推导，但是不带方括号。</font><font id="420">通常，我们使用列表推导作为一个函数的参数，如<tt class="doctest"><span class="pre">set([w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> t])</span></tt>，忽略掉方括号而只写<tt class="doctest"><span class="pre">set(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> t)</span></tt>是允许的。</font><font id="421">（更多的讲解请参见<a class="reference external" href="./ch04.html#sec-sequences">4.2</a>节“生成器表达式”的讨论。）</font></p>
+</div>
+<div class="section" id="generating-random-text-with-bigrams"><h2 class="sigil_not_in_toc"><font id="422">2.4 使用双连词生成随机文本</font></h2>
+<p><font id="423">我们可以使用条件频率分布创建一个双连词表（词对）。</font><font id="424">（我们在<a class="reference external" href="./ch01.html#sec-computing-with-language-simple-statistics">3</a>中介绍过。）</font><font id="425"><tt class="doctest"><span class="pre">bigrams()</span></tt>函数接受一个单词列表，并建立一个连续的词对列表。</font><font id="426">记住，为了能看到结果而不是神秘的"生成器对象"，我们需要使用<tt class="doctest"><span class="pre">list()</span></tt>函数︰</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = [<span class="pysrc-string">'In'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'beginning'</span>, <span class="pysrc-string">'God'</span>, <span class="pysrc-string">'created'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'heaven'</span>,
+<span class="pysrc-more">... </span>  <span class="pysrc-string">'and'</span>, <span class="pysrc-string">'the'</span>, <span class="pysrc-string">'earth'</span>, <span class="pysrc-string">'.'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>list(nltk.bigrams(sent))
+<span class="pysrc-output">[('In', 'the'), ('the', 'beginning'), ('beginning', 'God'), ('God', 'created'),</span>
+<span class="pysrc-output">('created', 'the'), ('the', 'heaven'), ('heaven', 'and'), ('and', 'the'),</span>
+<span class="pysrc-output">('the', 'earth'), ('earth', '.')]</span></pre>
+<p><font id="427">在<a class="reference internal" href="./ch02.html#code-random-text">2.2</a>中，我们把每个词作为一个条件，对每个词我们有效的创建它的后续词的频率分布。</font><font id="428">函数<tt class="doctest"><span class="pre">generate_model()</span></tt>包含一个简单的循环来生成文本。</font><font id="429">当我们调用这个函数时，我们选择一个词（如<tt class="doctest"><span class="pre"><span class="pysrc-string">'living'</span></span></tt>）作为我们的初始内容，然后进入循环，我们输入变量<tt class="doctest"><span class="pre">word</span></tt>的当前值，重新设置<tt class="doctest"><span class="pre">word</span></tt>为上下文中最可能的词符（使用<tt class="doctest"><span class="pre">max()</span></tt>）；下一次进入循环，我们使用那个词作为新的初始内容。</font><font id="430">正如你通过检查输出可以看到的，这种简单的文本生成方法往往会在循环中卡住；另一种方法是从可用的词汇中随机选择下一个词。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">generate_model</span>(cfdist, word, num=15):
+    <span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> range(num):
+        <span class="pysrc-keyword">print</span>(word, end=<span class="pysrc-string">' '</span>)
+        word = cfdist[word].max()
+
+text = nltk.corpus.genesis.words(<span class="pysrc-string">'english-kjv.txt'</span>)
+bigrams = nltk.bigrams(text)
+cfd = nltk.ConditionalFreqDist(bigrams) <a href="./ch02.html#ref-bigram-condition"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a></pre>
+<p><font id="432">条件频率分布是一个对许多NLP 任务都有用的数据结构。</font><font id="433"><a class="reference internal" href="./ch02.html#tab-conditionalfreqdist">2.1</a>总结了它们常用的方法。</font></p>
+<p class="caption"><font id="434"><span class="caption-label">表 2.1</span>：</font></p>
+<p><font id="435">NLTK 中的条件频率分布：定义、访问和可视化一个计数的条件频率分布的常用方法和习惯用法。</font></p>
+<p></p>
+<pre class="literal-block">print('Monty Python')
+</pre>
+<p><font id="469">你也可以输入<tt class="doctest"><span class="pre"><span class="pysrc-keyword">from</span> monty <span class="pysrc-keyword">import</span> *</span></tt>，它将做同样的事情。</font></p>
+<p><font id="470">从现在起，你可以选择使用交互式解释器或文本编辑器来创建你的程序。</font><font id="471">使用解释器测试你的想法往往比较方便，修改一行代码直到达到你期望的效果。</font><font id="472">测试好之后，你就可以将代码粘贴到文本编辑器（去除所有<tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt> 和<tt class="doctest"><span class="pre"><span class="pysrc-more">...</span></span></tt>提示符），继续扩展它。</font><font id="473">给文件一个小而准确的名字，使用所有的小写字母，用下划线分割词汇，使用<tt class="doctest"><span class="pre">.py</span></tt>文件名后缀，例如<tt class="doctest"><span class="pre">monty_python.py</span></tt>。</font></p>
+<div class="note"><p class="first admonition-title"><font id="474">注意</font></p>
+<p class="last"><font id="475"><strong>要点：</strong> 我们的内联代码的例子包含<tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt;</span></span></tt>和<tt class="doctest"><span class="pre"><span class="pysrc-more">...</span></span></tt>提示符，好像我们正在直接与解释器交互。</font><font id="476">随着程序变得更加复杂，你应该在编辑器中输入它们，没有提示符，如前面所示的那样在编辑器中运行它们。</font><font id="477">当我们在这本书中提供更长的程序时，我们将不使用提示符以提醒你在文件中输入它而不是使用解释器。</font><font id="478">你可以看到<a class="reference internal" href="./ch02.html#code-random-text">2.2</a>已经这样了。</font><font id="479">请注意，这个例子还包括两行代码带有Python 提示符；它是任务的互动部分，在这里你观察一些数据，并调用一个函数。</font><font id="480">请记住，像<a class="reference internal" href="./ch02.html#code-random-text">2.2</a>这样的所有示例代码都可以从<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>下载。</font></p>
+</div>
+</div>
+<div class="section" id="functions"><h2 class="sigil_not_in_toc"><font id="481">3.2 函数</font></h2>
+<p><font id="482">假设你正在分析一些文本，这些文本包含同一个词的不同形式，你的一部分程序需要将给定的单数名词变成复数形式。</font><font id="483">假设需要在两个地方做这样的事，一个是处理一些文本，另一个是处理用户的输入。</font></p>
+<p><font id="484">比起重复相同的代码好几次，把这些事情放在一个<span class="termdef">函数</span>中会更有效和可靠。</font><font id="485">一个函数是命名的代码块，执行一些明确的任务，就像我们在<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>中所看到的那样。</font><font id="486">一个函数通常被定义来使用一些称为<span class="termdef">参数</span>的变量接受一些输入，并且它可能会产生一些结果，也称为<span class="termdef">返回值</span>。</font><font id="487">我们使用关键字<tt class="doctest"><span class="pre">def</span></tt>加函数名以及所有输入参数来定义一个函数，接下来是函数的主体。</font><font id="488">这里是我们在<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>看到的函数（对于Python 2，请包含<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>语句，这样可以使除法像我们期望的那样运算）：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> __future__ <span class="pysrc-keyword">import</span> division
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">lexical_diversity</span>(text):
+<span class="pysrc-more">... </span>    return len(text) / len(set(text))</pre>
+<p><font id="489">我们使用关键字<tt class="doctest"><span class="pre">return</span></tt>表示函数作为输出而产生的值。</font><font id="490">在这个例子中，函数所有的工作都在<tt class="doctest"><span class="pre">return</span></tt>语句中完成。</font><font id="491">下面是一个等价的定义，使用多行代码做同样的事。</font><font id="492">我们将把参数名称从<tt class="doctest"><span class="pre">text</span></tt>变为<tt class="doctest"><span class="pre">my_text_data</span></tt>，注意这只是一个任意的选择：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">lexical_diversity</span>(my_text_data):
+<span class="pysrc-more">... </span>    word_count = len(my_text_data)
+<span class="pysrc-more">... </span>    vocab_size = len(set(my_text_data))
+<span class="pysrc-more">... </span>    diversity_score = vocab_size / word_count
+<span class="pysrc-more">... </span>    return diversity_score</pre>
+<p><font id="493">请注意，我们已经在函数体内部创造了一些新的变量。</font><font id="494">这些是<span class="termdef">局部变量</span>，不能在函数体外访问。</font><font id="495">现在我们已经定义一个名为<tt class="doctest"><span class="pre">lexical_diversity</span></tt>的函数。</font><font id="496">但只定义它不会产生任何输出！</font><font id="497">函数在被“调用”之前不会做任何事情：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> genesis
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>kjv = genesis.words(<span class="pysrc-string">'english-kjv.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>lexical_diversity(kjv)
+<span class="pysrc-output">0.06230453042623537</span></pre>
+<p><font id="498">让我们回到前面的场景，实际定义一个简单的函数来处理英文的复数词。</font><font id="499"><a class="reference internal" href="./ch02.html#code-plural">3.1</a>中的函数<tt class="doctest"><span class="pre">plural()</span></tt>接受单数名词，产生一个复数形式，虽然它并不总是正确的。</font><font id="500">（我们将在<a class="reference external" href="./ch04.html#sec-functions">4.4</a>中以更长的篇幅讨论这个函数。）</font></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">plural</span>(word):
+    <span class="pysrc-keyword">if</span> word.endswith(<span class="pysrc-string">'y'</span>):
+        return word[:-1] + <span class="pysrc-string">'ies'</span>
+    <span class="pysrc-keyword">elif</span> word[-1] <span class="pysrc-keyword">in</span> <span class="pysrc-string">'sx'</span> <span class="pysrc-keyword">or</span> word[-2:] <span class="pysrc-keyword">in</span> [<span class="pysrc-string">'sh'</span>, <span class="pysrc-string">'ch'</span>]:
+        return word + <span class="pysrc-string">'es'</span>
+    <span class="pysrc-keyword">elif</span> word.endswith(<span class="pysrc-string">'an'</span>):
+        return word[:-2] + <span class="pysrc-string">'en'</span>
+    <span class="pysrc-keyword">else</span>:
+        return word + <span class="pysrc-string">'s'</span></pre>
+<p><font id="502"><tt class="doctest"><span class="pre">endswith()</span></tt>函数总是与一个字符串对象一起使用（如<a class="reference internal" href="./ch02.html#code-plural">3.1</a>中的<tt class="doctest"><span class="pre">word</span></tt>）。</font><font id="503">要调用此函数，我们使用对象的名字，一个点，然后跟函数的名称。</font><font id="504">这些函数通常被称为<span class="termdef">方法</span>。</font></p>
+
+<div class="section" id="modules"><h2 class="sigil_not_in_toc"><font id="505">3.3 模块</font></h2>
+<p><font id="506">随着时间的推移，你将会发现你创建了大量小而有用的文字处理函数，结果你不停的把它们从老程序复制到新程序中。</font><font id="507">哪个文件中包含的才是你要使用的函数的最新版本？</font><font id="508">如果你能把你的劳动成果收集在一个单独的地方，而且访问以前定义的函数不必复制，生活将会更加轻松。</font></p>
+<p><font id="509">要做到这一点，请将你的函数保存到一个文件<tt class="doctest"><span class="pre">text_proc.py</span></tt>。</font><font id="510">现在，你可以简单的通过从文件导入它来访问你的函数：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> text_proc <span class="pysrc-keyword">import</span> plural
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>plural(<span class="pysrc-string">'wish'</span>)
+<span class="pysrc-output">wishes</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>plural(<span class="pysrc-string">'fan'</span>)
+<span class="pysrc-output">fen</span></pre>
+<p><font id="511">显然，我们的复数函数明显存在错误，因为<span class="example">fan</span>的复数是<span class="example">fans</span>。</font><font id="512">不必再重新输入这个函数的新版本，我们可以简单的编辑现有的。</font><font id="513">因此，在任何时候我们的复数函数只有一个版本，不会再有使用哪个版本的困扰。</font></p>
+<p><font id="514">在一个文件中的变量和函数定义的集合被称为一个Python <span class="termdef">模块</span>。</font><font id="515">相关模块的集合称为一个<span class="termdef">包</span>。</font><font id="516">处理布朗语料库的NLTK 代码是一个模块，处理各种不同的语料库的代码的集合是一个包。</font><font id="517">NLTK 的本身是包的集合，有时被称为一个<span class="termdef">库</span>。</font></p>
+<div class="caution"><p class="first admonition-title"><font id="518">小心！</font></p>
+<p class="last"><font id="519">如果你正在创建一个包含一些你自己的Python 代码的文件，一定<em>不</em>要将文件命名为<tt class="doctest"><span class="pre">nltk.py</span></tt>：这可能会在导入时占据“真正的”NLTK 包。</font><font id="520">当Python 导入模块时，它先查找当前目录（文件夹）。</font></p>
+</div>
+</div>
+
+<div class="section" id="lexical-resources"><h2 class="sigil_not_in_toc"><font id="521">4 词汇资源</font></h2>
+<p><font id="522">词典或者词典资源是一个词和/或短语以及一些相关信息的集合，例如：词性和词意定义等相关信息。</font><font id="523">词典资源附属于文本，通常在文本的帮助下创建和丰富。</font><font id="524">例如：如果我们定义了一个文本<tt class="doctest"><span class="pre">my_text</span></tt>，然后<tt class="doctest"><span class="pre">vocab = sorted(set(my_text))</span></tt>建立<tt class="doctest"><span class="pre">my_text</span></tt>的词汇，同时<tt class="doctest"><span class="pre">word_freq = FreqDist(my_text)</span></tt>计数文本中每个词的频率。</font><font id="525"><tt class="doctest"><span class="pre">vocab</span></tt>和<tt class="doctest"><span class="pre">word_freq</span></tt>都是简单的词汇资源。</font><font id="526">同样，如我们在<a class="reference external" href="./ch01.html#sec-computing-with-language-texts-and-words">1</a>中看到的，词汇索引为我们提供了有关词语用法的信息，可能在编写词典时有用。</font><font id="527"><a class="reference internal" href="./ch02.html#fig-lexicon">4.1</a>中描述了词汇相关的标准术语。</font><font id="528">一个<span class="termdef">词项</span>包括<span class="termdef">词目</span>（也叫<span class="termdef">词条</span>）以及其他附加信息，例如词性和词意定义。</font><font id="529">两个不同的词拼写相同被称为<span class="termdef">同音异义词</span>。</font></p>
+<div class="figure" id="fig-lexicon"><img alt="Images/1b33abb14fc8fe7c704d005736ddb323.jpg" src="Images/1b33abb14fc8fe7c704d005736ddb323.jpg" style="width: 504.0px; height: 223.20000000000002px;"/><p class="caption"><font id="530"><span class="caption-label">图 4.1</span>：词典术语：两个拼写相同的词条（同音异义词）的词汇项，包括词性和注释信息。</font></p>
+</div>
+<p><font id="531">最简单的词典是除了一个词汇列表外什么也没有。</font><font id="532">复杂的词典资源包括在词汇项内和跨词汇项的复杂的结构。</font><font id="533">在本节，我们来看看NLTK 中的一些词典资源。</font></p>
+<div class="section" id="wordlist-corpora"><h2 class="sigil_not_in_toc"><font id="534">4.1 词汇列表语料库</font></h2>
+<p><font id="535">NLTK 包括一些仅仅包含词汇列表的语料库。</font><font id="536">词汇语料库是Unix 中的<tt class="doctest"><span class="pre">/usr/share/dict/words</span></tt>文件，被一些拼写检查程序使用。</font><font id="537">我们可以用它来寻找文本语料中不寻常的或拼写错误的词汇，如<a class="reference internal" href="./ch02.html#code-unusual">4.2</a>所示。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">unusual_words</span>(text):
+    text_vocab = set(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text <span class="pysrc-keyword">if</span> w.isalpha())
+    english_vocab = set(w.lower() <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> nltk.corpus.words.words())
+    unusual = text_vocab - english_vocab
+    return sorted(unusual)
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unusual_words(nltk.corpus.gutenberg.words(<span class="pysrc-string">'austen-sense.txt'</span>))
+[<span class="pysrc-string">'abbeyland'</span>, <span class="pysrc-string">'abhorred'</span>, <span class="pysrc-string">'abilities'</span>, <span class="pysrc-string">'abounded'</span>, <span class="pysrc-string">'abridgement'</span>, <span class="pysrc-string">'abused'</span>, <span class="pysrc-string">'abuses'</span>,
+<span class="pysrc-string">'accents'</span>, <span class="pysrc-string">'accepting'</span>, <span class="pysrc-string">'accommodations'</span>, <span class="pysrc-string">'accompanied'</span>, <span class="pysrc-string">'accounted'</span>, <span class="pysrc-string">'accounts'</span>,
+<span class="pysrc-string">'accustomary'</span>, <span class="pysrc-string">'aches'</span>, <span class="pysrc-string">'acknowledging'</span>, <span class="pysrc-string">'acknowledgment'</span>, <span class="pysrc-string">'acknowledgments'</span>, ...]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unusual_words(nltk.corpus.nps_chat.words())
+[<span class="pysrc-string">'aaaaaaaaaaaaaaaaa'</span>, <span class="pysrc-string">'aaahhhh'</span>, <span class="pysrc-string">'abortions'</span>, <span class="pysrc-string">'abou'</span>, <span class="pysrc-string">'abourted'</span>, <span class="pysrc-string">'abs'</span>, <span class="pysrc-string">'ack'</span>,
+<span class="pysrc-string">'acros'</span>, <span class="pysrc-string">'actualy'</span>, <span class="pysrc-string">'adams'</span>, <span class="pysrc-string">'adds'</span>, <span class="pysrc-string">'adduser'</span>, <span class="pysrc-string">'adjusts'</span>, <span class="pysrc-string">'adoted'</span>, <span class="pysrc-string">'adreniline'</span>,
+<span class="pysrc-string">'ads'</span>, <span class="pysrc-string">'adults'</span>, <span class="pysrc-string">'afe'</span>, <span class="pysrc-string">'affairs'</span>, <span class="pysrc-string">'affari'</span>, <span class="pysrc-string">'affects'</span>, <span class="pysrc-string">'afk'</span>, <span class="pysrc-string">'agaibn'</span>, <span class="pysrc-string">'ages'</span>, ...]</pre>
+<p><font id="539">还有一个<span class="termdef">停用词</span>语料库，就是那些高频词汇，如<span class="example">the</span>，<span class="example">to</span>和<span class="example">also</span>，我们有时在进一步的处理之前想要将它们从文档中过滤。</font><font id="540">停用词通常几乎没有什么词汇内容，而它们的出现会使区分文本变困难。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> stopwords
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>stopwords.words(<span class="pysrc-string">'english'</span>)
+<span class="pysrc-output">['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours',</span>
+<span class="pysrc-output">'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers',</span>
+<span class="pysrc-output">'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves',</span>
+<span class="pysrc-output">'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',</span>
+<span class="pysrc-output">'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',</span>
+<span class="pysrc-output">'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until',</span>
+<span class="pysrc-output">'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into',</span>
+<span class="pysrc-output">'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down',</span>
+<span class="pysrc-output">'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here',</span>
+<span class="pysrc-output">'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more',</span>
+<span class="pysrc-output">'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',</span>
+<span class="pysrc-output">'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now']</span></pre>
+<p><font id="541">让我们定义一个函数来计算文本中<em>没有</em>在停用词列表中的词的比例：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">content_fraction</span>(text):
+<span class="pysrc-more">... </span>    stopwords = nltk.corpus.stopwords.words(<span class="pysrc-string">'english'</span>)
+<span class="pysrc-more">... </span>    content = [w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text <span class="pysrc-keyword">if</span> w.lower() <span class="pysrc-keyword">not</span> <span class="pysrc-keyword">in</span> stopwords]
+<span class="pysrc-more">... </span>    return len(content) / len(text)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>content_fraction(nltk.corpus.reuters.words())
+<span class="pysrc-output">0.7364374824583169</span></pre>
+<p><font id="542">因此，在停用词的帮助下，我们筛选掉文本中四分之一的词。</font><font id="543">请注意，我们在这里结合了两种不同类型的语料库，使用词典资源来过滤文本语料的内容。</font></p>
+<div class="figure" id="fig-target"><img alt="Images/b2af1426c6cd2403c8b938eb557a99d1.jpg" src="Images/b2af1426c6cd2403c8b938eb557a99d1.jpg" style="width: 652.5px; height: 133.79999999999998px;"/><p class="caption"><font id="544"><span class="caption-label">图 4.3</span>：一个字母拼词谜题：：在由随机选择的字母组成的网格中，选择里面的字母组成词；这个谜题叫做“目标”。</font></p>
+</div>
+<p><font id="545">一个词汇列表对解决如图<a class="reference internal" href="./ch02.html#fig-target">4.3</a>中这样的词的谜题很有用。</font><font id="546">我们的程序遍历每一个词，对于每一个词检查是否符合条件。</font><font id="547">检查必须出现的字母<a class="reference internal" href="./ch02.html#obligatory-letter"><span id="ref-obligatory-letter"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>和长度限制<a class="reference internal" href="./ch02.html#length-constraint"><span id="ref-length-constraint"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>是很容易的（这里我们只查找6个或6个以上字母的词）。</font><font id="548">只使用指定的字母组合作为候选方案，尤其是一些指定的字母出现了两次（这里如字母<span class="example">v</span>）这样的检查是很棘手的。</font><font id="549"><tt class="doctest"><span class="pre">FreqDist</span></tt>比较法<a class="reference internal" href="./ch02.html#freqdist-compare"><span id="ref-freqdist-compare"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></span></a>允许我们检查每个<em>字母</em>在候选词中的频率是否小于或等于相应的字母在拼词谜题中的频率。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>puzzle_letters = nltk.FreqDist(<span class="pysrc-string">'egivrvonl'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>obligatory = <span class="pysrc-string">'r'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wordlist = nltk.corpus.words.words()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> wordlist <span class="pysrc-keyword">if</span> len(w) &gt;= 6 <a href="./ch02.html#ref-length-constraint"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>                     <span class="pysrc-keyword">and</span> obligatory <span class="pysrc-keyword">in</span> w <a href="./ch02.html#ref-obligatory-letter"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-more">... </span>                     <span class="pysrc-keyword">and</span> nltk.FreqDist(w) &lt;= puzzle_letters] <a href="./ch02.html#ref-freqdist-compare"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></a>
+<span class="pysrc-output">['glover', 'gorlin', 'govern', 'grovel', 'ignore', 'involver', 'lienor',</span>
+<span class="pysrc-output">'linger', 'longer', 'lovering', 'noiler', 'overling', 'region', 'renvoi',</span>
+<span class="pysrc-output">'revolving', 'ringle', 'roving', 'violer', 'virole']</span></pre>
+<p><font id="550">另一个词汇列表是名字语料库，包括8000个按性别分类的名字。</font><font id="551">男性和女性的名字存储在单独的文件中。</font><font id="552">让我们找出同时出现在两个文件中的名字，即</font><font id="553">性别暧昧的名字：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>names = nltk.corpus.names
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>names.fileids()
+<span class="pysrc-output">['female.txt', 'male.txt']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>male_names = names.words(<span class="pysrc-string">'male.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>female_names = names.words(<span class="pysrc-string">'female.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> male_names <span class="pysrc-keyword">if</span> w <span class="pysrc-keyword">in</span> female_names]
+<span class="pysrc-output">['Abbey', 'Abbie', 'Abby', 'Addie', 'Adrian', 'Adrien', 'Ajay', 'Alex', 'Alexis',</span>
+<span class="pysrc-output">'Alfie', 'Ali', 'Alix', 'Allie', 'Allyn', 'Andie', 'Andrea', 'Andy', 'Angel',</span>
+<span class="pysrc-output">'Angie', 'Ariel', 'Ashley', 'Aubrey', 'Augustine', 'Austin', 'Averil', ...]</span></pre>
+<p><font id="554">正如大家都知道的，以字母<span class="example">a</span>结尾的名字几乎都是女性。</font><font id="555">我们可以在<a class="reference internal" href="./ch02.html#fig-cfd-gender">4.4</a>中看到这一点以及一些其它的模式，该图是由下面的代码产生的。</font><font id="556">请记住<tt class="doctest"><span class="pre">name[-1]</span></tt>是<tt class="doctest"><span class="pre">name</span></tt>的最后一个字母。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>          (fileid, name[-1])
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> fileid <span class="pysrc-keyword">in</span> names.fileids()
+<span class="pysrc-more">... </span>          <span class="pysrc-keyword">for</span> name <span class="pysrc-keyword">in</span> names.words(fileid))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd.plot()</pre>
+<div class="figure" id="fig-cfd-gender"><img alt="Images/5e197b7d253f66454a97af2a93c30a8e.jpg" src="Images/5e197b7d253f66454a97af2a93c30a8e.jpg" style="width: 613.0px; height: 463.0px;"/><p class="caption"><font id="557"><span class="caption-label">图 4.4</span>：条件频率分布：此图显示男性和女性名字的结尾字母；大多数以<span class="example">a</span>，<span class="example">e</span>或<span class="example">i</span>结尾的名字是女性；以<span class="example">h</span>和<span class="example">l</span>结尾的男性和女性同样多；以<span class="example">k</span>, <span class="example">o</span>, <span class="example">r</span>, <span class="example">s</span>和<span class="example">t</span>结尾的更可能是男性。</font></p>
+</div>
+
+<div class="section" id="a-pronouncing-dictionary"><h2 class="sigil_not_in_toc"><font id="558">4.2 发音的词典</font></h2>
+<p><font id="559">一个稍微丰富的词典资源是一个表格（或电子表格），在每一行中含有一个词加一些性质。</font><font id="560">NLTK 中包括美国英语的CMU发音词典，它是为语音合成器使用而设计的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>entries = nltk.corpus.cmudict.entries()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>len(entries)
+<span class="pysrc-output">133737</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> entries[42371:42379]:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(entry)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">('fir', ['F', 'ER1'])</span>
+<span class="pysrc-output">('fire', ['F', 'AY1', 'ER0'])</span>
+<span class="pysrc-output">('fire', ['F', 'AY1', 'R'])</span>
+<span class="pysrc-output">('firearm', ['F', 'AY1', 'ER0', 'AA2', 'R', 'M'])</span>
+<span class="pysrc-output">('firearm', ['F', 'AY1', 'R', 'AA2', 'R', 'M'])</span>
+<span class="pysrc-output">('firearms', ['F', 'AY1', 'ER0', 'AA2', 'R', 'M', 'Z'])</span>
+<span class="pysrc-output">('firearms', ['F', 'AY1', 'R', 'AA2', 'R', 'M', 'Z'])</span>
+<span class="pysrc-output">('fireball', ['F', 'AY1', 'ER0', 'B', 'AO2', 'L'])</span></pre>
+<p><font id="561">对每一个词，这个词典资源提供语音的代码——不同的声音不同的标签——叫做<span class="example">phones</span>。</font><font id="562">请看<span class="example">fire</span>有两个发音（美国英语中）：单音节<tt class="doctest"><span class="pre">F AY1 R</span></tt>和双音节<tt class="doctest"><span class="pre">F AY1 ER0</span></tt>。</font><font id="563">CMU 发音词典中的符号是从<em>Arpabet</em>来的，更多的细节请参考<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Arpabet</span></tt>。</font></p>
+<p><font id="564">每个条目由两部分组成，我们可以用一个复杂的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句来一个一个的处理这些。</font><font id="565">我们没有写<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span> entry <span class="pysrc-keyword">in</span> entries:</span></tt>，而是用<em>两个</em>变量名<tt class="doctest"><span class="pre">word, pron</span></tt>替换<tt class="doctest"><span class="pre">entry</span></tt><a class="reference internal" href="./ch02.html#word-pron"><span id="ref-word-pron"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>。</font><font id="566">现在，每次通过循环时，<tt class="doctest"><span class="pre">word</span></tt>被分配条目的第一部分，<tt class="doctest"><span class="pre">pron</span></tt>被分配条目的第二部分：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word, pron <span class="pysrc-keyword">in</span> entries: <a href="./ch02.html#ref-word-pron"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(pron) == 3: <a href="./ch02.html#ref-len-pron-three"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-more">... </span>        ph1, ph2, ph3 = pron <a href="./ch02.html#ref-tuple-assignment"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></a>
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">if</span> ph1 == <span class="pysrc-string">'P'</span> <span class="pysrc-keyword">and</span> ph3 == <span class="pysrc-string">'T'</span>:
+<span class="pysrc-more">... </span>            <span class="pysrc-keyword">print</span>(word, ph2, end=<span class="pysrc-string">' '</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">pait EY1 pat AE1 pate EY1 patt AE1 peart ER1 peat IY1 peet IY1 peete IY1 pert ER1</span>
+<span class="pysrc-output">pet EH1 pete IY1 pett EH1 piet IY1 piette IY1 pit IH1 pitt IH1 pot AA1 pote OW1</span>
+<span class="pysrc-output">pott AA1 pout AW1 puett UW1 purt ER1 put UH1 putt AH1</span></pre>
+<p><font id="567">上面的程序扫描词典中那些发音包含三个音素的条目<a class="reference internal" href="./ch02.html#len-pron-three"><span id="ref-len-pron-three"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>。</font><font id="568">如果条件为真，就将<tt class="doctest"><span class="pre">pron</span></tt>的内容分配给三个新的变量：<tt class="doctest"><span class="pre">ph1</span></tt>, <tt class="doctest"><span class="pre">ph2</span></tt>和<tt class="doctest"><span class="pre">ph3</span></tt>。</font><font id="569">请注意实现这个功能的语句的形式并不多见<a class="reference internal" href="./ch02.html#tuple-assignment"><span id="ref-tuple-assignment"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></span></a>。</font></p>
+<p><font id="570">这里是同样的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>语句的另一个例子，这次使用内部的列表推导。</font><font id="571">这段程序找到所有发音结尾与<span class="example">nicks</span>相似的词汇。</font><font id="572">你可以使用此方法来找到押韵的词。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>syllable = [<span class="pysrc-string">'N'</span>, <span class="pysrc-string">'IH0'</span>, <span class="pysrc-string">'K'</span>, <span class="pysrc-string">'S'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[word <span class="pysrc-keyword">for</span> word, pron <span class="pysrc-keyword">in</span> entries <span class="pysrc-keyword">if</span> pron[-4:] == syllable]
+<span class="pysrc-output">["atlantic's", 'audiotronics', 'avionics', 'beatniks', 'calisthenics', 'centronics',</span>
+<span class="pysrc-output">'chamonix', 'chetniks', "clinic's", 'clinics', 'conics', 'conics', 'cryogenics',</span>
+<span class="pysrc-output">'cynics', 'diasonics', "dominic's", 'ebonics', 'electronics', "electronics'", ...]</span></pre>
+<p><font id="573">请注意，有几种方法来拼读一个读音：<span class="example">nics</span>, <span class="example">niks</span>, <span class="example">nix</span>甚至<span class="example">ntic's</span>加一个无声的<span class="example">t</span>，如词<span class="example">atlantic's</span>。</font><font id="574">让我们来看看其他一些发音与书写之间的不匹配。</font><font id="575">你可以总结一下下面的例子的功能，并解释它们是如何实现的？</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w, pron <span class="pysrc-keyword">in</span> entries <span class="pysrc-keyword">if</span> pron[-1] == <span class="pysrc-string">'M'</span> <span class="pysrc-keyword">and</span> w[-1] == <span class="pysrc-string">'n'</span>]
+<span class="pysrc-output">['autumn', 'column', 'condemn', 'damn', 'goddamn', 'hymn', 'solemn']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(set(w[:2] <span class="pysrc-keyword">for</span> w, pron <span class="pysrc-keyword">in</span> entries <span class="pysrc-keyword">if</span> pron[0] == <span class="pysrc-string">'N'</span> <span class="pysrc-keyword">and</span> w[0] != <span class="pysrc-string">'n'</span>))
+<span class="pysrc-output">['gn', 'kn', 'mn', 'pn']</span></pre>
+<p><font id="576">音素包含数字表示主重音(<tt class="doctest"><span class="pre">1</span></tt>)，次重音(<tt class="doctest"><span class="pre">2</span></tt>)和无重音(<tt class="doctest"><span class="pre">0</span></tt>)。</font><font id="577">作为我们最后的一个例子，我们定义一个函数来提取重音数字，然后扫描我们的词典，找到具有特定重音模式的词汇。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">stress</span>(pron):
+<span class="pysrc-more">... </span>    return [char <span class="pysrc-keyword">for</span> phone <span class="pysrc-keyword">in</span> pron <span class="pysrc-keyword">for</span> char <span class="pysrc-keyword">in</span> phone <span class="pysrc-keyword">if</span> char.isdigit()]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w, pron <span class="pysrc-keyword">in</span> entries <span class="pysrc-keyword">if</span> stress(pron) == [<span class="pysrc-string">'0'</span>, <span class="pysrc-string">'1'</span>, <span class="pysrc-string">'0'</span>, <span class="pysrc-string">'2'</span>, <span class="pysrc-string">'0'</span>]]
+<span class="pysrc-output">['abbreviated', 'abbreviated', 'abbreviating', 'accelerated', 'accelerating',</span>
+<span class="pysrc-output">'accelerator', 'accelerators', 'accentuated', 'accentuating', 'accommodated',</span>
+<span class="pysrc-output">'accommodating', 'accommodative', 'accumulated', 'accumulating', 'accumulative', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w, pron <span class="pysrc-keyword">in</span> entries <span class="pysrc-keyword">if</span> stress(pron) == [<span class="pysrc-string">'0'</span>, <span class="pysrc-string">'2'</span>, <span class="pysrc-string">'0'</span>, <span class="pysrc-string">'1'</span>, <span class="pysrc-string">'0'</span>]]
+<span class="pysrc-output">['abbreviation', 'abbreviations', 'abomination', 'abortifacient', 'abortifacients',</span>
+<span class="pysrc-output">'academicians', 'accommodation', 'accommodations', 'accreditation', 'accreditations',</span>
+<span class="pysrc-output">'accumulation', 'accumulations', 'acetylcholine', 'acetylcholine', 'adjudication', ...]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="578">注意</font></p>
+<p class="last"><font id="579">这段程序的精妙之处在于：我们的用户自定义函数<tt class="doctest"><span class="pre">stress()</span></tt>调用一个内含条件的列表推导。</font><font id="580">还有一个双层嵌套<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环。</font><font id="581">这里有些复杂，等你有了更多的使用列表推导的经验后，你可能会想回过来重新阅读。</font></p>
+</div>
+<p><font id="582">我们可以使用条件频率分布来帮助我们找到词汇的最小受限集合。</font><font id="583">在这里，我们找到所有<span class="example">p</span>开头的三音素词<a class="reference internal" href="./ch02.html#p3-words"><span id="ref-p3-words"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>，并按照它们的第一个和最后一个音素来分组<a class="reference internal" href="./ch02.html#group-first-last"><span id="ref-group-first-last"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>p3 = [(pron[0]+<span class="pysrc-string">'-'</span>+pron[2], word) <a href="./ch02.html#ref-group-first-last"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-more">... </span>      <span class="pysrc-keyword">for</span> (word, pron) <span class="pysrc-keyword">in</span> entries
+<span class="pysrc-more">... </span>      <span class="pysrc-keyword">if</span> pron[0] == <span class="pysrc-string">'P'</span> <span class="pysrc-keyword">and</span> len(pron) == 3] <a href="./ch02.html#ref-p3-words"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(p3)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> template <span class="pysrc-keyword">in</span> sorted(cfd.conditions()):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(cfd[template]) &gt; 10:
+<span class="pysrc-more">... </span>        words = sorted(cfd[template])
+<span class="pysrc-more">... </span>        wordstring = <span class="pysrc-string">' '</span>.join(words)
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(template, wordstring[:70] + <span class="pysrc-string">"..."</span>)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">P-CH patch pautsch peach perch petsch petsche piche piech pietsch pitch pit...</span>
+<span class="pysrc-output">P-K pac pack paek paik pak pake paque peak peake pech peck peek perc perk ...</span>
+<span class="pysrc-output">P-L pahl pail paille pal pale pall paul paule paull peal peale pearl pearl...</span>
+<span class="pysrc-output">P-N paign pain paine pan pane pawn payne peine pen penh penn pin pine pinn...</span>
+<span class="pysrc-output">P-P paap paape pap pape papp paup peep pep pip pipe pipp poop pop pope pop...</span>
+<span class="pysrc-output">P-R paar pair par pare parr pear peer pier poor poore por pore porr pour...</span>
+<span class="pysrc-output">P-S pace pass pasts peace pearse pease perce pers perse pesce piece piss p...</span>
+<span class="pysrc-output">P-T pait pat pate patt peart peat peet peete pert pet pete pett piet piett...</span>
+<span class="pysrc-output">P-UW1 peru peugh pew plew plue prew pru prue prugh pshew pugh...</span></pre>
+<p><font id="584">我们可以通过查找特定词汇来访问词典，而不必遍历整个词典。</font><font id="585">我们将使用Python 的词典数据结构，在<a class="reference external" href="./ch05.html#sec-dictionaries">3</a>节我们将系统的学习它。</font><font id="586">通过指定词典的名字后面跟一个包含在方括号里的<span class="termdef">关键字</span>（例如词<tt class="doctest"><span class="pre"><span class="pysrc-string">'fire'</span></span></tt>）来查词典<a class="reference internal" href="./ch02.html#dict-key"><span id="ref-dict-key"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>prondict = nltk.corpus.cmudict.dict()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>prondict[<span class="pysrc-string">'fire'</span>] <a href="./ch02.html#ref-dict-key"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-output">[['F', 'AY1', 'ER0'], ['F', 'AY1', 'R']]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>prondict[<span class="pysrc-string">'blog'</span>] <a href="./ch02.html#ref-dict-key-error"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-except">Traceback (most recent call last):</span>
+<span class="pysrc-except">  File "&lt;stdin&gt;", line 1, in &lt;module&gt;</span>
+<span class="pysrc-except">KeyError: 'blog'</span>
+<span class="pysrc-except"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>prondict[<span class="pysrc-string">'blog'</span>] = [[<span class="pysrc-string">'B'</span>, <span class="pysrc-string">'L'</span>, <span class="pysrc-string">'AA1'</span>, <span class="pysrc-string">'G'</span>]] <a href="./ch02.html#ref-dict-assign"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>prondict[<span class="pysrc-string">'blog'</span>]
+<span class="pysrc-output">[['B', 'L', 'AA1', 'G']]</span></pre>
+<p><font id="587">如果我们试图查找一个不存在的关键字<a class="reference internal" href="./ch02.html#dict-key-error"><span id="ref-dict-key-error"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>，就会得到一个<tt class="doctest"><span class="pre">KeyError</span></tt>。</font><font id="588">这与我们使用一个过大的整数索引一个列表时产生一个<tt class="doctest"><span class="pre">IndexError</span></tt>是类似的。</font><font id="589">词<span class="example">blog</span>在发音词典中没有，所以我们对我们自己版本的词典稍作调整，为这个关键字分配一个值<a class="reference internal" href="./ch02.html#dict-assign"><span id="ref-dict-assign"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></span></a>（这对NLTK 语料库是没有影响的；下一次我们访问它，<span class="example">blog</span>依然是空的）。</font></p>
+<p><font id="590">我们可以用任何词典资源来处理文本，如过滤掉具有某些词典属性的词（如名词），或者映射文本中每一个词。</font><font id="591">例如，下面的文本到发音函数在发音词典中查找文本中每个词：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = [<span class="pysrc-string">'natural'</span>, <span class="pysrc-string">'language'</span>, <span class="pysrc-string">'processing'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[ph <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> text <span class="pysrc-keyword">for</span> ph <span class="pysrc-keyword">in</span> prondict[w][0]]
+<span class="pysrc-output">['N', 'AE1', 'CH', 'ER0', 'AH0', 'L', 'L', 'AE1', 'NG', 'G', 'W', 'AH0', 'JH',</span>
+<span class="pysrc-output">'P', 'R', 'AA1', 'S', 'EH0', 'S', 'IH0', 'NG']</span></pre>
+</div>
+<div class="section" id="comparative-wordlists"><h2 class="sigil_not_in_toc"><font id="592">4.3 比较词表</font></h2>
+<p><font id="593">表格词典的另一个例子是<span class="termdef">比较词表</span>。</font><font id="594">NLTK 中包含了所谓的<span class="termdef">斯瓦迪士核心词列表</span>，几种语言中约200个常用词的列表。</font><font id="595">语言标识符使用ISO639 双字母码。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> swadesh
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>swadesh.fileids()
+<span class="pysrc-output">['be', 'bg', 'bs', 'ca', 'cs', 'cu', 'de', 'en', 'es', 'fr', 'hr', 'it', 'la', 'mk',</span>
+<span class="pysrc-output">'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sw', 'uk']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>swadesh.words(<span class="pysrc-string">'en'</span>)
+<span class="pysrc-output">['I', 'you (singular), thou', 'he', 'we', 'you (plural)', 'they', 'this', 'that',</span>
+<span class="pysrc-output">'here', 'there', 'who', 'what', 'where', 'when', 'how', 'not', 'all', 'many', 'some',</span>
+<span class="pysrc-output">'few', 'other', 'one', 'two', 'three', 'four', 'five', 'big', 'long', 'wide', ...]</span></pre>
+<p><font id="596">我们可以通过在<tt class="doctest"><span class="pre">entries()</span></tt> 方法中指定一个语言列表来访问多语言中的同源词。</font><font id="597">更进一步，我们可以把它转换成一个简单的词典（我们将在<a class="reference external" href="./ch05.html#sec-dictionaries">3</a>学到<tt class="doctest"><span class="pre">dict()</span></tt>函数）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fr2en = swadesh.entries([<span class="pysrc-string">'fr'</span>, <span class="pysrc-string">'en'</span>])
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fr2en
+<span class="pysrc-output">[('je', 'I'), ('tu, vous', 'you (singular), thou'), ('il', 'he'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>translate = dict(fr2en)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>translate[<span class="pysrc-string">'chien'</span>]
+<span class="pysrc-output">'dog'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>translate[<span class="pysrc-string">'jeter'</span>]
+<span class="pysrc-output">'throw'</span></pre>
+<p><font id="598">通过添加其他源语言，我们可以让我们这个简单的翻译器更为有用。</font><font id="599">让我们使用<tt class="doctest"><span class="pre">dict()</span></tt>函数把德语-英语和西班牙语-英语对相互转换成一个词典，然后用这些添加的映射<em>更新</em>我们原来的<tt class="doctest"><span class="pre">翻译</span></tt>词典：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>de2en = swadesh.entries([<span class="pysrc-string">'de'</span>, <span class="pysrc-string">'en'</span>])    <span class="pysrc-comment"># German-English</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>es2en = swadesh.entries([<span class="pysrc-string">'es'</span>, <span class="pysrc-string">'en'</span>])    <span class="pysrc-comment"># Spanish-English</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>translate.update(dict(de2en))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>translate.update(dict(es2en))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>translate[<span class="pysrc-string">'Hund'</span>]
+<span class="pysrc-output">'dog'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>translate[<span class="pysrc-string">'perro'</span>]
+<span class="pysrc-output">'dog'</span></pre>
+<p><font id="600">我们可以比较日尔曼语族和拉丁语族的不同：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>languages = [<span class="pysrc-string">'en'</span>, <span class="pysrc-string">'de'</span>, <span class="pysrc-string">'nl'</span>, <span class="pysrc-string">'es'</span>, <span class="pysrc-string">'fr'</span>, <span class="pysrc-string">'pt'</span>, <span class="pysrc-string">'la'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> i <span class="pysrc-keyword">in</span> [139, 140, 141, 142]:
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(swadesh.entries(languages)[i])
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">('say', 'sagen', 'zeggen', 'decir', 'dire', 'dizer', 'dicere')</span>
+<span class="pysrc-output">('sing', 'singen', 'zingen', 'cantar', 'chanter', 'cantar', 'canere')</span>
+<span class="pysrc-output">('play', 'spielen', 'spelen', 'jugar', 'jouer', 'jogar, brincar', 'ludere')</span>
+<span class="pysrc-output">('float', 'schweben', 'zweven', 'flotar', 'flotter', 'flutuar, boiar', 'fluctuare')</span></pre>
+</div>
+<div class="section" id="shoebox-and-toolbox-lexicons"><h2 class="sigil_not_in_toc"><font id="601">4.4 词汇工具：Shoebox和Toolbox</font></h2>
+<p><font id="602">可能最流行的语言学家用来管理数据的工具是<em>Toolbox</em>，以前叫做<em>Shoebox</em>，因为它用满满的档案卡片占据了语言学家的旧鞋盒。</font><font id="603">Toolbox 可以免费从<tt class="doctest"><span class="pre">http://www.sil.org/computing/toolbox/</span></tt>下载。</font></p>
+<p><font id="604">一个Toolbox 文件由一个大量条目的集合组成，其中每个条目由一个或多个字段组成。</font><font id="605">大多数字段都是可选的或重复的，这意味着这个词汇资源不能作为一个表格或电子表格来处理。</font></p>
+<p><font id="606">下面是一个罗托卡特语的词典。</font><font id="607">我们只看第一个条目，词<span class="example">kaa</span>的意思是"to gag"：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> toolbox
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>toolbox.entries(<span class="pysrc-string">'rotokas.dic'</span>)
+<span class="pysrc-output">[('kaa', [('ps', 'V'), ('pt', 'A'), ('ge', 'gag'), ('tkp', 'nek i pas'),</span>
+<span class="pysrc-output">('dcsv', 'true'), ('vx', '1'), ('sc', '???'), ('dt', '29/Oct/2005'),</span>
+<span class="pysrc-output">('ex', 'Apoka ira kaaroi aioa-ia reoreopaoro.'),</span>
+<span class="pysrc-output">('xp', 'Kaikai i pas long nek bilong Apoka bikos em i kaikai na toktok.'),</span>
+<span class="pysrc-output">('xe', 'Apoka is gagging from food while talking.')]), ...]</span></pre>
+<p><font id="608">条目包括一系列的属性-值对，如<tt class="doctest"><span class="pre">(<span class="pysrc-string">'ps'</span>, <span class="pysrc-string">'V'</span>)</span></tt>表示词性是<tt class="doctest"><span class="pre"><span class="pysrc-string">'V'</span></span></tt>(动词)，<tt class="doctest"><span class="pre">(<span class="pysrc-string">'ge'</span>, <span class="pysrc-string">'gag'</span>)</span></tt>表示英文注释是'<tt class="doctest"><span class="pre"><span class="pysrc-string">'gag'</span></span></tt>。</font><font id="609">最后的3 个配对包含一个罗托卡特语例句和它的巴布亚皮钦语及英语翻译。</font></p>
+<p><font id="610">Toolbox 文件松散的结构使我们在现阶段很难更好的利用它。</font><font id="611">XML 提供了一种强有力的方式来处理这种语料库，我们将在<a class="reference external" href="./ch11.html#chap-data">11.</a>回到这个的主题。</font></p>
+<div class="note"><p class="first admonition-title"><font id="612">注意</font></p>
+<p class="last"><font id="613">罗托卡特语是巴布亚新几内亚的布干维尔岛上使用的一种语言。</font><font id="614">这个词典资源由Stuart Robinson 贡献给NLTK。</font><font id="615">罗托卡特语以仅有12 个音素（彼此对立的声音）而闻名。详情请参考：<tt class="doctest"><span class="pre">http://en.wikipedia.org/wiki/Rotokas_language</span></tt></font></p>
+</div>
+</div>
+
+<div class="section" id="wordnet"><h2 class="sigil_not_in_toc"><font id="616">5 WordNet</font></h2>
+<p><font id="617"><span class="term">WordNet</span>是面向语义的英语词典，类似与传统辞典，但具有更丰富的结构。</font><font id="618">NLTK 中包括英语WordNet，共有155,287 个词和117,659 个同义词集合。</font><font id="619">我们将以寻找同义词和它们在WordNet中如何访问开始。</font></p>
+<div class="section" id="senses-and-synonyms"><h2 class="sigil_not_in_toc"><font id="620">5.1 意义与同义词</font></h2>
+<p><font id="621">考虑<a class="reference internal" href="./ch02.html#ex-car1">(1a)</a>中的句子。</font><font id="622">如果我们用<span class="example">automobile</span>替换掉<a class="reference internal" href="./ch02.html#ex-car1">(1a)</a>中的词<span class="example">motorcar</span>，变成<a class="reference internal" href="./ch02.html#ex-car2">(1b)</a>，句子的意思几乎保持不变：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> wordnet <span class="pysrc-keyword">as</span> wn
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synsets(<span class="pysrc-string">'motorcar'</span>)
+<span class="pysrc-output">[Synset('car.n.01')]</span></pre>
+<p><font id="631">因此，<span class="example">motorcar</span>只有一个可能的含义，它被定义为<tt class="doctest"><span class="pre">car.n.01</span></tt>，<span class="example">car</span>的第一个名词意义。</font><font id="632"><tt class="doctest"><span class="pre">car.n.01</span></tt>被称为<span class="termdef">synset</span>或“同义词集”，意义相同的词（或“词条”）的集合：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'car.n.01'</span>).lemma_names()
+<span class="pysrc-output">['car', 'auto', 'automobile', 'machine', 'motorcar']</span></pre>
+<p><font id="633">同义词集中的每个词可以有多种含义，例如：<span class="example">car</span>也可能是火车车厢、一个货车或电梯厢。</font><font id="634">但我们只对这个同义词集中所有词来说最常用的一个意义感兴趣。</font><font id="635">同义词集也有一些一般的定义和例句：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'car.n.01'</span>).definition()
+<span class="pysrc-output">'a motor vehicle with four wheels; usually propelled by an internal combustion engine'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'car.n.01'</span>).examples()
+<span class="pysrc-output">['he needs a car to get to work']</span></pre>
+<p><font id="636">虽然定义帮助人们了解一个同义词集的本意，同义词集中的<span class="emphasis">词</span>往往对我们的程序更有用。</font><font id="637">为了消除歧义，我们将这些词标记为<tt class="doctest"><span class="pre">car.n.01.automobile</span></tt>，<tt class="doctest"><span class="pre">car.n.01.motorcar</span></tt>等。</font><font id="638">这种同义词集和词的配对叫做词条。</font><font id="639">我们可以得到指定同义词集的所有词条<a class="reference internal" href="./ch02.html#get-lemmas"><span id="ref-get-lemmas"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></span></a>，查找特定的词条<a class="reference internal" href="./ch02.html#lookup-lemma"><span id="ref-lookup-lemma"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></span></a>，得到一个词条对应的同义词集<a class="reference internal" href="./ch02.html#get-synset"><span id="ref-get-synset"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></span></a>，也可以得到一个词条的“名字”<a class="reference internal" href="./ch02.html#get-name"><span id="ref-get-name"><img alt="[4]" class="callout" src="Images/f3ad266a67457b4615141d6ba83e724e.jpg"/></span></a>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'car.n.01'</span>).lemmas() <a href="./ch02.html#ref-get-lemmas"><img alt="[1]" class="callout" src="Images/eeff7ed83be48bf40aeeb3bf9db5550e.jpg"/></a>
+<span class="pysrc-output">[Lemma('car.n.01.car'), Lemma('car.n.01.auto'), Lemma('car.n.01.automobile'),</span>
+<span class="pysrc-output">Lemma('car.n.01.machine'), Lemma('car.n.01.motorcar')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'car.n.01.automobile'</span>) <a href="./ch02.html#ref-lookup-lemma"><img alt="[2]" class="callout" src="Images/6efeadf518b11a6441906b93844c2b19.jpg"/></a>
+<span class="pysrc-output">Lemma('car.n.01.automobile')</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'car.n.01.automobile'</span>).synset() <a href="./ch02.html#ref-get-synset"><img alt="[3]" class="callout" src="Images/e941b64ed778967dd0170d25492e42df.jpg"/></a>
+<span class="pysrc-output">Synset('car.n.01')</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'car.n.01.automobile'</span>).name() <a href="./ch02.html#ref-get-name"><img alt="[4]" class="callout" src="Images/f3ad266a67457b4615141d6ba83e724e.jpg"/></a>
+<span class="pysrc-output">'automobile'</span></pre>
+<p><font id="640">与词<span class="example">motorcar</span>意义明确且只有一个同义词集不同，词<span class="example">car</span>是含糊的，有五个同义词集：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synsets(<span class="pysrc-string">'car'</span>)
+<span class="pysrc-output">[Synset('car.n.01'), Synset('car.n.02'), Synset('car.n.03'), Synset('car.n.04'),</span>
+<span class="pysrc-output">Synset('cable_car.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> synset <span class="pysrc-keyword">in</span> wn.synsets(<span class="pysrc-string">'car'</span>):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(synset.lemma_names())
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">['car', 'auto', 'automobile', 'machine', 'motorcar']</span>
+<span class="pysrc-output">['car', 'railcar', 'railway_car', 'railroad_car']</span>
+<span class="pysrc-output">['car', 'gondola']</span>
+<span class="pysrc-output">['car', 'elevator_car']</span>
+<span class="pysrc-output">['cable_car', 'car']</span></pre>
+<p><font id="641">为方便起见，我们可以用下面的方式访问所有包含词<span class="example">car</span>的词条。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemmas(<span class="pysrc-string">'car'</span>)
+<span class="pysrc-output">[Lemma('car.n.01.car'), Lemma('car.n.02.car'), Lemma('car.n.03.car'),</span>
+<span class="pysrc-output">Lemma('car.n.04.car'), Lemma('cable_car.n.01.car')]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="642">注意</font></p>
+<p class="last"><font id="643"><strong>轮到你来：</strong>写下词<span class="example">dish</span>的你能想到的所有意思。</font><font id="644">现在，在WordNet 的帮助下使用前面所示的相同的操作探索这个词。</font></p>
+</div>
+</div>
+<div class="section" id="the-wordnet-hierarchy"><h2 class="sigil_not_in_toc"><font id="645">5.2 WordNet的层次结构</font></h2>
+<p><font id="646">WordNet 的同义词集对应于抽象的概念，它们并不总是有对应的英语词汇。</font><font id="647">这些概念在层次结构中相互联系在一起。</font><font id="648">一些概念也很一般，如<em>实体</em>、<em>状态</em>、<em>事件</em>；这些被称为<span class="termdef">唯一前缀</span>或者根同义词集。</font><font id="649">其他的，如<em>油老虎</em>和<em>有仓门式后背的汽车</em>等就比较具体的多。</font><font id="650"><a class="reference internal" href="./ch02.html#fig-wn-hierarchy">5.1</a>展示了一个概念层次的一小部分。</font></p>
+<div class="figure" id="fig-wn-hierarchy"><img alt="Images/74248e04835acdba414fd407bb4f3241.jpg" src="Images/74248e04835acdba414fd407bb4f3241.jpg" style="width: 451.25px; height: 245.0px;"/><p class="caption"><font id="651"><span class="caption-label">图 5.1</span>：WordNet 概念层次片段：每个节点对应一个同义词集；边表示上位词/下位词关系，即</font><font id="652">上级概念与从属概念的关系。</font></p>
+</div>
+<p><font id="653">WordNet 使在概念之间漫游变的容易。</font><font id="654">例如：一个如<em>motorcar</em>这样的概念，我们可以看到它的更加具体（直接）的概念——<span class="termdef">下位词</span>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>motorcar = wn.synset(<span class="pysrc-string">'car.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>types_of_motorcar = motorcar.hyponyms()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>types_of_motorcar[0]
+<span class="pysrc-output">Synset('ambulance.n.01')</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(lemma.name() <span class="pysrc-keyword">for</span> synset <span class="pysrc-keyword">in</span> types_of_motorcar <span class="pysrc-keyword">for</span> lemma <span class="pysrc-keyword">in</span> synset.lemmas())
+<span class="pysrc-output">['Model_T', 'S.U.V.', 'SUV', 'Stanley_Steamer', 'ambulance', 'beach_waggon',</span>
+<span class="pysrc-output">'beach_wagon', 'bus', 'cab', 'compact', 'compact_car', 'convertible',</span>
+<span class="pysrc-output">'coupe', 'cruiser', 'electric', 'electric_automobile', 'electric_car',</span>
+<span class="pysrc-output">'estate_car', 'gas_guzzler', 'hack', 'hardtop', 'hatchback', 'heap',</span>
+<span class="pysrc-output">'horseless_carriage', 'hot-rod', 'hot_rod', 'jalopy', 'jeep', 'landrover',</span>
+<span class="pysrc-output">'limo', 'limousine', 'loaner', 'minicar', 'minivan', 'pace_car', 'patrol_car',</span>
+<span class="pysrc-output">'phaeton', 'police_car', 'police_cruiser', 'prowl_car', 'race_car', 'racer',</span>
+<span class="pysrc-output">'racing_car', 'roadster', 'runabout', 'saloon', 'secondhand_car', 'sedan',</span>
+<span class="pysrc-output">'sport_car', 'sport_utility', 'sport_utility_vehicle', 'sports_car', 'squad_car',</span>
+<span class="pysrc-output">'station_waggon', 'station_wagon', 'stock_car', 'subcompact', 'subcompact_car',</span>
+<span class="pysrc-output">'taxi', 'taxicab', 'tourer', 'touring_car', 'two-seater', 'used-car', 'waggon',</span>
+<span class="pysrc-output">'wagon']</span></pre>
+<p><font id="655">我们也可以通过访问上位词来浏览层次结构。</font><font id="656">有些词有多条路径，因为它们可以归类在一个以上的分类中。</font><font id="657"><tt class="doctest"><span class="pre">car.n.01</span></tt>与<tt class="doctest"><span class="pre">entity.n.01</span></tt>间有两条路径，因为<tt class="doctest"><span class="pre">wheeled_vehicle.n.01</span></tt>可以同时被归类为车辆和容器。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>motorcar.hypernyms()
+<span class="pysrc-output">[Synset('motor_vehicle.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>paths = motorcar.hypernym_paths()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>len(paths)
+<span class="pysrc-output">2</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[synset.name() <span class="pysrc-keyword">for</span> synset <span class="pysrc-keyword">in</span> paths[0]]
+<span class="pysrc-output">['entity.n.01', 'physical_entity.n.01', 'object.n.01', 'whole.n.02', 'artifact.n.01',</span>
+<span class="pysrc-output">'instrumentality.n.03', 'container.n.01', 'wheeled_vehicle.n.01',</span>
+<span class="pysrc-output">'self-propelled_vehicle.n.01', 'motor_vehicle.n.01', 'car.n.01']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[synset.name() <span class="pysrc-keyword">for</span> synset <span class="pysrc-keyword">in</span> paths[1]]
+<span class="pysrc-output">['entity.n.01', 'physical_entity.n.01', 'object.n.01', 'whole.n.02', 'artifact.n.01',</span>
+<span class="pysrc-output">'instrumentality.n.03', 'conveyance.n.03', 'vehicle.n.01', 'wheeled_vehicle.n.01',</span>
+<span class="pysrc-output">'self-propelled_vehicle.n.01', 'motor_vehicle.n.01', 'car.n.01']</span></pre>
+<p><font id="658">我们可以用如下方式得到一个最一般的上位（或根上位）同义词集：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>motorcar.root_hypernyms()
+<span class="pysrc-output">[Synset('entity.n.01')]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="659">注意</font></p>
+<p class="last"><font id="660"><strong>轮到你来：</strong> 尝试NLTK 中便捷的图形化WordNet浏览器：<tt class="doctest"><span class="pre">nltk.app.wordnet()</span></tt>。</font><font id="661">沿着上位词与下位词之间的链接，探索WordNet的层次结构。</font></p>
+</div>
+</div>
+<div class="section" id="more-lexical-relations"><h2 class="sigil_not_in_toc"><font id="662">5.3 更多的词汇关系</font></h2>
+<p><font id="663">上位词和下位词被称为<span class="termdef">词汇关系</span>，因为它们是同义集之间的关系。</font><font id="664">这个关系定位上下为“是一个”层次。</font><font id="665">WordNet 网络另一个重要的漫游方式是从元素到它们的部件（<span class="termdef">部分</span>）或到它们被包含其中的东西（<span class="termdef">整体</span>）。</font><font id="666">例如，一棵<span class="example">树</span>的部分是它的<span class="example">树干</span>，<span class="example">树冠</span>等；这些都是<tt class="doctest"><span class="pre">part_meronyms()</span></tt>。</font><font id="667">一棵树的<em>实质</em>是包括<span class="example">心材</span>和<span class="example">边材</span>组成的，即<tt class="doctest"><span class="pre">substance_meronyms()</span></tt>。</font><font id="668">树木的集合形成了一个<span class="example">森林</span>，即<tt class="doctest"><span class="pre">member_holonyms()</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'tree.n.01'</span>).part_meronyms()
+<span class="pysrc-output">[Synset('burl.n.02'), Synset('crown.n.07'), Synset('limb.n.02'),</span>
+<span class="pysrc-output">Synset('stump.n.01'), Synset('trunk.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'tree.n.01'</span>).substance_meronyms()
+<span class="pysrc-output">[Synset('heartwood.n.01'), Synset('sapwood.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'tree.n.01'</span>).member_holonyms()
+<span class="pysrc-output">[Synset('forest.n.01')]</span></pre>
+<p><font id="669">来看看可以获得多么复杂的东西，考虑具有几个密切相关意思的词<span class="example">mint</span>。</font><font id="670">我们可以看到<tt class="doctest"><span class="pre">mint.n.04</span></tt>是<tt class="doctest"><span class="pre">mint.n.02</span></tt>的一部分，是组成<tt class="doctest"><span class="pre">mint.n.05</span></tt>的材质。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> synset <span class="pysrc-keyword">in</span> wn.synsets(<span class="pysrc-string">'mint'</span>, wn.NOUN):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(synset.name() + <span class="pysrc-string">':'</span>, synset.definition())
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">batch.n.02: (often followed by `of') a large number or amount or extent</span>
+<span class="pysrc-output">mint.n.02: any north temperate plant of the genus Mentha with aromatic leaves and</span>
+<span class="pysrc-output">           small mauve flowers</span>
+<span class="pysrc-output">mint.n.03: any member of the mint family of plants</span>
+<span class="pysrc-output">mint.n.04: the leaves of a mint plant used fresh or candied</span>
+<span class="pysrc-output">mint.n.05: a candy that is flavored with a mint oil</span>
+<span class="pysrc-output">mint.n.06: a plant where money is coined by authority of the government</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'mint.n.04'</span>).part_holonyms()
+<span class="pysrc-output">[Synset('mint.n.02')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'mint.n.04'</span>).substance_holonyms()
+<span class="pysrc-output">[Synset('mint.n.05')]</span></pre>
+<p><font id="671">动词之间也有关系。</font><font id="672">例如，<span class="example">走路</span>的动作包括<span class="example">抬脚</span>的动作，所以走路<span class="termdef">蕴涵</span>着抬脚。</font><font id="673">一些动词有多个蕴涵：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'walk.v.01'</span>).entailments()
+<span class="pysrc-output">[Synset('step.v.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'eat.v.01'</span>).entailments()
+<span class="pysrc-output">[Synset('chew.v.01'), Synset('swallow.v.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'tease.v.03'</span>).entailments()
+<span class="pysrc-output">[Synset('arouse.v.07'), Synset('disappoint.v.01')]</span></pre>
+<p><font id="674">词条之间的一些词汇关系，如<span class="termdef">反义词</span>:</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'supply.n.02.supply'</span>).antonyms()
+<span class="pysrc-output">[Lemma('demand.n.02.demand')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'rush.v.01.rush'</span>).antonyms()
+<span class="pysrc-output">[Lemma('linger.v.04.linger')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'horizontal.a.01.horizontal'</span>).antonyms()
+<span class="pysrc-output">[Lemma('inclined.a.02.inclined'), Lemma('vertical.a.01.vertical')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.lemma(<span class="pysrc-string">'staccato.r.01.staccato'</span>).antonyms()
+<span class="pysrc-output">[Lemma('legato.r.01.legato')]</span></pre>
+<p><font id="675">你可以使用<tt class="doctest"><span class="pre">dir()</span></tt>查看词汇关系和同义词集上定义的其它方法，例如<tt class="doctest"><span class="pre">dir(wn.synset(<span class="pysrc-string">'harmony.n.02'</span>))</span></tt>。</font></p>
+</div>
+<div class="section" id="semantic-similarity"><h2 class="sigil_not_in_toc"><font id="676">5.4 语义相似度</font></h2>
+<p><font id="677">我们已经看到同义词集之间构成复杂的词汇关系网络。</font><font id="678">给定一个同义词集，我们可以遍历WordNet网络来查找相关含义的同义词集。</font><font id="679">知道哪些词是语义相关的，对索引文本集合非常有用，当搜索一个一般性的用语例如<span class="example">车辆</span>时，就可以匹配包含具体用语例如<span class="example">豪华轿车</span>的文档。</font></p>
+<p><font id="680">回想一下每个同义词集都有一个或多个上位词路径连接到一个根上位词，如<tt class="doctest"><span class="pre">entity.n.01</span></tt>。</font><font id="681">连接到同一个根的两个同义词集可能有一些共同的上位词（见图<a class="reference internal" href="./ch02.html#fig-wn-hierarchy">5.1</a>）。</font><font id="682">如果两个同义词集共用一个非常具体的上位词——在上位词层次结构中处于较低层的上位词——它们一定有密切的联系。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>right = wn.synset(<span class="pysrc-string">'right_whale.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>orca = wn.synset(<span class="pysrc-string">'orca.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>minke = wn.synset(<span class="pysrc-string">'minke_whale.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tortoise = wn.synset(<span class="pysrc-string">'tortoise.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>novel = wn.synset(<span class="pysrc-string">'novel.n.01'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>right.lowest_common_hypernyms(minke)
+<span class="pysrc-output">[Synset('baleen_whale.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.lowest_common_hypernyms(orca)
+<span class="pysrc-output">[Synset('whale.n.02')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.lowest_common_hypernyms(tortoise)
+<span class="pysrc-output">[Synset('vertebrate.n.01')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.lowest_common_hypernyms(novel)
+<span class="pysrc-output">[Synset('entity.n.01')]</span></pre>
+<p><font id="683">当然，我们知道，<span class="example">鲸鱼</span>是非常具体的（<span class="example">须鲸</span>更是如此），<span class="example">脊椎动物</span>是更一般的，而<span class="example">实体</span>完全是抽象的一般的。</font><font id="684">我们可以通过查找每个同义词集深度量化这个一般性的概念：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'baleen_whale.n.01'</span>).min_depth()
+<span class="pysrc-output">14</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'whale.n.02'</span>).min_depth()
+<span class="pysrc-output">13</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'vertebrate.n.01'</span>).min_depth()
+<span class="pysrc-output">8</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>wn.synset(<span class="pysrc-string">'entity.n.01'</span>).min_depth()
+<span class="pysrc-output">0</span></pre>
+<p><font id="685">WordNet同义词集的集合上定义的相似度能够包括上面的概念。</font><font id="686">例如，<tt class="doctest"><span class="pre">path_similarity</span></tt>是基于上位词层次结构中相互连接的概念之间的最短路径在<tt class="doctest"><span class="pre">0</span></tt>-<tt class="doctest"><span class="pre">1</span></tt>范围的打分（两者之间没有路径就返回<tt class="doctest"><span class="pre">-1</span></tt>）。</font><font id="687">同义词集与自身比较将返回<tt class="doctest"><span class="pre">1</span></tt>。</font><font id="688">考虑以下的相似度：<span class="example">露脊鲸</span>与<span class="example">小须鲸</span>、<span class="example">逆戟鲸</span>、<span class="example">乌龟</span>以及<span class="example">小说</span>。</font><font id="689">数字本身的意义并不大，当我们从海洋生物的语义空间转移到非生物时它是减少的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.path_similarity(minke)
+<span class="pysrc-output">0.25</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.path_similarity(orca)
+<span class="pysrc-output">0.16666666666666666</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.path_similarity(tortoise)
+<span class="pysrc-output">0.07692307692307693</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>right.path_similarity(novel)
+<span class="pysrc-output">0.043478260869565216</span></pre>
+<div class="note"><p class="first admonition-title"><font id="690">注意</font></p>
+<p class="last"><font id="691">还有一些其它的相似性度量方法；你可以输入<tt class="doctest"><span class="pre">help(wn)</span></tt>获得更多信息。</font><font id="692">NLTK 还包括VerbNet，一个连接到WordNet的动词的层次结构的词典。</font><font id="693">It can be accessed with <tt class="doctest"><span class="pre">nltk.corpus.verbnet</span></tt>.</font></p>
+</div>
+</div>
+</div>
+<div class="section" id="summary"><h2 class="sigil_not_in_toc"><font id="694">6 小结</font></h2>
+<ul class="simple"><li><font id="695">文本语料库是一个大型结构化文本的集合。</font><font id="696">NLTK 包含了许多语料库，如布朗语料库<tt class="doctest"><span class="pre">nltk.corpus.brown</span></tt>。</font></li>
+<li><font id="697">有些文本语料库是分类的，例如通过文体或者主题分类；有时候语料库的分类会相互重叠。</font></li>
+<li><font id="698">条件频率分布是一个频率分布的集合，每个分布都有一个不同的条件。</font><font id="699">它们可以用于通过给定内容或者文体对词的频率计数。</font></li>
+<li><font id="700">行数较多的Python 程序应该使用文本编辑器来输入，保存为<tt class="doctest"><span class="pre">.py</span></tt>后缀的文件，并使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>语句来访问。</font></li>
+<li><font id="701">Python 函数允许你将一段特定的代码块与一个名字联系起来，然后重用这些代码想用多少次就用多少次。</font></li>
+<li><font id="702">一些被称为“方法”的函数与一个对象联系在起来，我们使用对象名称跟一个点然后跟方法名称来调用它，就像：<tt class="doctest"><span class="pre">x.funct(y)</span></tt>或者<tt class="doctest"><span class="pre">word.isalpha()</span></tt>。</font></li>
+<li><font id="703">要想找到一些关于某个变量<tt class="doctest"><span class="pre">v</span></tt>的信息，可以在Pyhon交互式解释器中输入<tt class="doctest"><span class="pre">help(v)</span></tt>来阅读这一类对象的帮助条目。</font></li>
+<li><font id="704">WordNet是一个面向语义的英语词典，由同义词的集合——或称为同义词集——组成，并且组织成一个网络。</font></li>
+<li><font id="705">默认情况下有些函数是不能使用的，必须使用Python的<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span></span></tt>语句来访问。</font></li>
+</ul>
+</div>
+<div class="section" id="further-reading"><h2 class="sigil_not_in_toc"><font id="706">7 深入阅读</font></h2>
+<p><font id="707">本章的附加材料发布在<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>，包括网络上免费提供的资源的链接。</font><font id="708">语料库方法总结请参阅<tt class="doctest"><span class="pre">http://nltk.org/howto</span></tt>上的语料库HOWTO，在线API文档中也有更广泛的资料。</font></p>
+<p><font id="709">公开发行的语料库的重要来源是<span class="example">语言数据联盟</span>（(LDC）和<span class="example">欧洲语言资源局</span>（ELRA）。</font><font id="710">提供几十种语言的数以百计的已标注文本和语音语料库。</font><font id="711">非商业许可证允许这些数据用于教学和科研目的。</font><font id="712">其中一些语料库也提供商业许可（但需要较高的费用）。</font></p>
+<p><font id="713">用于创建标注的文本语料库的好工具叫做<span class="emphasis">Brat</span>，可从<tt class="doctest"><span class="pre">http://brat.nlplab.org/</span></tt>访问。</font></p>
+<p><font id="714">这些语料库和许多其他语言资源使用OLAC 元数据格式存档，可以通过 <tt class="doctest"><span class="pre">http://www.language-archives.org/</span></tt>上的OLAC 主页搜索到。</font><font id="715"><span class="emphasis">Corpora List</span>是一个讨论语料库内容的邮件列表，你可以通过搜索列表档案来找到资源或发布资源到列表中。</font><font id="716"><em>Ethnologue</em>是最完整的世界上的语言的清单，<tt class="doctest"><span class="pre">http://www.ethnologue.com/</span></tt>。</font><font id="717">7000 种语言中只有几十中有大量适合NLP 使用的数字资源。</font></p>
+<p><font id="718">本章触及<span class="termdef">语料库语言学</span>领域。</font><font id="719">在这一领域的其他有用的书籍包括<a class="reference external" href="./bibliography.html#biber1998" id="id1">(Biber, Conrad, &amp; Reppen, 1998)</a>, <a class="reference external" href="./bibliography.html#mcenery2006" id="id2">(McEnery, 2006)</a>, <a class="reference external" href="./bibliography.html#meyer2002" id="id3">(Meyer, 2002)</a>, <a class="reference external" href="./bibliography.html#sampson2005" id="id4">(Sampson &amp; McCarthy, 2005)</a>, <a class="reference external" href="./bibliography.html#scott2006" id="id5">(Scott &amp; Tribble, 2006)</a>。</font><font id="720">在语言学中海量数据分析的深入阅读材料有：<a class="reference external" href="./bibliography.html#baayen2008" id="id6">(Baayen, 2008)</a>, <a class="reference external" href="./bibliography.html#gries2009" id="id7">(Gries, 2009)</a>, <a class="reference external" href="./bibliography.html#woods1986" id="id8">(Woods, Fletcher, &amp; Hughes, 1986)</a>。</font></p>
+<p><font id="721">WordNet原始描述是<a class="reference external" href="./bibliography.html#fellbaum1998" id="id9">(Fellbaum, 1998)</a>。</font><font id="722">虽然WordNet最初是为心理语言学研究开发的，它目前在自然语言处理和信息检索领域被广泛使用。</font><font id="723">WordNets 正在开发许多其他语言的版本，在<tt class="doctest"><span class="pre">http://www.globalwordnet.org/</span></tt>中有记录。</font><font id="724">学习WordNet相似性度量可以阅读<a class="reference external" href="./bibliography.html#budanitsky2006ewb" id="id10">(Budanitsky &amp; Hirst, 2006)</a>。</font></p>
+<p><font id="725">本章触及的其它主题是语音和词汇语义学，读者可以参考<a class="reference external" href="./bibliography.html#jurafskymartin2008" id="id11">(Jurafsky &amp; Martin, 2008)</a>的第7和第20章。</font></p>
+</div>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="726">8 练习</font></h2>
+<ol class="arabic simple"><li><font id="727">☼ 创建一个变量<tt class="doctest"><span class="pre">phrase</span></tt>包含一个词的列表。</font><font id="728">实验本章描述的操作，包括加法、乘法、索引、切片和排序。</font></li>
+<li><font id="729">☼ 使用语料库模块处理<tt class="doctest"><span class="pre">austen-persuasion.txt</span></tt>。</font><font id="730">这本书中有多少词符？</font><font id="731">多少词型？</font></li>
+<li><font id="732">☼ 使用布朗语料库阅读器<tt class="doctest"><span class="pre">nltk.corpus.brown.words()</span></tt>或网络文本语料库阅读器<tt class="doctest"><span class="pre">nltk.corpus.webtext.words()</span></tt>来访问两个不同文体的一些样例文本。</font></li>
+<li><font id="733">☼ 使用<tt class="doctest"><span class="pre">state_union</span></tt>语料库阅读器，访问<em>《国情咨文报告》</em>的文本。</font><font id="734">计数每个文档中出现的<tt class="doctest"><span class="pre">men</span></tt>、<tt class="doctest"><span class="pre">women</span></tt>和<tt class="doctest"><span class="pre">people</span></tt>。</font><font id="735">随时间的推移这些词的用法有什么变化？</font></li>
+<li><font id="736">☼ 考查一些名词的整体部分关系。</font><font id="737">请记住，有3 种整体部分关系，所以你需要使用：<tt class="doctest"><span class="pre">member_meronyms()</span></tt>, <tt class="doctest"><span class="pre">part_meronyms()</span></tt>, <tt class="doctest"><span class="pre">substance_meronyms()</span></tt>, <tt class="doctest"><span class="pre">member_holonyms()</span></tt>, <tt class="doctest"><span class="pre">part_holonyms()</span></tt>和<tt class="doctest"><span class="pre">substance_holonyms()</span></tt>。</font></li>
+<li><font id="738">☼ 在比较词表的讨论中，我们创建了一个对象叫做<tt class="doctest"><span class="pre">translate</span></tt>，通过它你可以使用德语和意大利语词汇查找对应的英语词汇。</font><font id="739">这种方法可能会出现什么问题？</font><font id="740">你能提出一个办法来避免这个问题吗？</font></li>
+<li><font id="741">☼ 根据Strunk 和White 的<em>《Elements of Style》</em>，词<span class="example">however</span>在句子开头使用是“in whatever way”或“to whatever extent”的意思，而没有“nevertheless”的意思。</font><font id="742">他们给出了正确用法的例子：<span class="example">However you advise him, he will probably do as he thinks best.</span></font><font id="743">(<tt class="doctest"><span class="pre">http://www.bartleby.com/141/strunk3.html</span></tt>) 使用词汇索引工具在我们一直在思考的各种文本中研究这个词的实际用法。</font><font id="744">也可以看<em>LanguageLog</em>发布在<tt class="doctest"><span class="pre">http://itre.cis.upenn.edu/~myl/languagelog/archives/001913.html</span></tt>上的“Fossilized prejudices abou‘t however’”。</font></li>
+<li><font id="745">◑ 在名字语料库上定义一个条件频率分布，显示哪个<em>首</em>字母在男性名字中比在女性名字中更常用（参见</font><font id="746"><a class="reference internal" href="./ch02.html#fig-cfd-gender">4.4</a>)。</font></li>
+<li><font id="747">◑ 挑选两个文本，研究它们之间在词汇、词汇丰富性、文体等方面的差异。</font><font id="748">你能找出几个在这两个文本中词意相当不同的词吗，例如在<em>《白鲸记》</em>与<em>《理智与情感》</em>中的<span class="example">monstrous</span>？</font></li>
+<li><font id="749">◑ 阅读BBC 新闻文章：<em>UK's Vicky Pollards 'left behind'</em> <tt class="doctest"><span class="pre">http://news.bbc.co.uk/1/hi/education/6173441.stm</span></tt>。</font><font id="750">文章给出了有关青少年语言的以下统计：“使用最多的20 个词，包括yeah, no, but 和like，占所有词的大约三分之一”。</font><font id="751">对于大量文本源来说，所有词标识符的三分之一有多少词类型？</font><font id="752">你从这个统计中得出什么结论？</font><font id="753">更多相关信息请阅读<tt class="doctest"><span class="pre">http://itre.cis.upenn.edu/~myl/languagelog/archives/003993.html</span></tt>上的<em>LanguageLog</em>。</font></li>
+<li><font id="754">◑ 调查模式分布表，寻找其他模式。</font><font id="755">试着用你自己对不同文体的印象理解来解释它们。</font><font id="756">你能找到其他封闭的词汇归类，展现不同文体的显著差异吗？</font></li>
+<li><font id="757">◑ CMU 发音词典包含某些词的多个发音。</font><font id="758">它包含多少种不同的词？</font><font id="759">具有多个可能的发音的词在这个词典中的比例是多少？</font></li>
+<li><font id="760">◑ 没有下位词的名词同义词集所占的百分比是多少？</font><font id="761">你可以使用<tt class="doctest"><span class="pre">wn.all_synsets(<span class="pysrc-string">'n'</span>)</span></tt>得到所有名词同义词集。</font></li>
+<li><font id="762">◑ 定义函数<tt class="doctest"><span class="pre">supergloss(s)</span></tt>，使用一个同义词集<tt class="doctest"><span class="pre">s</span></tt>作为它的参数，返回一个字符串，包含<tt class="doctest"><span class="pre">s</span></tt>的定义和<tt class="doctest"><span class="pre">s</span></tt>所有的上位词与下位词的定义的连接字符串。</font></li>
+<li><font id="763">◑ 写一个程序，找出所有在布朗语料库中出现至少3 次的词。</font></li>
+<li><font id="764">◑ 写一个程序，生成一个词汇多样性得分表（例如</font><font id="765">词符/词型的比例），如我们在<a class="reference external" href="./ch01.html#tab-brown-types">1.1</a>所看到的。</font><font id="766">包括布朗语料库文体的全集 (<tt class="doctest"><span class="pre">nltk.corpus.brown.categories()</span></tt>)。</font><font id="767">哪个文体词汇多样性最低（每个类型的标识符数最多）？</font><font id="768">这是你所期望的吗？</font></li>
+<li><font id="769">◑ 写一个函数，找出一个文本中最常出现的50个词，停用词除外。</font></li>
+<li><font id="770">◑ 写一个程序，输出一个文本中50 个最常见的双连词（相邻词对），忽略包含停用词的双连词。</font></li>
+<li><font id="771">◑ 写一个程序，按文体创建一个词频表，以<a class="reference internal" href="./ch02.html#sec-extracting-text-from-corpora">1</a>节给出的词频表为范例。</font><font id="772">选择你自己的词汇，并尝试找出那些在一个文体中很突出或很缺乏的词汇。</font><font id="773">讨论你的发现。</font></li>
+<li><font id="774">◑ 写一个函数<tt class="doctest"><span class="pre">word_freq()</span></tt>，用一个词和布朗语料库中的一个部分的名字作为参数，计算这部分语料中词的频率。</font></li>
+<li><font id="775">◑ 写一个程序，估算一个文本中的音节数，利用CMU发音词典。</font></li>
+<li><font id="776">◑ 定义一个函数<tt class="doctest"><span class="pre">hedge(text)</span></tt>，处理一个文本和产生一个新的版本在每三个词之间插入一个词<tt class="doctest"><span class="pre"><span class="pysrc-string">'like'</span></span></tt>。</font></li>
+<li><font id="786">★ <strong>齐夫定律</strong>：<em>f(w)</em>是一个自由文本中的词<em>w</em>的频率。</font><font id="787">假设一个文本中的所有词都按照它们的频率排名，频率最高的在最前面。</font><font id="788">齐夫定律指出一个词类型的频率与它的排名成反比（即</font><font id="789"><em>f</em> × <em>r = k</em>，<em>k</em>是某个常数）。</font><font id="790">例如：最常见的第50个词类型出现的频率应该是最常见的第150个词型出现频率的3倍。</font><ol class="loweralpha"><li><font id="777">写一个函数来处理一个大文本,使用<tt class="doctest"><span class="pre">pylab.plot</span></tt>画出相对于词的排名的词的频率。</font><font id="778">你认可齐夫定律吗？</font><font id="779">（提示：使用对数刻度会有帮助。）</font><font id="780">所绘的线的极端情况是怎样的？</font></li>
+<li><font id="781">随机生成文本，如使用<tt class="doctest"><span class="pre">random.choice(<span class="pysrc-string">"abcdefg "</span>)</span></tt>，注意要包括空格字符。</font><font id="782">你需要事先<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> random</span></tt>。</font><font id="783">使用字符串连接操作将字符累积成一个很长的字符串。</font><font id="784">然后为这个字符串分词，产生前面的齐夫图，比较这两个图。</font><font id="785">此时你怎么看齐夫定律？</font></li>
+</ol></li>
+<li><font id="800">★ 修改例<a class="reference internal" href="./ch02.html#code-random-text">2.2</a>的文本生成程序，进一步完成下列任务：</font><ol class="loweralpha"><li><font id="791">在一个列表<tt class="doctest"><span class="pre">words</span></tt>中存储<em>n</em>个最相似的词，使用<tt class="doctest"><span class="pre">random.choice()</span></tt>从列表中随机选取一个词。</font><font id="792">（你将需要事先<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> random</span></tt>。）</font></li>
+<li><font id="793">选择特定的文体，如布朗语料库中的一部分或者《创世纪》翻译或者古腾堡语料库中的文本或者一个网络文本。</font><font id="794">在此语料上训练一个模型，产生随机文本。</font><font id="795">你可能要实验不同的起始字。</font><font id="796">文本的可理解性如何？</font><font id="797">讨论这种方法产生随机文本的长处和短处。</font></li>
+<li><font id="798">现在使用两种不同文体训练你的系统，使用混合文体文本做实验。</font><font id="799">讨论你的观察结果。</font></li>
+</ol></li>
+<li><font id="801">★ 定义一个函数<tt class="doctest"><span class="pre">find_language()</span></tt>，用一个字符串作为其参数，返回包含这个字符串作为词汇的语言的列表。</font><font id="802">使用《世界人权宣言》<tt class="doctest"><span class="pre">udhr</span></tt>的语料，将你的搜索限制在Latin-1 编码的文件中。</font></li>
+<li><font id="803">★ 名词上位词层次的分枝因素是什么？</font><font id="804">也就是说，</font><font id="805">对于每一个具有下位词——上位词层次中的子女——的名词同义词集，它们平均有几个下位词？</font><font id="806">你可以使用<tt class="doctest"><span class="pre">wn.all_synsets(<span class="pysrc-string">'n'</span>)</span></tt>获得所有名词同义词集。</font></li>
+<li><font id="807">★ 一个词的多义性是它所有含义的个数。</font><font id="808">利用WordNet，使用<tt class="doctest"><span class="pre">len(wn.synsets(<span class="pysrc-string">'dog'</span>, <span class="pysrc-string">'n'</span>))</span></tt>我们可以判断名词<em>dog</em>有7 种含义。</font><font id="809">计算WordNet 中名词、动词、形容词和副词的平均多义性。</font></li>
+<li><font id="810">★使用预定义的相似性度量之一给下面的每个词对的相似性打分。</font><font id="811">按相似性减少的顺序排名。</font><font id="812">你的排名与这里给出的顺序有多接近？<a class="reference external" href="./bibliography.html#millercharles1998" id="id12">(Miller &amp; Charles, 1998)</a>实验得出的顺序： car-automobile, gem-jewel, journey-voyage, boy-lad, coast-shore, asylum-madhouse, magician-wizard, midday-noon, furnace-stove, food-fruit, bird-cock, bird-crane, tool-implement, brother-monk, lad-brother, crane-implement, journey-car, monk-oracle, cemetery-woodland, food-rooster, coast-hill, forest-graveyard, shore-woodland, monk-slave, coast-forest, lad-wizard, chord-smile, glass-magician, rooster-voyage, noon-string。</font></li>
+</ol>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="813">关于本文档...</font></p>
+<p><font id="814">针对NLTK 3.0 作出更新。</font><font id="815">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="816">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="817">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</body>
+</html>

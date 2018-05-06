@@ -1,0 +1,942 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+
+<link href="Styles/ebook.css" type="text/css" rel="stylesheet"/>
+<link href="Styles/style.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<div class="document" id="categorizing-and-tagging-words"><h1 class="title"><font id="1">5. </font><font id="2">分类和标注词汇</font></h1>
+<p><font id="3">早在小学你就学过名词、动词、形容词和副词之间的差异。</font><font id="4">这些“词类”不是闲置的文法家的发明，而是对许多语言处理任务都有用的分类。</font><font id="5">正如我们将看到的，这些分类源于对文本中词的分布的简单的分析。</font><font id="6">本章的目的是要回答下列问题：</font></p>
+<ol class="arabic simple"><li><font id="7">什么是词汇分类，在自然语言处理中它们是如何使用？</font></li>
+<li><font id="8">一个好的存储词汇和它们的分类的Python数据结构是什么？</font></li>
+<li><font id="9">我们如何自动标注文本中词汇的词类？</font></li>
+</ol>
+<p><font id="10">一路上，我们将介绍NLP的一些基本技术，包括序列标注、N-gram模型、回退和评估。</font><font id="11">这些技术在许多方面都很有用，标注为我们提供了一个表示它们的简单的上下文。</font><font id="12">我们还将看到，在典型的NLP处理流程中，标注为何是位于分词之后的第二个步骤。</font></p>
+<p><font id="13">将单词按它们的<span class="termdef">词性</span>分类并进行相应地标注的过程，称为<span class="termdef">词语性质标注</span>、<span class="termdef">词性标注</span>或简称<span class="termdef">标注</span>。</font><font id="14">词性也称为<span class="termdef">词类</span>或<span class="termdef">词汇类别</span>。</font><font id="15">用于特定任务的标记的集合被称为一个<span class="termdef">标记集</span>。</font><font id="16">我们在本章的重点是运用标记和自动标注文本。</font></p>
+<div class="section" id="using-a-tagger"><h2 class="sigil_not_in_toc"><font id="17">1 使用词性标注器</font></h2>
+<p><font id="18">一个词语性质标注器或者<span class="termdef">词性标注器</span>处理一个单词序列，为每个词附加一个词性标记（不要忘记<tt class="doctest"><span class="pre"><span class="pysrc-keyword">import</span> nltk</span></tt>）：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = word_tokenize(<span class="pysrc-string">"And now for something completely different"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.pos_tag(text)
+<span class="pysrc-output">[('And', 'CC'), ('now', 'RB'), ('for', 'IN'), ('something', 'NN'),</span>
+<span class="pysrc-output">('completely', 'RB'), ('different', 'JJ')]</span></pre>
+<p><font id="19">在这里我们看到<span class="example">and</span>是<tt class="doctest"><span class="pre">CC</span></tt>，并列连词；<span class="example">now</span>和<span class="example">completely</span>是<tt class="doctest"><span class="pre">RB</span></tt>，副词；<span class="example">for</span>是<tt class="doctest"><span class="pre">IN</span></tt>，介词；<span class="example">something</span>是<tt class="doctest"><span class="pre">NN</span></tt>，名词；<span class="example">different</span>是<tt class="doctest"><span class="pre">JJ</span></tt>，形容词。</font></p>
+<div class="note"><p class="first admonition-title"><font id="20">注意</font></p>
+<p class="last"><font id="21">NLTK为每个标记提供了文档，可以使用该标记来查询，如</font><font id="22"><tt class="doctest"><span class="pre">nltk.help.upenn_tagset(<span class="pysrc-string">'RB'</span>)</span></tt>，或者一个正则表达，如</font><font id="23"><tt class="doctest"><span class="pre">nltk.help.upenn_tagset(<span class="pysrc-string">'NN.*'</span>)</span></tt>。</font><font id="24">一些语料库有标记集文档的README文件，见<tt class="doctest"><span class="pre">nltk.corpus.???.readme()</span></tt>，用语料库的名称替换。</font></p>
+</div>
+<p><font id="25">让我们来看看另一个例子，这次包括一些同形同音异义词：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = word_tokenize(<span class="pysrc-string">"They refuse to permit us to obtain the refuse permit"</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.pos_tag(text)
+<span class="pysrc-output">[('They', 'PRP'), ('refuse', 'VBP'), ('to', 'TO'), ('permit', 'VB'), ('us', 'PRP'),</span>
+<span class="pysrc-output">('to', 'TO'), ('obtain', 'VB'), ('the', 'DT'), ('refuse', 'NN'), ('permit', 'NN')]</span></pre>
+<p><font id="26">请注意<span class="example">refuse</span>和<span class="example">permit</span>都以现在时动词（<tt class="doctest"><span class="pre">VBP</span></tt>）和名词（<tt class="doctest"><span class="pre">NN</span></tt>）形式出现。</font><font id="27">例如</font><font id="28"><span class="example">refUSE</span>是一个动词，意为“拒绝”，而<span class="example">REFuse</span>是一个名词，意为“垃圾”（即</font><font id="29">它们不是同音词）。</font><font id="30">因此，我们需要知道正在使用哪一个词以便能正确读出文本。</font><font id="31">（出于这个原因，文本转语音系统通常进行词性标注。）</font></p>
+<div class="note"><p class="first admonition-title"><font id="32">注意</font></p>
+<p class="last"><font id="33"><strong>轮到你来：</strong> 很多单词，如<span class="example">ski</span>和<span class="example">race</span>，可以用作名词或动词而发音没有区别。</font><font id="34">你能想出其他的吗？</font><font id="35">提示：想想一个常见的东西，尝试把词<span class="example">to</span>放到它前面，看它是否也是一个动词；或者想想一个动作，尝试把<span class="example">the</span>放在它前面，看它是否也是一个名词。</font><font id="36">现在用这个词的两种用途造句，在这句话上运行词性标注器。</font></p>
+</div>
+<p><font id="37">词汇类别如“名词”和词性标记如<tt class="doctest"><span class="pre">NN</span></tt>，看上去似乎有其用途，但在细节上将使许多读者感到晦涩。</font><font id="38">你可能想知道要引进这种额外的信息的理由是什么。</font><font id="39">很多这些类别源于对文本中单词分布的粗略分析。</font><font id="40">考虑下面的分析，涉及<span class="example">woman</span>（名词），<span class="example">bought</span>（动词），<span class="example">over</span>（介词）和<span class="example">the</span>（限定词）。</font><font id="41"><tt class="doctest"><span class="pre">text.similar()</span></tt>方法接收一个单词<span class="math">w</span>，找出所有上下文<span class="math">w</span><sub>1</sub><span class="math">w</span> <span class="math">w</span><sub>2</sub>，然后找出所有出现在相同上下文中的词<span class="math">w'</span>，即</font><font id="42"><span class="math">w</span><sub>1</sub><span class="math">w'</span><span class="math">w</span><sub>2</sub>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = nltk.Text(word.lower() <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> nltk.corpus.brown.words())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>text.similar(<span class="pysrc-string">'woman'</span>)
+<span class="pysrc-output">Building word-context index...</span>
+<span class="pysrc-output">man day time year car moment world family house boy child country job</span>
+<span class="pysrc-output">state girl place war way case question</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text.similar(<span class="pysrc-string">'bought'</span>)
+<span class="pysrc-output">made done put said found had seen given left heard been brought got</span>
+<span class="pysrc-output">set was called felt in that told</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text.similar(<span class="pysrc-string">'over'</span>)
+<span class="pysrc-output">in on to of and for with from at by that into as up out down through</span>
+<span class="pysrc-output">about all is</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>text.similar(<span class="pysrc-string">'the'</span>)
+<span class="pysrc-output">a his this their its her an that our any all one these my in your no</span>
+<span class="pysrc-output">some other and</span></pre>
+<p><font id="43">可以观察到，搜索<span class="example">woman</span>找到名词；搜索<span class="example">bought</span>找到的大部分是动词；搜索<span class="example">over</span>一般会找到介词；搜索<span class="example">the</span>找到几个限定词。</font><font id="44">一个标注器能够正确识别一个句子的上下文中的这些词的标记，例如</font><font id="45"><span class="example">The woman bought over $150,000 worth of clothes</span>。</font></p>
+<p><font id="46">一个标注器还可以为我们对未知词的认识建模，例如</font><font id="47">我们可以根据词根<span class="example">scrobble</span>猜测<span class="example">scrobbling</span>可能是一个动词，并有可能发生在<span class="example">he was scrobbling</span>这样的上下文中。</font></p>
+</div>
+<div class="section" id="tagged-corpora"><h2 class="sigil_not_in_toc"><font id="48">2 已经标注的语料库</font></h2>
+<div class="section" id="representing-tagged-tokens"><h2 class="sigil_not_in_toc"><font id="49">2.1 表示已经标注的词符</font></h2>
+<p><font id="50">按照NLTK的约定，一个已标注的词符使用一个由词符和标记组成的元组来表示。</font><font id="51">我们可以使用函数<tt class="doctest"><span class="pre">str2tuple()</span></tt>从表示一个已标注的词符的标准字符串创建一个这样的特殊元组：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tagged_token = nltk.tag.str2tuple(<span class="pysrc-string">'fly/NN'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tagged_token
+<span class="pysrc-output">('fly', 'NN')</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tagged_token[0]
+<span class="pysrc-output">'fly'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>tagged_token[1]
+<span class="pysrc-output">'NN'</span></pre>
+<p><font id="52">我们可以直接从一个字符串构造一个已标注的词符的列表。</font><font id="53">第一步是对字符串分词以便能访问单独的<tt class="doctest"><span class="pre">单词/标记</span></tt>字符串，然后将每一个转换成一个元组（使用<tt class="doctest"><span class="pre">str2tuple()</span></tt>）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = <span class="pysrc-string">'''</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">The/AT grand/JJ jury/NN commented/VBD on/IN a/AT number/NN of/IN</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">other/AP topics/NNS ,/, AMONG/IN them/PPO the/AT Atlanta/NP and/CC</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">Fulton/NP-tl County/NN-tl purchasing/VBG departments/NNS which/WDT it/PPS</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">said/VBD ``/`` ARE/BER well/QL operated/VBN and/CC follow/VB generally/RB</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">accepted/VBN practices/NNS which/WDT inure/VB to/IN the/AT best/JJT</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">interest/NN of/IN both/ABX governments/NNS ''/'' ./.</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">'''</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[nltk.tag.str2tuple(t) <span class="pysrc-keyword">for</span> t <span class="pysrc-keyword">in</span> sent.split()]
+<span class="pysrc-output">[('The', 'AT'), ('grand', 'JJ'), ('jury', 'NN'), ('commented', 'VBD'),</span>
+<span class="pysrc-output">('on', 'IN'), ('a', 'AT'), ('number', 'NN'), ... ('.', '.')]</span></pre>
+</div>
+<div class="section" id="reading-tagged-corpora"><h2 class="sigil_not_in_toc"><font id="54">2.2 读取已标注的语料库</font></h2>
+<p><font id="55">NLTK中包括的若干语料库<span class="termdef">已标注</span>了词性。</font><font id="56">下面是一个你用文本编辑器打开一个布朗语料库的文件就能看到的例子：</font></p>
+<font id="72"> <blockquote> The/at Fulton/np-tl County/nn-tl Grand/jj-tl Jury/nn-tl said/vbd Friday/nr an/at investigation/nn of/in Atlanta's/np$ recent/jj primary/nn election/nn produced/vbd <tt class="doctest"><span class="pre">/</span></tt> no/at evidence/nn ''/'' that/cs any/dti irregularities/nns took/vbd place/nn ./.</blockquote></font><p><font id="57">其他语料库使用各种格式存储词性标记。</font><font id="58">NLTK的语料库阅读器提供了一个统一的接口，使你不必理会这些不同的文件格式。</font><font id="59">与刚才提取并显示的上面的文件不同，布朗语料库的语料库阅读器按如下所示的方式表示数据。</font><font id="60">注意，词性标记已转换为大写的，自从布朗语料库发布以来这已成为标准的做法。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.brown.tagged_words()
+<span class="pysrc-output">[('The', 'AT'), ('Fulton', 'NP-TL'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.brown.tagged_words(tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-output">[('The', 'DET'), ('Fulton', 'NOUN'), ...]</span></pre>
+<p><font id="61">只要语料库包含已标注的文本，NLTK的语料库接口都将有一个<tt class="doctest"><span class="pre">tagged_words()</span></tt>方法。</font><font id="62">下面是一些例子，再次使用布朗语料库所示的输出格式：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.corpus.nps_chat.tagged_words())
+<span class="pysrc-output">[('now', 'RB'), ('im', 'PRP'), ('left', 'VBD'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.conll2000.tagged_words()
+<span class="pysrc-output">[('Confidence', 'NN'), ('in', 'IN'), ('the', 'DT'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.treebank.tagged_words()
+<span class="pysrc-output">[('Pierre', 'NNP'), ('Vinken', 'NNP'), (',', ','), ...]</span></pre>
+<p><font id="63">并非所有的语料库都采用同一组标记；看前面提到的标记集的帮助函数和<tt class="doctest"><span class="pre">readme()</span></tt>方法中的文档。</font><font id="64">最初，我们想避免这些标记集的复杂化，所以我们使用一个内置的到“通用标记集“的映射：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.brown.tagged_words(tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-output">[('The', 'DET'), ('Fulton', 'NOUN'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.treebank.tagged_words(tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-output">[('Pierre', 'NOUN'), ('Vinken', 'NOUN'), (',', '.'), ...]</span></pre>
+<p><font id="65">NLTK中还有其他几种语言的已标注语料库，包括中文，印地语，葡萄牙语，西班牙语，荷兰语和加泰罗尼亚语。</font><font id="66">这些通常含有非ASCII文本，当输出较大的结构如列表时，Python总是以十六进制显示这些。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.sinica_treebank.tagged_words()
+<span class="pysrc-output">[('ä', 'Neu'), ('åæ', 'Nad'), ('åç', 'Nba'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.indian.tagged_words()
+<span class="pysrc-output">[('মহিষের', 'NN'), ('সন্তান', 'NN'), (':', 'SYM'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.mac_morpho.tagged_words()
+<span class="pysrc-output">[('Jersei', 'N'), ('atinge', 'V'), ('m\xe9dia', 'N'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.conll2002.tagged_words()
+<span class="pysrc-output">[('Sao', 'NC'), ('Paulo', 'VMI'), ('(', 'Fpa'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.corpus.cess_cat.tagged_words()
+<span class="pysrc-output">[('El', 'da0ms0'), ('Tribunal_Suprem', 'np0000o'), ...]</span></pre>
+<p><font id="67">如果你的环境设置正确，有适合的编辑器和字体，你应该能够以人可读的方式显示单个字符串。</font><font id="68">例如，<a class="reference internal" href="./ch05.html#fig-tag-indian">2.1</a>显示的使用<tt class="doctest"><span class="pre">nltk.corpus.indian</span></tt>访问的数据。</font></p>
+<div class="figure" id="fig-tag-indian"><img alt="Images/tag-indian.png" src="Images/1c54b3124863d24d17b2edec4f1d47e5.jpg" style="width: 800.4px; height: 213.0px;"/><p class="caption"><font id="69"><span class="caption-label">图 2.1</span>：四种印度语言的词性标注数据：孟加拉语、印地语、马拉地语和泰卢固语</font></p>
+</div>
+<p><font id="70">如果语料库也被分割成句子，将有一个<tt class="doctest"><span class="pre">tagged_sents()</span></tt>方法将已标注的词划分成句子，而不是将它们表示成一个大列表。</font><font id="71">在我们开始开发自动标注器时，这将是有益的，因为它们在句子列表上被训练和测试，而不是词。</font></p>
+</div>
+<div class="section" id="a-universal-part-of-speech-tagset"><h2 class="sigil_not_in_toc"><font id="73">2.3 通用词性标记集</font></h2>
+<p><font id="74">已标注的语料库使用许多不同的标记集约定来标注词汇。</font><font id="75">为了帮助我们开始，我们将看一看一个简化的标记集（<a class="reference internal" href="./ch05.html#tab-universal-tagset">2.1</a>中所示）。</font></p>
+<p class="caption"><font id="76"><span class="caption-label">表 2.1</span>：</font></p>
+<p><font id="77">通用词性标记集</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_news_tagged = brown.tagged_words(categories=<span class="pysrc-string">'news'</span>, tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tag_fd = nltk.FreqDist(tag <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> brown_news_tagged)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tag_fd.most_common()
+<span class="pysrc-output">[('NOUN', 30640), ('VERB', 14399), ('ADP', 12355), ('.', 11928), ('DET', 11389),</span>
+<span class="pysrc-output"> ('ADJ', 6706), ('ADV', 3349), ('CONJ', 2717), ('PRON', 2535), ('PRT', 2264),</span>
+<span class="pysrc-output"> ('NUM', 2166), ('X', 106)]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="118">注意</font></p>
+<p class="last"><font id="119"><strong>轮到你来：</strong>使用<tt class="doctest"><span class="pre">tag_fd.plot(cumulative=True)</span></tt>为上面显示的频率分布绘图。</font><font id="120">标注为上述列表中的前五个标记的词的百分比是多少？</font></p>
+</div>
+<p><font id="121">我们可以使用这些标记做强大的搜索，结合一个图形化的词性索引工具<tt class="doctest"><span class="pre">nltk.app.concordance()</span></tt>。</font><font id="122">用它来寻找任一单词和词性标记的组合，如</font><font id="123"><tt class="doctest"><span class="pre">N N N N</span></tt>, <tt class="doctest"><span class="pre">hit/VD</span></tt>, <tt class="doctest"><span class="pre">hit/VN</span></tt>或者<tt class="doctest"><span class="pre">the ADJ man</span></tt>。</font></p>
+</div>
+<div class="section" id="nouns"><h2 class="sigil_not_in_toc"><font id="124">2.4 名词</font></h2>
+<p><font id="125">名词一般指的是人、地点、事情或概念，例如</font><font id="126">: <span class="example">woman, Scotland, book, intelligence</span>。</font><font id="127">名词可能出现在限定词和形容词之后，可以是动词的主语或宾语，如<a class="reference internal" href="./ch05.html#tab-syntax-nouns">2.2</a>所示。</font></p>
+<p class="caption"><font id="128"><span class="caption-label">表 2.2</span>：</font></p>
+<p><font id="129">一些名词的句法模式</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>word_tag_pairs = nltk.bigrams(brown_news_tagged)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>noun_preceders = [a[1] <span class="pysrc-keyword">for</span> (a, b) <span class="pysrc-keyword">in</span> word_tag_pairs <span class="pysrc-keyword">if</span> b[1] == <span class="pysrc-string">'NOUN'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fdist = nltk.FreqDist(noun_preceders)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[tag <span class="pysrc-keyword">for</span> (tag, _) <span class="pysrc-keyword">in</span> fdist.most_common()]
+<span class="pysrc-output">['NOUN', 'DET', 'ADJ', 'ADP', '.', 'VERB', 'CONJ', 'NUM', 'ADV', 'PRT', 'PRON', 'X']</span></pre>
+<p><font id="149">这证实了我们的断言，名词出现在限定词和形容词之后，包括数字形容词（数词，标注为<tt class="doctest"><span class="pre">NUM</span></tt>）。</font></p>
+</div>
+<div class="section" id="verbs"><h2 class="sigil_not_in_toc"><font id="150">2.5 动词</font></h2>
+<p><font id="151">动词是用来描述事件和行动的词，例如</font><font id="152"><a class="reference internal" href="./ch05.html#tab-syntax-verbs">2.3</a>中的<span class="example">fall</span>, <span class="example">eat</span>。</font><font id="153">在一个句子中，动词通常表示涉及一个或多个名词短语所指示物的关系。</font></p>
+<p class="caption"><font id="154"><span class="caption-label">表 2.3</span>：</font></p>
+<p><font id="155">一些动词的句法模式</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wsj = nltk.corpus.treebank.tagged_words(tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>word_tag_fd = nltk.FreqDist(wsj)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[wt[0] <span class="pysrc-keyword">for</span> (wt, _) <span class="pysrc-keyword">in</span> word_tag_fd.most_common() <span class="pysrc-keyword">if</span> wt[1] == <span class="pysrc-string">'VERB'</span>]
+<span class="pysrc-output">['is', 'said', 'are', 'was', 'be', 'has', 'have', 'will', 'says', 'would',</span>
+<span class="pysrc-output"> 'were', 'had', 'been', 'could', "'s", 'can', 'do', 'say', 'make', 'may',</span>
+<span class="pysrc-output"> 'did', 'rose', 'made', 'does', 'expected', 'buy', 'take', 'get', 'might',</span>
+<span class="pysrc-output"> 'sell', 'added', 'sold', 'help', 'including', 'should', 'reported', ...]</span></pre>
+<p><font id="167">请注意，频率分布中计算的项目是词-标记对。</font><font id="168">由于词汇和标记是成对的，我们可以把词作作为条件，标记作为事件，使用条件-事件对的链表初始化一个条件频率分布。</font><font id="169">这让我们看到了一个给定的词的标记的频率顺序列表：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd1 = nltk.ConditionalFreqDist(wsj)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd1[<span class="pysrc-string">'yield'</span>].most_common()
+<span class="pysrc-output">[('VERB', 28), ('NOUN', 20)]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd1[<span class="pysrc-string">'cut'</span>].most_common()
+<span class="pysrc-output">[('VERB', 25), ('NOUN', 3)]</span></pre>
+<p><font id="170">我们可以颠倒配对的顺序，这样标记作为条件，词汇作为事件。</font><font id="171">现在我们可以看到对于一个给定的标记可能的词。</font><font id="172">我们将用《华尔街日报 》的标记集而不是通用的标记集来这样做：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>wsj = nltk.corpus.treebank.tagged_words()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd2 = nltk.ConditionalFreqDist((tag, word) <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> wsj)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>list(cfd2[<span class="pysrc-string">'VBN'</span>])
+<span class="pysrc-output">['been', 'expected', 'made', 'compared', 'based', 'priced', 'used', 'sold',</span>
+<span class="pysrc-output">'named', 'designed', 'held', 'fined', 'taken', 'paid', 'traded', 'said', ...]</span></pre>
+<p><font id="173">要弄清<tt class="doctest"><span class="pre">VBD</span></tt>（过去式）和<tt class="doctest"><span class="pre">VBN</span></tt>（过去分词）之间的区别，让我们找到可以同是<tt class="doctest"><span class="pre">VBD</span></tt>和<tt class="doctest"><span class="pre">VBN</span></tt>的词汇，看看一些它们周围的文字：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> cfd1.conditions() <span class="pysrc-keyword">if</span> <span class="pysrc-string">'VBD'</span> <span class="pysrc-keyword">in</span> cfd1[w] <span class="pysrc-keyword">and</span> <span class="pysrc-string">'VBN'</span> <span class="pysrc-keyword">in</span> cfd1[w]]
+<span class="pysrc-output">['Asked', 'accelerated', 'accepted', 'accused', 'acquired', 'added', 'adopted', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>idx1 = wsj.index((<span class="pysrc-string">'kicked'</span>, <span class="pysrc-string">'VBD'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wsj[idx1-4:idx1+1]
+<span class="pysrc-output">[('While', 'IN'), ('program', 'NN'), ('trades', 'NNS'), ('swiftly', 'RB'),</span>
+<span class="pysrc-output"> ('kicked', 'VBD')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>idx2 = wsj.index((<span class="pysrc-string">'kicked'</span>, <span class="pysrc-string">'VBN'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>wsj[idx2-4:idx2+1]
+<span class="pysrc-output">[('head', 'NN'), ('of', 'IN'), ('state', 'NN'), ('has', 'VBZ'), ('kicked', 'VBN')]</span></pre>
+<p><font id="174">在这种情况下，我们可以看到过去分词<span class="example">kicked</span>前面是助动词<span class="example">have</span>的形式。</font><font id="175">这是普遍真实的吗？</font></p>
+<div class="note"><p class="first admonition-title"><font id="176">注意</font></p>
+<p class="last"><font id="177"><strong>轮到你来：</strong> 通过<tt class="doctest"><span class="pre">list(cfd2[<span class="pysrc-string">'VN'</span>])</span></tt>指定一个过去分词的列表，尝试收集所有直接在列表中项目前面的词-标记对。</font></p>
+</div>
+</div>
+<div class="section" id="adjectives-and-adverbs"><h2 class="sigil_not_in_toc"><font id="178">2.6 形容词和副词</font></h2>
+<p><font id="179">另外两个重要的词类是<span class="termdef">形容词</span>和<span class="termdef">副词</span>。</font><font id="180">形容词修饰名词，可以作为修饰语（如</font><font id="181"><span class="example">the large pizza</span>中的<span class="example">large</span>），或者谓语（如</font><font id="182"><span class="example">the pizza is large</span>）。</font><font id="183">英语形容词可以有内部结构（如</font><font id="184"><span class="example">the falling stocks</span>中的<span class="example">fall+ing</span>）。</font><font id="185">副词修饰动词，指定动词描述的事件的时间、方式、地点或方向（如</font><font id="186"><span class="example">the stocks fell quickly</span>中的<span class="example">quickly</span>）。</font><font id="187">副词也可以修饰的形容词（如</font><font id="188"><span class="example">Mary's teacher was really nice</span>中的<span class="example">really</span>）。</font></p>
+<p><font id="189">英语中还有几个封闭的词类，如介词，<span class="termdef">冠词</span>（也常称为<span class="termdef">限定词</span>）（如<span class="example">the</span>、<span class="example">a</span>），<span class="termdef">情态动词</span>（如<span class="example">should</span>、<span class="example">may</span>）和<span class="termdef">人称代词</span>（如<span class="example">she</span>、<span class="example">they</span>）。</font><font id="190">每个词典和语法对这些词的分类都不同。</font></p>
+<div class="note"><p class="first admonition-title"><font id="191">注意</font></p>
+<p class="last"><font id="192"><strong>轮到你来：</strong>如果你对这些词性中的一些不确定，使用<tt class="doctest"><span class="pre">nltk.app.concordance()</span></tt>学习它们，或看<em>Schoolhouse Rock!</em></font><font id="193">语法视频于YouTube，或者查询本章结束的进一步阅读一节。</font></p>
+</div>
+</div>
+<div class="section" id="unsimplified-tags"><h2 class="sigil_not_in_toc"><font id="194">2.7 未简化的标记</font></h2>
+<p><font id="195">让我们找出每个名词类型中最频繁的名词。</font><font id="196"><a class="reference internal" href="./ch05.html#code-findtags">2.2</a>中的程序找出所有以<tt class="doctest"><span class="pre">NN</span></tt>开始的标记，并为每个标记提供了几个示例单词。</font><font id="197">你会看到有许多<tt class="doctest"><span class="pre">NN</span></tt>的变种；最重要有<tt class="doctest"><span class="pre">$</span></tt>表示所有格名词，<tt class="doctest"><span class="pre">S</span></tt>表示复数名词（因为复数名词通常以<span class="example">s</span>结尾），以及<tt class="doctest"><span class="pre">P</span></tt>表示专有名词。</font><font id="198">此外，大多数的标记都有后缀修饰符：<tt class="doctest"><span class="pre">-NC</span></tt>表示引用，<tt class="doctest"><span class="pre">-HL</span></tt>表示标题中的词，<tt class="doctest"><span class="pre">-TL</span></tt>表示标题（布朗标记的特征）。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">findtags</span>(tag_prefix, tagged_text):
+    cfd = nltk.ConditionalFreqDist((tag, word) <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> tagged_text
+                                  <span class="pysrc-keyword">if</span> tag.startswith(tag_prefix))
+    return dict((tag, cfd[tag].most_common(5)) <span class="pysrc-keyword">for</span> tag <span class="pysrc-keyword">in</span> cfd.conditions())
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tagdict = findtags(<span class="pysrc-string">'NN'</span>, nltk.corpus.brown.tagged_words(categories=<span class="pysrc-string">'news'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tag <span class="pysrc-keyword">in</span> sorted(tagdict):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(tag, tagdict[tag])
+<span class="pysrc-more">...</span>
+NN [(<span class="pysrc-string">'year'</span>, 137), (<span class="pysrc-string">'time'</span>, 97), (<span class="pysrc-string">'state'</span>, 88), (<span class="pysrc-string">'week'</span>, 85), (<span class="pysrc-string">'man'</span>, 72)]
+NN$ [(<span class="pysrc-string">"year's"</span>, 13), (<span class="pysrc-string">"world's"</span>, 8), (<span class="pysrc-string">"state's"</span>, 7), (<span class="pysrc-string">"nation's"</span>, 6), (<span class="pysrc-string">"company's"</span>, 6)]
+NN$-HL [(<span class="pysrc-string">"Golf's"</span>, 1), (<span class="pysrc-string">"Navy's"</span>, 1)]
+NN$-TL [(<span class="pysrc-string">"President's"</span>, 11), (<span class="pysrc-string">"Army's"</span>, 3), (<span class="pysrc-string">"Gallery's"</span>, 3), (<span class="pysrc-string">"University's"</span>, 3), (<span class="pysrc-string">"League's"</span>, 3)]
+NN-HL [(<span class="pysrc-string">'sp.'</span>, 2), (<span class="pysrc-string">'problem'</span>, 2), (<span class="pysrc-string">'Question'</span>, 2), (<span class="pysrc-string">'business'</span>, 2), (<span class="pysrc-string">'Salary'</span>, 2)]
+NN-NC [(<span class="pysrc-string">'eva'</span>, 1), (<span class="pysrc-string">'aya'</span>, 1), (<span class="pysrc-string">'ova'</span>, 1)]
+NN-TL [(<span class="pysrc-string">'President'</span>, 88), (<span class="pysrc-string">'House'</span>, 68), (<span class="pysrc-string">'State'</span>, 59), (<span class="pysrc-string">'University'</span>, 42), (<span class="pysrc-string">'City'</span>, 41)]
+NN-TL-HL [(<span class="pysrc-string">'Fort'</span>, 2), (<span class="pysrc-string">'Dr.'</span>, 1), (<span class="pysrc-string">'Oak'</span>, 1), (<span class="pysrc-string">'Street'</span>, 1), (<span class="pysrc-string">'Basin'</span>, 1)]
+NNS [(<span class="pysrc-string">'years'</span>, 101), (<span class="pysrc-string">'members'</span>, 69), (<span class="pysrc-string">'people'</span>, 52), (<span class="pysrc-string">'sales'</span>, 51), (<span class="pysrc-string">'men'</span>, 46)]
+NNS$ [(<span class="pysrc-string">"children's"</span>, 7), (<span class="pysrc-string">"women's"</span>, 5), (<span class="pysrc-string">"janitors'"</span>, 3), (<span class="pysrc-string">"men's"</span>, 3), (<span class="pysrc-string">"taxpayers'"</span>, 2)]
+NNS$-HL [(<span class="pysrc-string">"Dealers'"</span>, 1), (<span class="pysrc-string">"Idols'"</span>, 1)]
+NNS$-TL [(<span class="pysrc-string">"Women's"</span>, 4), (<span class="pysrc-string">"States'"</span>, 3), (<span class="pysrc-string">"Giants'"</span>, 2), (<span class="pysrc-string">"Bros.'"</span>, 1), (<span class="pysrc-string">"Writers'"</span>, 1)]
+NNS-HL [(<span class="pysrc-string">'comments'</span>, 1), (<span class="pysrc-string">'Offenses'</span>, 1), (<span class="pysrc-string">'Sacrifices'</span>, 1), (<span class="pysrc-string">'funds'</span>, 1), (<span class="pysrc-string">'Results'</span>, 1)]
+NNS-TL [(<span class="pysrc-string">'States'</span>, 38), (<span class="pysrc-string">'Nations'</span>, 11), (<span class="pysrc-string">'Masters'</span>, 10), (<span class="pysrc-string">'Rules'</span>, 9), (<span class="pysrc-string">'Communists'</span>, 9)]
+NNS-TL-HL [(<span class="pysrc-string">'Nations'</span>, 1)]</pre>
+<p><font id="200">当我们开始在本章后续部分创建词性标注器时，我们将使用未简化的标记。</font></p>
+
+<div class="section" id="exploring-tagged-corpora"><h2 class="sigil_not_in_toc"><font id="201">2.8 探索已标注的语料库</font></h2>
+<p><font id="202">让我们简要地回过来探索语料库，我们在前面的章节中看到过，这次我们探索词性标记。</font></p>
+<p><font id="203">假设我们正在研究词<span class="example">often</span>，想看看它是如何在文本中使用的。</font><font id="204">我们可以试着看看跟在<span class="example">often</span>后面的词汇</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_learned_text = brown.words(categories=<span class="pysrc-string">'learned'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(set(b <span class="pysrc-keyword">for</span> (a, b) <span class="pysrc-keyword">in</span> nltk.bigrams(brown_learned_text) <span class="pysrc-keyword">if</span> a == <span class="pysrc-string">'often'</span>))
+<span class="pysrc-output">[',', '.', 'accomplished', 'analytically', 'appear', 'apt', 'associated', 'assuming',</span>
+<span class="pysrc-output">'became', 'become', 'been', 'began', 'call', 'called', 'carefully', 'chose', ...]</span></pre>
+<p><font id="205">然而，使用<tt class="doctest"><span class="pre">tagged_words()</span></tt>方法查看跟随词的词性标记可能更有指导性：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_lrnd_tagged = brown.tagged_words(categories=<span class="pysrc-string">'learned'</span>, tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tags = [b[1] <span class="pysrc-keyword">for</span> (a, b) <span class="pysrc-keyword">in</span> nltk.bigrams(brown_lrnd_tagged) <span class="pysrc-keyword">if</span> a[0] == <span class="pysrc-string">'often'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fd = nltk.FreqDist(tags)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>fd.tabulate()
+<span class="pysrc-output"> PRT  ADV  ADP    . VERB  ADJ</span>
+<span class="pysrc-output">   2    8    7    4   37    6</span></pre>
+<p><font id="206">请注意<span class="example">often</span>后面最高频率的词性是动词。</font><font id="207">名词从来没有在这个位置出现（在这个特别的语料中）。</font></p>
+<p><font id="208">接下来，让我们看一些较大范围的上下文，找出涉及特定标记和词序列的词（在这种情况下，<tt class="doctest"><span class="pre"><span class="pysrc-string">"&lt;Verb&gt; to &lt;Verb&gt;"</span></span></tt>）。</font><font id="209">在code-three-word-phrase中，我们考虑句子中的每个三词窗口<a class="reference internal" href="./ch05.html#three-word"><span id="ref-three-word"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>，检查它们是否符合我们的标准<a class="reference internal" href="./ch05.html#verb-to-verb"><span id="ref-verb-to-verb"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></span></a>。</font><font id="210">如果标记匹配，我们输出对应的词<a class="reference internal" href="./ch05.html#print-words"><span id="ref-print-words"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></span></a>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">process</span>(sentence):
+    <span class="pysrc-keyword">for</span> (w1,t1), (w2,t2), (w3,t3) <span class="pysrc-keyword">in</span> nltk.trigrams(sentence): <a href="./ch05.html#ref-three-word"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+        <span class="pysrc-keyword">if</span> (t1.startswith(<span class="pysrc-string">'V'</span>) <span class="pysrc-keyword">and</span> t2 == <span class="pysrc-string">'TO'</span> <span class="pysrc-keyword">and</span> t3.startswith(<span class="pysrc-string">'V'</span>)): <a href="./ch05.html#ref-verb-to-verb"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>
+            <span class="pysrc-keyword">print</span>(w1, w2, w3) <a href="./ch05.html#ref-print-words"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></a>
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> tagged_sent <span class="pysrc-keyword">in</span> brown.tagged_sents():
+<span class="pysrc-more">... </span>    process(tagged_sent)
+<span class="pysrc-more">...</span>
+combined to achieve
+continue to place
+serve to protect
+wanted to wait
+allowed to place
+expected to become
+<span class="pysrc-more">...</span></pre>
+<p><font id="212">最后，让我们看看与它们的标记关系高度模糊不清的词。</font><font id="213">了解为什么要标注这样的词是因为它们各自的上下文可以帮助我们弄清楚标记之间的区别。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_news_tagged = brown.tagged_words(categories=<span class="pysrc-string">'news'</span>, tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>data = nltk.ConditionalFreqDist((word.lower(), tag)
+<span class="pysrc-more">... </span>                                <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> brown_news_tagged)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> sorted(data.conditions()):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">if</span> len(data[word]) &gt; 3:
+<span class="pysrc-more">... </span>        tags = [tag <span class="pysrc-keyword">for</span> (tag, _) <span class="pysrc-keyword">in</span> data[word].most_common()]
+<span class="pysrc-more">... </span>        <span class="pysrc-keyword">print</span>(word, <span class="pysrc-string">' '</span>.join(tags))
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">best ADJ ADV NP V</span>
+<span class="pysrc-output">better ADJ ADV V DET</span>
+<span class="pysrc-output">close ADV ADJ V N</span>
+<span class="pysrc-output">cut V N VN VD</span>
+<span class="pysrc-output">even ADV DET ADJ V</span>
+<span class="pysrc-output">grant NP N V -</span>
+<span class="pysrc-output">hit V VD VN N</span>
+<span class="pysrc-output">lay ADJ V NP VD</span>
+<span class="pysrc-output">left VD ADJ N VN</span>
+<span class="pysrc-output">like CNJ V ADJ P -</span>
+<span class="pysrc-output">near P ADV ADJ DET</span>
+<span class="pysrc-output">open ADJ V N ADV</span>
+<span class="pysrc-output">past N ADJ DET P</span>
+<span class="pysrc-output">present ADJ ADV V N</span>
+<span class="pysrc-output">read V VN VD NP</span>
+<span class="pysrc-output">right ADJ N DET ADV</span>
+<span class="pysrc-output">second NUM ADV DET N</span>
+<span class="pysrc-output">set VN V VD N -</span>
+<span class="pysrc-output">that CNJ V WH DET</span></pre>
+<div class="note"><p class="first admonition-title"><font id="214">注意</font></p>
+<p class="last"><font id="215"><strong>轮到你来：</strong>打开词性索引工具<tt class="doctest"><span class="pre">nltk.app.concordance()</span></tt>并加载完整的布朗语料库（简化标记集）。</font><font id="216">现在挑选一些上面代码例子末尾处列出的词，看看词的标记如何与词的上下文相关。</font><font id="217">例如</font><font id="218">搜索<tt class="doctest"><span class="pre">near</span></tt>会看到所有混合在一起的形式，搜索<tt class="doctest"><span class="pre">near/ADJ</span></tt>会看到它作为形容词使用，<tt class="doctest"><span class="pre">near N</span></tt>会看到只是名词跟在后面的情况，等等。</font><font id="219">更多的例子，请修改附带的代码，以便它列出的词具有三个不同的标签。</font></p>
+</div>
+
+
+<div class="section" id="mapping-words-to-properties-using-python-dictionaries"><h2 class="sigil_not_in_toc"><font id="220">3 使用Python字典映射单词到其属性</font></h2>
+<p><font id="221">正如我们已经看到，<tt class="doctest"><span class="pre">(word, tag)</span></tt>形式的一个已标注词是词和词性标记的关联。</font><font id="222">一旦我们开始做词性标注，我们将会创建分配一个标记给一个词的程序，标记是在给定上下文中最可能的标记。</font><font id="223">我们可以认为这个过程是从词到标记的<span class="termdef">映射</span>。</font><font id="224">在Python中最自然的方式存储映射是使用所谓的<span class="termdef">字典</span>数据类型（在其他的编程语言又称为<span class="termdef">关联数组</span>或<span class="termdef">哈希数组</span>）。</font><font id="225">在本节中，我们来看看字典，看它如何能表示包括词性在内的各种不同的语言信息。</font></p>
+<div class="section" id="indexing-lists-vs-dictionaries"><h2 class="sigil_not_in_toc"><font id="226">3.1 索引列表VS字典</font></h2>
+<p><font id="227">我们已经看到，文本在Python中被视为一个词列表。</font><font id="228">链表的一个重要的属性是我们可以通过给出其索引来“看”特定项目，例如</font><font id="229"><tt class="doctest"><span class="pre">text1[100]</span></tt>。</font><font id="230">请注意我们如何指定一个数字，然后取回一个词。</font><font id="231">我们可以把链表看作一种简单的表格，如<a class="reference internal" href="./ch05.html#fig-maps01">3.1</a>所示。</font></p>
+<div class="figure" id="fig-maps01"><img alt="Images/maps01.png" src="Images/e9d9a0887996a6bac6c52bb0bfaf9fdf.jpg" style="width: 136.8px; height: 113.4px;"/><p class="caption"><font id="232"><span class="caption-label">图 3.1</span>：列表查找：一个整数索引帮助我们访问Python列表的内容。</font></p>
+</div>
+<p><font id="233">对比这种情况与频率分布（<a class="reference external" href="./ch01.html#sec-computing-with-language-simple-statistics">3</a>），在那里我们指定一个词然后取回一个数字，如</font><font id="234"><tt class="doctest"><span class="pre">fdist[<span class="pysrc-string">'monstrous'</span>]</span></tt>，它告诉我们一个给定的词在文本中出现的次数。</font><font id="235">用词查询对任何使用过字典的人都很熟悉。</font><font id="236"><a class="reference internal" href="./ch05.html#fig-maps02">3.2</a>展示一些更多的例子。</font></p>
+<div class="figure" id="fig-maps02"><img alt="Images/maps02.png" src="Images/484180fc6abc244116b30e57cb6c0cf5.jpg" style="width: 719.62px; height: 170.5px;"/><p class="caption"><font id="237"><span class="caption-label">图 3.2</span>：字典查询：我们使用一个关键字，如某人的名字、一个域名或一个英文单词，访问一个字典的条目；字典的其他名字有映射、哈希表、哈希和关联数组。</font></p>
+</div>
+<p><font id="238">在电话簿中，我们用<span class="emphasis">名字</span>查找一个条目得到一个数字。</font><font id="239">当我们在浏览器中输入一个域名，计算机查找它得到一个IP 地址。</font><font id="240">一个词频表允许我们查一个词找出它在一个文本集合中的频率。</font><font id="241">在所有这些情况中，我们都是从名称映射到数字，而不是其他如列表那样的方式。</font><font id="242">总之，我们希望能够在任意类型的信息之间映射。</font><font id="243"><a class="reference internal" href="./ch05.html#tab-linguistic-objects">3.1</a>列出了各种语言学对象以及它们的映射。</font></p>
+<p class="caption"><font id="244"><span class="caption-label">表 3.1</span>：</font></p>
+<p><font id="245">语言学对象从键到值的映射</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = {}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos
+<span class="pysrc-output">{}</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'colorless'</span>] = <span class="pysrc-string">'ADJ'</span> <a href="./ch05.html#ref-pos-colorless"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos
+<span class="pysrc-output">{'colorless': 'ADJ'}</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'ideas'</span>] = <span class="pysrc-string">'N'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>] = <span class="pysrc-string">'V'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'furiously'</span>] = <span class="pysrc-string">'ADV'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos <a href="./ch05.html#ref-pos-inspect"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>
+<span class="pysrc-output">{'furiously': 'ADV', 'ideas': 'N', 'colorless': 'ADJ', 'sleep': 'V'}</span></pre>
+<p><font id="273">所以，例如，<a class="reference internal" href="./ch05.html#pos-colorless"><span id="ref-pos-colorless"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>说的是<span class="example">colorless</span>的词性是形容词，或者更具体地说：在字典<tt class="doctest"><span class="pre">pos</span></tt>中，<span class="termdef">键</span><tt class="doctest"><span class="pre"><span class="pysrc-string">'colorless'</span></span></tt>被分配了<span class="termdef">值</span><tt class="doctest"><span class="pre"><span class="pysrc-string">'ADJ'</span></span></tt>。</font><font id="274">当我们检查<tt class="doctest"><span class="pre">pos</span></tt>的值时<a class="reference internal" href="./ch05.html#pos-inspect"><span id="ref-pos-inspect"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></span></a>，我们看到一个键-值对的集合。</font><font id="275">一旦我们以这样的方式填充了字典，就可以使用键来检索值：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'ideas'</span>]
+<span class="pysrc-output">'N'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'colorless'</span>]
+<span class="pysrc-output">'ADJ'</span></pre>
+<p><font id="276">当然，我们可能会无意中使用一个尚未分配值的键。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'green'</span>]
+<span class="pysrc-except">Traceback (most recent call last):</span>
+<span class="pysrc-except">  File "&lt;stdin&gt;", line 1, in ?</span>
+<span class="pysrc-except">KeyError: 'green'</span></pre>
+<p><font id="277">这就提出了一个重要的问题。</font><font id="278">与列表和字符串不同，我们可以用<tt class="doctest"><span class="pre">len()</span></tt>算出哪些整数是合法索引，我们如何算出一个字典的合法键？</font><font id="279">如果字典不是太大，我们可以简单地通过查看变量<tt class="doctest"><span class="pre">pos</span></tt>检查它的内容。</font><font id="280">正如在前面（<a class="reference internal" href="./ch05.html#pos-inspect"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>行）所看到，这为我们提供了键-值对。</font><font id="281">请注意它们的顺序与最初放入它们的顺序不同；这是因为字典不是序列而是映射（参见</font><font id="282"><a class="reference internal" href="./ch05.html#fig-maps02">3.2</a>），键没有固定地排序。</font></p>
+<p><font id="283">换种方式，要找到键，我们可以将字典转换成一个列表<a class="reference internal" href="./ch05.html#dict-to-list"><span id="ref-dict-to-list"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>——要么在期望列表的上下文中使用字典，如作为<tt class="doctest"><span class="pre">sorted()</span></tt>的参数<a class="reference internal" href="./ch05.html#dict-sorted"><span id="ref-dict-sorted"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></span></a>，要么在<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt> 循环中<a class="reference internal" href="./ch05.html#dict-for-loop"><span id="ref-dict-for-loop"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(pos) <a href="./ch05.html#ref-dict-to-list"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+<span class="pysrc-output">['ideas', 'furiously', 'colorless', 'sleep']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(pos) <a href="./ch05.html#ref-dict-sorted"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>
+<span class="pysrc-output">['colorless', 'furiously', 'ideas', 'sleep']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>[w <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> pos <span class="pysrc-keyword">if</span> w.endswith(<span class="pysrc-string">'s'</span>)] <a href="./ch05.html#ref-dict-for-loop"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></a>
+<span class="pysrc-output">['colorless', 'ideas']</span></pre>
+<div class="note"><p class="first admonition-title"><font id="284">注意</font></p>
+<p class="last"><font id="285">当你输入<tt class="doctest"><span class="pre">list(pos)</span></tt>时，你看到的可能会与这里显示的顺序不同。</font><font id="286">如果你想看到有序的键，只需要对它们进行排序。</font></p>
+</div>
+<p><font id="287">与使用一个<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环遍历字典中的所有键一样，我们可以使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环输出列表：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> sorted(pos):
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(word + <span class="pysrc-string">":"</span>, pos[word])
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">colorless: ADJ</span>
+<span class="pysrc-output">furiously: ADV</span>
+<span class="pysrc-output">sleep: V</span>
+<span class="pysrc-output">ideas: N</span></pre>
+<p><font id="288">最后，字典的方法<tt class="doctest"><span class="pre"><span class="pysrc-builtin">keys</span>()</span></tt>、<tt class="doctest"><span class="pre"><span class="pysrc-builtin">values</span>()</span></tt>和<tt class="doctest"><span class="pre"><span class="pysrc-builtin">items</span>()</span></tt>允许我们以单独的列表访问键、值以及键-值对。</font><font id="289">我们甚至可以排序元组<a class="reference internal" href="./ch05.html#sort-tuples"><span id="ref-sort-tuples"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>，按它们的第一个元素排序（如果第一个元素相同，就使用它们的第二个元素）。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(pos.keys())
+<span class="pysrc-output">['colorless', 'furiously', 'sleep', 'ideas']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(pos.values())
+<span class="pysrc-output">['ADJ', 'ADV', 'V', 'N']</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(pos.items())
+<span class="pysrc-output">[('colorless', 'ADJ'), ('furiously', 'ADV'), ('sleep', 'V'), ('ideas', 'N')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> key, val <span class="pysrc-keyword">in</span> sorted(pos.items()): <a href="./ch05.html#ref-sort-tuples"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+<span class="pysrc-more">... </span>    <span class="pysrc-keyword">print</span>(key + <span class="pysrc-string">":"</span>, val)
+<span class="pysrc-more">...</span>
+<span class="pysrc-output">colorless: ADJ</span>
+<span class="pysrc-output">furiously: ADV</span>
+<span class="pysrc-output">ideas: N</span>
+<span class="pysrc-output">sleep: V</span></pre>
+<p><font id="290">我们要确保当我们在字典中查找某词时，一个键只得到一个值。</font><font id="291">现在假设我们试图用字典来存储可同时作为动词和名词的词<span class="example">sleep</span>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>] = <span class="pysrc-string">'V'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>]
+<span class="pysrc-output">'V'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>] = <span class="pysrc-string">'N'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>]
+<span class="pysrc-output">'N'</span></pre>
+<p><font id="292">最初，<tt class="doctest"><span class="pre">pos[<span class="pysrc-string">'sleep'</span>]</span></tt>给的值是<tt class="doctest"><span class="pre"><span class="pysrc-string">'V'</span></span></tt>。</font><font id="293">但是，它立即被一个新值<tt class="doctest"><span class="pre"><span class="pysrc-string">'N'</span></span></tt>覆盖。</font><font id="294">换句话说，字典中只能有<tt class="doctest"><span class="pre"><span class="pysrc-string">'sleep'</span></span></tt>的一个条目。</font><font id="295">然而，有一个方法可以在该项目中存储多个值：我们使用一个列表值，例如</font><font id="296"><tt class="doctest"><span class="pre">pos[<span class="pysrc-string">'sleep'</span>] = [<span class="pysrc-string">'N'</span>, <span class="pysrc-string">'V'</span>]</span></tt>。</font><font id="297">事实上，这就是我们在<a class="reference external" href="./ch02.html#sec-lexical-resources">4</a>中看到的CMU发音字典，它为一个词存储多个发音。</font></p>
+</div>
+<div class="section" id="defining-dictionaries"><h2 class="sigil_not_in_toc"><font id="298">3.3 定义字典</font></h2>
+<p><font id="299">我们可以使用键-值对格式创建字典。</font><font id="300">有两种方式做这个，我们通常会使用第一个：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = {<span class="pysrc-string">'colorless'</span>: <span class="pysrc-string">'ADJ'</span>, <span class="pysrc-string">'ideas'</span>: <span class="pysrc-string">'N'</span>, <span class="pysrc-string">'sleep'</span>: <span class="pysrc-string">'V'</span>, <span class="pysrc-string">'furiously'</span>: <span class="pysrc-string">'ADV'</span>}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = dict(colorless=<span class="pysrc-string">'ADJ'</span>, ideas=<span class="pysrc-string">'N'</span>, sleep=<span class="pysrc-string">'V'</span>, furiously=<span class="pysrc-string">'ADV'</span>)</pre>
+<p><font id="301">请注意，字典的键必须是不可改变的类型，如字符串和元组。</font><font id="302">如果我们尝试使用可变键定义字典会得到一个<tt class="doctest"><span class="pre">TypeError</span></tt>：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = {[<span class="pysrc-string">'ideas'</span>, <span class="pysrc-string">'blogs'</span>, <span class="pysrc-string">'adventures'</span>]: <span class="pysrc-string">'N'</span>}
+<span class="pysrc-except">Traceback (most recent call last):</span>
+<span class="pysrc-except">  File "&lt;stdin&gt;", line 1, in &lt;module&gt;</span>
+<span class="pysrc-except">TypeError: list objects are unhashable</span></pre>
+</div>
+<div class="section" id="default-dictionaries"><h2 class="sigil_not_in_toc"><font id="303">3.4 默认字典</font></h2>
+<p><font id="304">如果我们试图访问一个不在字典中的键，会得到一个错误。</font><font id="305">然而，如果一个字典能为这个新键自动创建一个条目并给它一个默认值，如0或者一个空链表，将是有用的。</font><font id="306">由于这个原因，可以使用一种特殊的称为<tt class="doctest"><span class="pre">defaultdict</span></tt>的字典。</font><font id="307">为了使用它，我们必须提供一个参数，用来创建默认值，如</font><font id="308"><tt class="doctest"><span class="pre">int</span></tt>, <tt class="doctest"><span class="pre">float</span></tt>, <tt class="doctest"><span class="pre">str</span></tt>, <tt class="doctest"><span class="pre">list</span></tt>, <tt class="doctest"><span class="pre">dict</span></tt>, <tt class="doctest"><span class="pre">tuple</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> defaultdict
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>frequency = defaultdict(int)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>frequency[<span class="pysrc-string">'colorless'</span>] = 4
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>frequency[<span class="pysrc-string">'ideas'</span>]
+<span class="pysrc-output">0</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = defaultdict(list)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'sleep'</span>] = [<span class="pysrc-string">'NOUN'</span>, <span class="pysrc-string">'VERB'</span>]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'ideas'</span>]
+<span class="pysrc-output">[]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="309">注意</font></p>
+<p class="last"><font id="310">这些默认值实际上是将其他对象转换为指定类型的函数（例如</font><font id="311"><tt class="doctest"><span class="pre">int(<span class="pysrc-string">"2"</span>)</span></tt>, <tt class="doctest"><span class="pre">list(<span class="pysrc-string">"2"</span>)</span></tt>）。</font><font id="312">当它们不带参数被调用时——<tt class="doctest"><span class="pre">int()</span></tt>, <tt class="doctest"><span class="pre">list()</span></tt>——它们分别返回<tt class="doctest"><span class="pre">0</span></tt>和<tt class="doctest"><span class="pre">[]</span></tt> 。</font></p>
+</div>
+<p><font id="313">前面的例子中指定字典项的默认值为一个特定的数据类型的默认值。</font><font id="314">然而，也可以指定任何我们喜欢的默认值，只要提供可以无参数的被调用产生所需值的函数的名子。</font><font id="315">让我们回到我们的词性的例子，创建一个任一条目的默认值是<tt class="doctest"><span class="pre"><span class="pysrc-string">'N'</span></span></tt>的字典<a class="reference internal" href="./ch05.html#default-noun"><span id="ref-default-noun"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>。</font><font id="316">当我们访问一个不存在的条目时<a class="reference internal" href="./ch05.html#non-existent"><span id="ref-non-existent"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></span></a>，它会自动添加到字典<a class="reference internal" href="./ch05.html#automatically-added"><span id="ref-automatically-added"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></span></a>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = defaultdict(<span class="pysrc-keyword">lambda</span>: <span class="pysrc-string">'NOUN'</span>) <a href="./ch05.html#ref-default-noun"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'colorless'</span>] = <span class="pysrc-string">'ADJ'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[<span class="pysrc-string">'blog'</span>] <a href="./ch05.html#ref-non-existent"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>
+<span class="pysrc-output">'NOUN'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>list(pos.items())
+<span class="pysrc-output">[('blog', 'NOUN'), ('colorless', 'ADJ')] # [_automatically-added]</span></pre>
+<div class="note"><p class="first admonition-title"><font id="317">注意</font></p>
+<p><font id="318">上面的例子使用一个<span class="emphasis">lambda</span>表达式，在<a class="reference external" href="./ch04.html#sec-functions">4.4</a>介绍过。</font><font id="319">这个lambda表达式没有指定参数，所以我们用不带参数的括号调用它。</font><font id="320">因此，下面的<tt class="doctest"><span class="pre">f</span></tt>和<tt class="doctest"><span class="pre">g</span></tt>的定义是等价的：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>f = <span class="pysrc-keyword">lambda</span>: <span class="pysrc-string">'NOUN'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>f()
+<span class="pysrc-output">'NOUN'</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">def</span> <span class="pysrc-defname">g</span>():
+<span class="pysrc-more">... </span>    return <span class="pysrc-string">'NOUN'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>g()
+<span class="pysrc-output">'NOUN'</span></pre>
+</div>
+<p><font id="321">让我们来看看默认字典如何被应用在较大规模的语言处理任务中。</font><font id="322">许多语言处理任务——包括标注——费很大力气来正确处理文本中只出现过一次的词。</font><font id="323">如果有一个固定的词汇和没有新词会出现的保证，它们会有更好的表现。</font><font id="324">在一个默认字典的帮助下，我们可以预处理一个文本，替换低频词汇为一个特殊的“超出词汇表”词符<tt class="doctest"><span class="pre">UNK</span></tt>。</font><font id="325">（你能不看下面的想出如何做吗？）</font></p>
+<p><font id="326">我们需要创建一个默认字典，映射每个词为它们的替换词。</font><font id="327">最频繁的<span class="math">n</span>个词将被映射到它们自己。</font><font id="328">其他的被映射到<tt class="doctest"><span class="pre">UNK</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>alice = nltk.corpus.gutenberg.words(<span class="pysrc-string">'carroll-alice.txt'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>vocab = nltk.FreqDist(alice)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>v1000 = [word <span class="pysrc-keyword">for</span> (word, _) <span class="pysrc-keyword">in</span> vocab.most_common(1000)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>mapping = defaultdict(<span class="pysrc-keyword">lambda</span>: <span class="pysrc-string">'UNK'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> v <span class="pysrc-keyword">in</span> v1000:
+<span class="pysrc-more">... </span>    mapping[v] = v
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>alice2 = [mapping[v] <span class="pysrc-keyword">for</span> v <span class="pysrc-keyword">in</span> alice]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>alice2[:100]
+<span class="pysrc-output">['UNK', 'Alice', "'", 's', 'UNK', 'in', 'UNK', 'by', 'UNK', 'UNK', 'UNK',</span>
+<span class="pysrc-output">'UNK', 'CHAPTER', 'I', '.', 'UNK', 'the', 'Rabbit', '-', 'UNK', 'Alice',</span>
+<span class="pysrc-output">'was', 'beginning', 'to', 'get', 'very', 'tired', 'of', 'sitting', 'by',</span>
+<span class="pysrc-output">'her', 'sister', 'on', 'the', 'UNK', ',', 'and', 'of', 'having', 'nothing',</span>
+<span class="pysrc-output">'to', 'do', ':', 'once', 'or', 'twice', 'she', 'had', 'UNK', 'into', 'the',</span>
+<span class="pysrc-output">'book', 'her', 'sister', 'was', 'UNK', ',', 'but', 'it', 'had', 'no',</span>
+<span class="pysrc-output">'pictures', 'or', 'UNK', 'in', 'it', ',', "'", 'and', 'what', 'is', 'the',</span>
+<span class="pysrc-output">'use', 'of', 'a', 'book', ",'", 'thought', 'Alice', "'", 'without',</span>
+<span class="pysrc-output">'pictures', 'or', 'conversation', "?'" ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>len(set(alice2))
+<span class="pysrc-output">1001</span></pre>
+</div>
+<div class="section" id="incrementally-updating-a-dictionary"><h2 class="sigil_not_in_toc"><font id="329">3.5 递增地更新字典</font></h2>
+<p><font id="330">我们可以使用字典计数出现的次数，模拟<a class="reference external" href="./ch01.html#fig-tally">fig-tally</a>所示的计数词汇的方法。</font><font id="331">首先初始化一个空的<tt class="doctest"><span class="pre">defaultdict</span></tt>，然后处理文本中每个词性标记。</font><font id="332">如果标记以前没有见过，就默认计数为零。</font><font id="333">每次我们遇到一个标记，就使用<tt class="doctest"><span class="pre">+=</span></tt>运算符递增它的计数。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> collections <span class="pysrc-keyword">import</span> defaultdict
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>counts = defaultdict(int)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> brown.tagged_words(categories=<span class="pysrc-string">'news'</span>, tagset=<span class="pysrc-string">'universal'</span>):
+<span class="pysrc-more">... </span>    counts[tag] += 1
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>counts[<span class="pysrc-string">'NOUN'</span>]
+30640
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(counts)
+[<span class="pysrc-string">'ADJ'</span>, <span class="pysrc-string">'PRT'</span>, <span class="pysrc-string">'ADV'</span>, <span class="pysrc-string">'X'</span>, <span class="pysrc-string">'CONJ'</span>, <span class="pysrc-string">'PRON'</span>, <span class="pysrc-string">'VERB'</span>, <span class="pysrc-string">'.'</span>, <span class="pysrc-string">'NUM'</span>, <span class="pysrc-string">'NOUN'</span>, <span class="pysrc-string">'ADP'</span>, <span class="pysrc-string">'DET'</span>]
+
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> operator <span class="pysrc-keyword">import</span> itemgetter
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sorted(counts.items(), key=itemgetter(1), reverse=True)
+[(<span class="pysrc-string">'NOUN'</span>, 30640), (<span class="pysrc-string">'VERB'</span>, 14399), (<span class="pysrc-string">'ADP'</span>, 12355), (<span class="pysrc-string">'.'</span>, 11928), ...]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[t <span class="pysrc-keyword">for</span> t, c <span class="pysrc-keyword">in</span> sorted(counts.items(), key=itemgetter(1), reverse=True)]
+[<span class="pysrc-string">'NOUN'</span>, <span class="pysrc-string">'VERB'</span>, <span class="pysrc-string">'ADP'</span>, <span class="pysrc-string">'.'</span>, <span class="pysrc-string">'DET'</span>, <span class="pysrc-string">'ADJ'</span>, <span class="pysrc-string">'ADV'</span>, <span class="pysrc-string">'CONJ'</span>, <span class="pysrc-string">'PRON'</span>, <span class="pysrc-string">'PRT'</span>, <span class="pysrc-string">'NUM'</span>, <span class="pysrc-string">'X'</span>]</pre>
+<p><font id="335"><a class="reference internal" href="./ch05.html#code-dictionary">3.3</a>中的列表演示了一个重要的按值排序一个字典的习惯用法，来按频率递减顺序显示词汇。</font><font id="336"><tt class="doctest"><span class="pre">sorted()</span></tt>的第一个参数是要排序的项目，它是由一个词性标记和一个频率组成的元组的列表。</font><font id="337">第二个参数使用函数<tt class="doctest"><span class="pre">itemgetter()</span></tt>指定排序的键。</font><font id="338">在一般情况下，<tt class="doctest"><span class="pre">itemgetter(n)</span></tt>返回一个函数，这个函数可以在一些其他序列对象上被调用获得这个序列的第<span class="math">n</span>个元素，例如</font><font id="339">：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pair = (<span class="pysrc-string">'NP'</span>, 8336)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pair[1]
+<span class="pysrc-output">8336</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>itemgetter(1)(pair)
+<span class="pysrc-output">8336</span></pre>
+<p><font id="340"><tt class="doctest"><span class="pre">sorted()</span></tt>的最后一个参数指定项目是否应被按相反的顺序返回，即</font><font id="341">频率值递减。</font></p>
+<p><font id="342">在<a class="reference internal" href="./ch05.html#code-dictionary">3.3</a>的开头还有第二个有用的习惯用法，那里我们初始化一个<tt class="doctest"><span class="pre">defaultdict</span></tt>，然后使用<tt class="doctest"><span class="pre"><span class="pysrc-keyword">for</span></span></tt>循环来更新其值。</font><font id="343">下面是一个示意版本：</font></p>
+<div class="line-block"><div class="line"><font id="344"><tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt; </span>my_dictionary = defaultdict(</span></tt><em>function to create default value</em><tt class="doctest"><span class="pre">)</span></tt></font></div>
+<div class="line"><font id="345"><tt class="doctest"><span class="pre"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span></span></tt> <em>item</em> <tt class="doctest"><span class="pre"><span class="pysrc-keyword">in</span></span></tt> <em>sequence</em><tt class="doctest"><span class="pre">:</span></tt></font></div>
+<div class="line"><font id="346"><tt class="doctest"><span class="pre"><span class="pysrc-more">... </span> my_dictionary[</span></tt><em>item_key</em><tt class="doctest"><span class="pre">]</span></tt> <em>is updated with information about item</em></font></div>
+</div>
+<p><font id="347">下面是这种模式的另一个示例，我们按它们最后两个字母索引词汇：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>last_letters = defaultdict(list)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>words = nltk.corpus.words.words(<span class="pysrc-string">'en'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> words:
+<span class="pysrc-more">... </span>    key = word[-2:]
+<span class="pysrc-more">... </span>    last_letters[key].append(word)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>last_letters[<span class="pysrc-string">'ly'</span>]
+<span class="pysrc-output">['abactinally', 'abandonedly', 'abasedly', 'abashedly', 'abashlessly', 'abbreviately',</span>
+<span class="pysrc-output">'abdominally', 'abhorrently', 'abidingly', 'abiogenetically', 'abiologically', ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>last_letters[<span class="pysrc-string">'zy'</span>]
+<span class="pysrc-output">['blazy', 'bleezy', 'blowzy', 'boozy', 'breezy', 'bronzy', 'buzzy', 'Chazy', ...]</span></pre>
+<p><font id="348">下面的例子使用相同的模式创建一个颠倒顺序的词字典。</font><font id="349">（你可能会试验第3行来弄清楚为什么这个程序能运行。）</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>anagrams = defaultdict(list)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> words:
+<span class="pysrc-more">... </span>    key = <span class="pysrc-string">''</span>.join(sorted(word))
+<span class="pysrc-more">... </span>    anagrams[key].append(word)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>anagrams[<span class="pysrc-string">'aeilnrt'</span>]
+<span class="pysrc-output">['entrail', 'latrine', 'ratline', 'reliant', 'retinal', 'trenail']</span></pre>
+<p><font id="350">由于积累这样的词是如此常用的任务，NLTK提供一个创建<tt class="doctest"><span class="pre">defaultdict(list)</span></tt>更方便的方式，形式为<tt class="doctest"><span class="pre">nltk.Index()</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>anagrams = nltk.Index((<span class="pysrc-string">''</span>.join(sorted(w)), w) <span class="pysrc-keyword">for</span> w <span class="pysrc-keyword">in</span> words)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>anagrams[<span class="pysrc-string">'aeilnrt'</span>]
+<span class="pysrc-output">['entrail', 'latrine', 'ratline', 'reliant', 'retinal', 'trenail']</span></pre>
+<div class="note"><p class="first admonition-title"><font id="351">注意</font></p>
+<p class="last"><font id="352"><tt class="doctest"><span class="pre">nltk.Index</span></tt>是一个支持额外初始化的<tt class="doctest"><span class="pre">defaultdict(list)</span></tt>。</font><font id="353">类似地，<tt class="doctest"><span class="pre">nltk.FreqDist</span></tt>本质上是一个额外支持初始化的<tt class="doctest"><span class="pre">defaultdict(int)</span></tt>（附带排序和绘图方法）。</font></p>
+</div>
+
+<div class="section" id="complex-keys-and-values"><h2 class="sigil_not_in_toc"><font id="354">3.6 复杂的键和值</font></h2>
+<p><font id="355">我们可以使用具有复杂的键和值的默认字典。</font><font id="356">让我们研究一个词可能的标记的范围，给定词本身和它前一个词的标记。</font><font id="357">我们将看到这些信息如何被一个词性标注器使用。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = defaultdict(<span class="pysrc-keyword">lambda</span>: defaultdict(int))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_news_tagged = brown.tagged_words(categories=<span class="pysrc-string">'news'</span>, tagset=<span class="pysrc-string">'universal'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> ((w1, t1), (w2, t2)) <span class="pysrc-keyword">in</span> nltk.bigrams(brown_news_tagged): <a href="./ch05.html#ref-processing-pairs"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></a>
+<span class="pysrc-more">... </span>    pos[(t1, w2)][t2] += 1 <a href="./ch05.html#ref-tag-word-update"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></a>
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos[(<span class="pysrc-string">'DET'</span>, <span class="pysrc-string">'right'</span>)] <a href="./ch05.html#ref-compound-key"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></a>
+<span class="pysrc-output">defaultdict(&lt;class 'int'&gt;, {'ADJ': 11, 'NOUN': 5})</span></pre>
+<p><font id="358">这个例子使用一个字典，它的条目的默认值也是一个字典（其默认值是<tt class="doctest"><span class="pre">int()</span></tt>，即</font><font id="359">0）。</font><font id="360">请注意我们如何遍历已标注语料库的双连词，每次遍历处理一个词-标记对<a class="reference internal" href="./ch05.html#processing-pairs"><span id="ref-processing-pairs"><img alt="[1]" class="callout" src="Images/7a979f968bd33428b02cde62eaf2b615.jpg"/></span></a>。</font><font id="361">每次通过循环时，我们更新字典<tt class="doctest"><span class="pre">pos</span></tt>中的条目<tt class="doctest"><span class="pre">(t1, w2)</span></tt>，一个标记和它<em>后面</em>的词<a class="reference internal" href="./ch05.html#tag-word-update"><span id="ref-tag-word-update"><img alt="[2]" class="callout" src="Images/6ac827d2d00b6ebf8bbc704f430af896.jpg"/></span></a>。</font><font id="362">当我们在<tt class="doctest"><span class="pre">pos</span></tt>中查找一个项目时，我们必须指定一个复合键<a class="reference internal" href="./ch05.html#compound-key"><span id="ref-compound-key"><img alt="[3]" class="callout" src="Images/934b688727805b37f2404f7497c52027.jpg"/></span></a>，然后得到一个字典对象。</font><font id="363">一个词性标注器可以使用这些信息来决定词<span class="example">right</span>，前面是一个限定词时，应标注为<tt class="doctest"><span class="pre">ADJ</span></tt>。</font></p>
+</div>
+<div class="section" id="inverting-a-dictionary"><h2 class="sigil_not_in_toc"><font id="364">3.7 反转字典</font></h2>
+<p><font id="365">字典支持高效查找，只要你想获得任意键的值。</font><font id="366">如果<tt class="doctest"><span class="pre">d</span></tt>是一个字典，<tt class="doctest"><span class="pre">k</span></tt>是一个键，输入<tt class="doctest"><span class="pre">d[k]</span></tt>，就立即获得值。</font><font id="367">给定一个值查找对应的键要慢一些和麻烦一些：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>counts = defaultdict(int)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> nltk.corpus.gutenberg.words(<span class="pysrc-string">'milton-paradise.txt'</span>):
+<span class="pysrc-more">... </span>    counts[word] += 1
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>[key <span class="pysrc-keyword">for</span> (key, value) <span class="pysrc-keyword">in</span> counts.items() <span class="pysrc-keyword">if</span> value == 32]
+<span class="pysrc-output">['brought', 'Him', 'virtue', 'Against', 'There', 'thine', 'King', 'mortal',</span>
+<span class="pysrc-output">'every', 'been']</span></pre>
+<p><font id="368">如果我们希望经常做这样的一种“反向查找”，建立一个映射值到键的字典是有用的。</font><font id="369">在没有两个键具有相同的值情况，这是一个容易的事。</font><font id="370">只要得到字典中的所有键-值对，并创建一个新的值-键对字典。</font><font id="371">下一个例子演示了用键-值对初始化字典<tt class="doctest"><span class="pre">pos</span></tt>的另一种方式。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos = {<span class="pysrc-string">'colorless'</span>: <span class="pysrc-string">'ADJ'</span>, <span class="pysrc-string">'ideas'</span>: <span class="pysrc-string">'N'</span>, <span class="pysrc-string">'sleep'</span>: <span class="pysrc-string">'V'</span>, <span class="pysrc-string">'furiously'</span>: <span class="pysrc-string">'ADV'</span>}
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2 = dict((value, key) <span class="pysrc-keyword">for</span> (key, value) <span class="pysrc-keyword">in</span> pos.items())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2[<span class="pysrc-string">'N'</span>]
+<span class="pysrc-output">'ideas'</span></pre>
+<p><font id="372">首先让我们将我们的词性字典做的更实用些，使用字典的<tt class="doctest"><span class="pre"><span class="pysrc-builtin">update</span>()</span></tt>方法加入再一些词到<tt class="doctest"><span class="pre">pos</span></tt>中，创建多个键具有相同的值的情况。</font><font id="373">这样一来，刚才看到的反向查找技术就将不再起作用（为什么不？）</font><font id="374">作为替代，我们不得不使用<tt class="doctest"><span class="pre">append()</span></tt>积累词和每个词性，如下所示：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos.update({<span class="pysrc-string">'cats'</span>: <span class="pysrc-string">'N'</span>, <span class="pysrc-string">'scratch'</span>: <span class="pysrc-string">'V'</span>, <span class="pysrc-string">'peacefully'</span>: <span class="pysrc-string">'ADV'</span>, <span class="pysrc-string">'old'</span>: <span class="pysrc-string">'ADJ'</span>})
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2 = defaultdict(list)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">for</span> key, value <span class="pysrc-keyword">in</span> pos.items():
+<span class="pysrc-more">... </span>    pos2[value].append(key)
+<span class="pysrc-more">...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2[<span class="pysrc-string">'ADV'</span>]
+<span class="pysrc-output">['peacefully', 'furiously']</span></pre>
+<p><font id="375">现在，我们已经反转字典<tt class="doctest"><span class="pre">pos</span></tt>，可以查任意词性找到所有具有此词性的词。</font><font id="376">可以使用NLTK中的索引支持更容易的做同样的事，如下所示：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2 = nltk.Index((value, key) <span class="pysrc-keyword">for</span> (key, value) <span class="pysrc-keyword">in</span> pos.items())
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>pos2[<span class="pysrc-string">'ADV'</span>]
+<span class="pysrc-output">['peacefully', 'furiously']</span></pre>
+<p><font id="377"><a class="reference internal" href="./ch05.html#tab-dict">3.2</a>给出Python字典方法的总结。</font></p>
+<p class="caption"><font id="378"><span class="caption-label">表 3.2</span>：</font></p>
+<p><font id="379">Python字典方法：常用的方法与字典相关习惯用法的总结。</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_tagged_sents = brown.tagged_sents(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_sents = brown.sents(categories=<span class="pysrc-string">'news'</span>)</pre>
+<div class="section" id="the-default-tagger"><h2 class="sigil_not_in_toc"><font id="409">4.1 默认标注器</font></h2>
+<p><font id="410">最简单的标注器是为每个词符分配同样的标记。</font><font id="411">这似乎是一个相当平庸的一步，但它建立了标注器性能的一个重要的底线。</font><font id="412">为了得到最好的效果，我们用最有可能的标记标注每个词。</font><font id="413">让我们找出哪个标记是最有可能的（现在使用未简化标记集）：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>tags = [tag <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> brown.tagged_words(categories=<span class="pysrc-string">'news'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.FreqDist(tags).max()
+<span class="pysrc-output">'NN'</span></pre>
+<p><font id="414">现在我们可以创建一个将所有词都标注成<tt class="doctest"><span class="pre">NN</span></tt>的标注器。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>raw = <span class="pysrc-string">'I do not like green eggs and ham, I do not like them Sam I am!'</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = word_tokenize(raw)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>default_tagger = nltk.DefaultTagger(<span class="pysrc-string">'NN'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>default_tagger.tag(tokens)
+<span class="pysrc-output">[('I', 'NN'), ('do', 'NN'), ('not', 'NN'), ('like', 'NN'), ('green', 'NN'),</span>
+<span class="pysrc-output">('eggs', 'NN'), ('and', 'NN'), ('ham', 'NN'), (',', 'NN'), ('I', 'NN'),</span>
+<span class="pysrc-output">('do', 'NN'), ('not', 'NN'), ('like', 'NN'), ('them', 'NN'), ('Sam', 'NN'),</span>
+<span class="pysrc-output">('I', 'NN'), ('am', 'NN'), ('!', 'NN')]</span></pre>
+<p><font id="415">不出所料，这种方法的表现相当不好。</font><font id="416">在一个典型的语料库中，它只标注正确了八分之一的标识符，正如我们在这里看到的：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>default_tagger.evaluate(brown_tagged_sents)
+<span class="pysrc-output">0.13089484257215028</span></pre>
+<p><font id="417">默认的标注器给每一个单独的词分配标记，即使是之前从未遇到过的词。</font><font id="418">碰巧的是，一旦我们处理了几千词的英文文本之后，大多数新词都将是名词。</font><font id="419">正如我们将看到的，这意味着，默认标注器可以帮助我们提高语言处理系统的稳定性。</font><font id="420">我们将很快回来讲述这个。</font></p>
+</div>
+<div class="section" id="the-regular-expression-tagger"><h2 class="sigil_not_in_toc"><font id="421">4.2 正则表达式标注器</font></h2>
+<p><font id="422">正则表达式标注器基于匹配模式分配标记给词符。</font><font id="423">例如，我们可能会猜测任一以<span class="example">ed</span>结尾的词都是动词过去分词，任一以<span class="example">'s</span>结尾的词都是名词所有格。</font><font id="424">可以用一个正则表达式的列表表示这些：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>patterns = [
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*ing$'</span>, <span class="pysrc-string">'VBG'</span>),               <span class="pysrc-comment"># gerunds</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*ed$'</span>, <span class="pysrc-string">'VBD'</span>),                <span class="pysrc-comment"># simple past</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*es$'</span>, <span class="pysrc-string">'VBZ'</span>),                <span class="pysrc-comment"># 3rd singular present</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*ould$'</span>, <span class="pysrc-string">'MD'</span>),               <span class="pysrc-comment"># modals</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*\'s$'</span>, <span class="pysrc-string">'NN$'</span>),               <span class="pysrc-comment"># possessive nouns</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*s$'</span>, <span class="pysrc-string">'NNS'</span>),                 <span class="pysrc-comment"># plural nouns</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'^-?[0-9]+(.[0-9]+)?$'</span>, <span class="pysrc-string">'CD'</span>),  <span class="pysrc-comment"># cardinal numbers</span>
+<span class="pysrc-more">... </span>    (r<span class="pysrc-string">'.*'</span>, <span class="pysrc-string">'NN'</span>)                     <span class="pysrc-comment"># nouns (default)</span>
+<span class="pysrc-more">... </span>]</pre>
+<p><font id="425">请注意，这些是顺序处理的，第一个匹配上的会被使用。</font><font id="426">现在我们可以建立一个标注器，并用它来标记一个句子。</font><font id="427">做完这一步会有约五分之一是正确的。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>regexp_tagger = nltk.RegexpTagger(patterns)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>regexp_tagger.tag(brown_sents[3])
+<span class="pysrc-output">[('``', 'NN'), ('Only', 'NN'), ('a', 'NN'), ('relative', 'NN'), ('handful', 'NN'),</span>
+<span class="pysrc-output">('of', 'NN'), ('such', 'NN'), ('reports', 'NNS'), ('was', 'NNS'), ('received', 'VBD'),</span>
+<span class="pysrc-output">("''", 'NN'), (',', 'NN'), ('the', 'NN'), ('jury', 'NN'), ('said', 'NN'), (',', 'NN'),</span>
+<span class="pysrc-output">('``', 'NN'), ('considering', 'VBG'), ('the', 'NN'), ('widespread', 'NN'), ...]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>regexp_tagger.evaluate(brown_tagged_sents)
+<span class="pysrc-output">0.20326391789486245</span></pre>
+<p><font id="428">最终的正则表达式«<tt class="doctest"><span class="pre">.*</span></tt>»是一个全面捕捉的，标注所有词为名词。</font><font id="429">这与默认标注器是等效的（只是效率低得多）。</font><font id="430">除了作为正则表达式标注器的一部分重新指定这个，有没有办法结合这个标注器和默认标注器呢？</font><font id="431">我们将很快看到如何做到这一点。</font></p>
+<div class="note"><p class="first admonition-title"><font id="432">注意</font></p>
+<p class="last"><font id="433"><strong>轮到你来：</strong>看看你能不能想出一些模式，提高上面所示的正则表达式标注器的性能。</font><font id="434">（请注意<a class="reference external" href="./ch06.html#sec-supervised-classification">1</a>描述部分自动化这类工作的方法。）</font></p>
+</div>
+</div>
+<div class="section" id="the-lookup-tagger"><h2 class="sigil_not_in_toc"><font id="435">4.3 查询标注器</font></h2>
+<p><font id="436">很多高频词没有<tt class="doctest"><span class="pre">NN</span></tt>标记。</font><font id="437">让我们找出100个最频繁的词，存储它们最有可能的标记。</font><font id="438">然后我们可以使用这个信息作为“查找标注器”（NLTK <tt class="doctest"><span class="pre">UnigramTagger</span></tt>）的模型：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>fd = nltk.FreqDist(brown.words(categories=<span class="pysrc-string">'news'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(brown.tagged_words(categories=<span class="pysrc-string">'news'</span>))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>most_freq_words = fd.most_common(100)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>likely_tags = dict((word, cfd[word].max()) <span class="pysrc-keyword">for</span> (word, _) <span class="pysrc-keyword">in</span> most_freq_words)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>baseline_tagger = nltk.UnigramTagger(model=likely_tags)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>baseline_tagger.evaluate(brown_tagged_sents)
+<span class="pysrc-output">0.45578495136941344</span></pre>
+<p><font id="439">现在应该并不奇怪，仅仅知道100个最频繁的词的标记就使我们能正确标注很大一部分词符（近一半，事实上）。</font><font id="440">让我们来看看它在一些未标注的输入文本上做的如何：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>sent = brown.sents(categories=<span class="pysrc-string">'news'</span>)[3]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>baseline_tagger.tag(sent)
+<span class="pysrc-output">[('``', '``'), ('Only', None), ('a', 'AT'), ('relative', None),</span>
+<span class="pysrc-output">('handful', None), ('of', 'IN'), ('such', None), ('reports', None),</span>
+<span class="pysrc-output">('was', 'BEDZ'), ('received', None), ("''", "''"), (',', ','),</span>
+<span class="pysrc-output">('the', 'AT'), ('jury', None), ('said', 'VBD'), (',', ','),</span>
+<span class="pysrc-output">('``', '``'), ('considering', None), ('the', 'AT'), ('widespread', None),</span>
+<span class="pysrc-output">('interest', None), ('in', 'IN'), ('the', 'AT'), ('election', None),</span>
+<span class="pysrc-output">(',', ','), ('the', 'AT'), ('number', None), ('of', 'IN'),</span>
+<span class="pysrc-output">('voters', None), ('and', 'CC'), ('the', 'AT'), ('size', None),</span>
+<span class="pysrc-output">('of', 'IN'), ('this', 'DT'), ('city', None), ("''", "''"), ('.', '.')]</span></pre>
+<p><font id="441">许多词都被分配了一个<tt class="doctest"><span class="pre">None</span></tt>标签，因为它们不在100个最频繁的词之中。</font><font id="442">在这些情况下，我们想分配默认标记<tt class="doctest"><span class="pre">NN</span></tt>。</font><font id="443">换句话说，我们要先使用查找表，如果它不能指定一个标记就使用默认标注器，这个过程叫做<span class="termdef">回退</span>（<a class="reference internal" href="./ch05.html#sec-n-gram-tagging">5</a>）。</font><font id="444">我们可以做到这个，通过指定一个标注器作为另一个标注器的参数，如下所示。</font><font id="445">现在查找标注器将只存储名词以外的词的词-标记对，只要它不能给一个词分配标记，它将会调用默认标注器。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>baseline_tagger = nltk.UnigramTagger(model=likely_tags,
+<span class="pysrc-more">... </span>                                     backoff=nltk.DefaultTagger(<span class="pysrc-string">'NN'</span>))</pre>
+<p><font id="446">让我们把所有这些放在一起，写一个程序来创建和评估具有一定范围的查找标注器 ，<a class="reference internal" href="./ch05.html#code-baseline-tagger">4.1</a>。</font></p>
+<div class="pylisting"><p></p>
+<pre class="doctest"><span class="pysrc-keyword">def</span> <span class="pysrc-defname">performance</span>(cfd, wordlist):
+    lt = dict((word, cfd[word].max()) <span class="pysrc-keyword">for</span> word <span class="pysrc-keyword">in</span> wordlist)
+    baseline_tagger = nltk.UnigramTagger(model=lt, backoff=nltk.DefaultTagger(<span class="pysrc-string">'NN'</span>))
+    return baseline_tagger.evaluate(brown.tagged_sents(categories=<span class="pysrc-string">'news'</span>))
+
+<span class="pysrc-keyword">def</span> <span class="pysrc-defname">display</span>():
+    <span class="pysrc-keyword">import</span> pylab
+    word_freqs = nltk.FreqDist(brown.words(categories=<span class="pysrc-string">'news'</span>)).most_common()
+    words_by_freq = [w <span class="pysrc-keyword">for</span> (w, _) <span class="pysrc-keyword">in</span> word_freqs]
+    cfd = nltk.ConditionalFreqDist(brown.tagged_words(categories=<span class="pysrc-string">'news'</span>))
+    sizes = 2 ** pylab.arange(15)
+    perfs = [performance(cfd, words_by_freq[:size]) <span class="pysrc-keyword">for</span> size <span class="pysrc-keyword">in</span> sizes]
+    pylab.plot(sizes, perfs, <span class="pysrc-string">'-bo'</span>)
+    pylab.title(<span class="pysrc-string">'Lookup Tagger Performance with Varying Model Size'</span>)
+    pylab.xlabel(<span class="pysrc-string">'Model Size'</span>)
+    pylab.ylabel(<span class="pysrc-string">'Performance'</span>)
+    pylab.show()</pre>
+<div class="figure" id="fig-tag-lookup"><img alt="Images/tag-lookup.png" src="Images/f093aaace735b4961dbf9fa7d5c8ca37.jpg" style="width: 490.40000000000003px; height: 370.40000000000003px;"/><p class="caption"><font id="448"><span class="caption-label">图 4.2</span>：查找标注器</font></p>
+</div>
+<p><font id="449">可以观察到，随着模型规模的增长，最初的性能增加迅速，最终达到一个稳定水平，这时模型的规模大量增加性能的提高很小。</font><font id="450">（这个例子使用<tt class="doctest"><span class="pre">pylab</span></tt>绘图软件包，在<a class="reference external" href="./ch04.html#sec-libraries">4.8</a>讨论过）。</font></p>
+
+<div class="section" id="evaluation"><h2 class="sigil_not_in_toc"><font id="451">4.4 评估</font></h2>
+<p><font id="452">在前面的例子中，你会注意到对准确性得分的强调。</font><font id="453">事实上，评估这些工具的表现是NLP的一个中心主题。</font><font id="454">回想<a class="reference external" href="./ch01.html#fig-sds">fig-sds</a>中的处理流程；一个模块输出中的任何错误都在下游模块大大的放大。</font></p>
+<p><font id="455">我们对比人类专家分配的标记来评估一个标注器的表现。</font><font id="456">由于我们通常很难获得专业和公正的人的判断，所以使用<span class="termdef">黄金标准</span>测试数据来代替。</font><font id="457">这是一个已经手动标注并作为自动系统评估标准而被接受的语料库。</font><font id="458">当标注器对给定词猜测的标记与黄金标准标记相同，标注器被视为是正确的。</font></p>
+<p><font id="459">当然，设计和实施原始的黄金标准标注的也是人。</font><font id="460">更深入的分析可能会显示黄金标准中的错误，或者可能最终会导致一个修正的标记集和更复杂的指导方针。</font><font id="461">然而，黄金标准就目前有关的自动标注器的评估而言被定义成“正确的”。</font></p>
+<div class="note"><p class="first admonition-title"><font id="462">注意</font></p>
+<p class="last"><font id="463">开发一个已标注语料库是一个重大的任务。</font><font id="464">除了数据，它会产生复杂的工具、文档和实践，为确保高品质的标注。</font><font id="465">标记集和其他编码方案不可避免地依赖于一些理论主张，不是所有的理论主张都被共享，然而，语料库的创作者往往竭尽全力使他们的工作尽可能理论中立，以最大限度地提高其工作的有效性。</font><font id="466">我们将在<a class="reference external" href="./ch11.html#chap-data">11.</a>讨论创建一个语料库的挑战。</font></p>
+</div>
+</div>
+
+<div class="section" id="n-gram-tagging"><h2 class="sigil_not_in_toc"><font id="467">5 N-gram标注</font></h2>
+<div class="section" id="unigram-tagging"><h2 class="sigil_not_in_toc"><font id="468">5.1 一元标注</font></h2>
+<p><font id="469">一元标注器基于一个简单的统计算法：对每个标识符分配这个独特的标识符最有可能的标记。</font><font id="470">例如，它将分配标记<tt class="doctest"><span class="pre">JJ</span></tt>给词<span class="example">frequent</span>的所有出现，因为<span class="example">frequent</span>用作一个形容词（例如</font><font id="471"><span class="example">a frequent word</span>）比用作一个动词（例如</font><font id="472"><span class="example">I frequent this cafe</span>）更常见。</font><font id="473">一个一元标注器的行为就像一个查找标注器（<a class="reference internal" href="./ch05.html#sec-automatic-tagging">4</a>），除了有一个更方便的建立它的技术，称为<span class="termdef">训练</span>。</font><font id="474">在下面的代码例子中，我们训练一个一元标注器，用它来标注一个句子，然后评估：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> nltk.corpus <span class="pysrc-keyword">import</span> brown
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_tagged_sents = brown.tagged_sents(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>brown_sents = brown.sents(categories=<span class="pysrc-string">'news'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_tagger = nltk.UnigramTagger(brown_tagged_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_tagger.tag(brown_sents[2007])
+<span class="pysrc-output">[('Various', 'JJ'), ('of', 'IN'), ('the', 'AT'), ('apartments', 'NNS'),</span>
+<span class="pysrc-output">('are', 'BER'), ('of', 'IN'), ('the', 'AT'), ('terrace', 'NN'), ('type', 'NN'),</span>
+<span class="pysrc-output">(',', ','), ('being', 'BEG'), ('on', 'IN'), ('the', 'AT'), ('ground', 'NN'),</span>
+<span class="pysrc-output">('floor', 'NN'), ('so', 'QL'), ('that', 'CS'), ('entrance', 'NN'), ('is', 'BEZ'),</span>
+<span class="pysrc-output">('direct', 'JJ'), ('.', '.')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_tagger.evaluate(brown_tagged_sents)
+<span class="pysrc-output">0.9349006503968017</span></pre>
+<p><font id="475">我们<span class="termdef">训练</span>一个<tt class="doctest"><span class="pre">UnigramTagger</span></tt>，通过在我们初始化标注器时指定已标注的句子数据作为参数。</font><font id="476">训练过程中涉及检查每个词的标记，将所有词的最可能的标记存储在一个字典里面，这个字典存储在标注器内部。</font></p>
+</div>
+<div class="section" id="separating-the-training-and-testing-data"><h2 class="sigil_not_in_toc"><font id="477">5.2 分离训练和测试数据</font></h2>
+<p><font id="478">现在，我们正在一些数据上训练一个标注器，必须小心不要在相同的数据上测试，如我们在前面的例子中的那样。</font><font id="479">一个只是记忆它的训练数据，而不试图建立一个一般的模型的标注器会得到一个完美的得分，但在标注新的文本时将是无用的。</font><font id="480">相反，我们应该分割数据，90％为测试数据，其余10％为测试数据：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>size = int(len(brown_tagged_sents) * 0.9)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>size
+<span class="pysrc-output">4160</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>train_sents = brown_tagged_sents[:size]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>test_sents = brown_tagged_sents[size:]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_tagger = nltk.UnigramTagger(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>unigram_tagger.evaluate(test_sents)
+<span class="pysrc-output">0.811721...</span></pre>
+<p><font id="481">虽然得分更糟糕了，但是现在我们对这种标注器的用处有了更好的了解，如</font><font id="482">它在之前没有遇见的文本上的表现。</font></p>
+</div>
+<div class="section" id="general-n-gram-tagging"><h2 class="sigil_not_in_toc"><font id="483">5.3 一般的N-gram标注</font></h2>
+<p><font id="484">在基于一元处理一个语言处理任务时，我们使用上下文中的一个项目。</font><font id="485">标注的时候，我们只考虑当前的词符，与更大的上下文隔离。</font><font id="486">给定一个模型，我们能做的最好的是为每个词标注其<em>先验的</em>最可能的标记。</font><font id="487">这意味着我们将使用相同的标记标注一个词，如<span class="example">wind</span>，不论它出现的上下文是<span class="example">the wind</span>还是<span class="example">to wind</span>。</font></p>
+<p><font id="488">一个<span class="termdef">n-gram tagger</span>标注器是一个一元标注器的一般化，它的上下文是当前词和它前面<em>n</em>-1个标识符的词性标记，如图<a class="reference internal" href="./ch05.html#fig-tag-context">5.1</a>所示。</font><font id="489">要选择的标记是圆圈里的<em>t</em><sub>n</sub>，灰色阴影的是上下文。</font><font id="490">在<a class="reference internal" href="./ch05.html#fig-tag-context">5.1</a>所示的n-gram标注器的例子中，我们让<em>n</em>=3；也就是说，我们考虑当前词的前两个词的标记。</font><font id="491">一个n-gram标注器挑选在给定的上下文中最有可能的标记。</font></p>
+<div class="figure" id="fig-tag-context"><img alt="Images/tag-context.png" src="Images/12573c3a9015654728fe798e170a3c50.jpg" style="width: 542.4px; height: 162.4px;"/><p class="caption"><font id="492"><span class="caption-label">图 5.1</span>：标注器上下文</font></p>
+</div>
+<div class="note"><p class="first admonition-title"><font id="493">注意</font></p>
+<p class="last"><font id="494">1-gram标注器是一元标注器另一个名称：即用于标注一个词符的上下文的只是词符本身。</font><font id="495">2-gram标注器也称为<em>二元标注器</em>，3-gram标注器也称为<em>三元标注器</em>。</font></p>
+</div>
+<p><font id="496"><tt class="doctest"><span class="pre">NgramTagger</span></tt>类使用一个已标注的训练语料库来确定对每个上下文哪个词性标记最有可能。</font><font id="497">这里我们看n-gram标注器的一个特殊情况，二元标注器。</font><font id="498">首先，我们训练它，然后用它来标注未标注的句子：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>bigram_tagger = nltk.BigramTagger(train_sents)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bigram_tagger.tag(brown_sents[2007])
+<span class="pysrc-output">[('Various', 'JJ'), ('of', 'IN'), ('the', 'AT'), ('apartments', 'NNS'),</span>
+<span class="pysrc-output">('are', 'BER'), ('of', 'IN'), ('the', 'AT'), ('terrace', 'NN'),</span>
+<span class="pysrc-output">('type', 'NN'), (',', ','), ('being', 'BEG'), ('on', 'IN'), ('the', 'AT'),</span>
+<span class="pysrc-output">('ground', 'NN'), ('floor', 'NN'), ('so', 'CS'), ('that', 'CS'),</span>
+<span class="pysrc-output">('entrance', 'NN'), ('is', 'BEZ'), ('direct', 'JJ'), ('.', '.')]</span>
+<span class="pysrc-output"></span><span class="pysrc-prompt">&gt;&gt;&gt; </span>unseen_sent = brown_sents[4203]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>bigram_tagger.tag(unseen_sent)
+<span class="pysrc-output">[('The', 'AT'), ('population', 'NN'), ('of', 'IN'), ('the', 'AT'), ('Congo', 'NP'),</span>
+<span class="pysrc-output">('is', 'BEZ'), ('13.5', None), ('million', None), (',', None), ('divided', None),</span>
+<span class="pysrc-output">('into', None), ('at', None), ('least', None), ('seven', None), ('major', None),</span>
+<span class="pysrc-output">('``', None), ('culture', None), ('clusters', None), ("''", None), ('and', None),</span>
+<span class="pysrc-output">('innumerable', None), ('tribes', None), ('speaking', None), ('400', None),</span>
+<span class="pysrc-output">('separate', None), ('dialects', None), ('.', None)]</span></pre>
+<p><font id="499">请注意，二元标注器能够标注训练中它看到过的句子中的所有词，但对一个没见过的句子表现很差。</font><font id="500">只要遇到一个新词（如<span class="example">13.5</span>），就无法给它分配标记。</font><font id="501">它不能标注下面的词（如<span class="example">million</span>)，即使是在训练过程中看到过的，只是因为在训练过程中从来没有见过它前面有一个<tt class="doctest"><span class="pre">None</span></tt>标记的词。</font><font id="502">因此，标注器标注句子的其余部分也失败了。</font><font id="503">它的整体准确度得分非常低：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>bigram_tagger.evaluate(test_sents)
+<span class="pysrc-output">0.102063...</span></pre>
+<p><font id="504">当<em>n</em>越大，上下文的特异性就会增加，我们要标注的数据中包含训练数据中不存在的上下文的几率也增大。</font><font id="505">这被称为<em>数据稀疏</em>问题，在NLP中是相当普遍的。</font><font id="506">因此，我们的研究结果的精度和覆盖范围之间需要有一个权衡（这与信息检索中的<span class="termdef">精度/召回权衡</span>有关）。</font></p>
+<div class="caution"><p class="first admonition-title"><font id="507">小心！</font></p>
+<p class="last"><font id="508">N-gram标注器不应考虑跨越句子边界的上下文。</font><font id="509">因此，NLTK的标注器被设计用于句子列表，其中一个句子是一个词列表。</font><font id="510">在一个句子的开始，<em>t</em><sub>n-1</sub>和前面的标记被设置为<tt class="doctest"><span class="pre">None</span></tt>。</font></p>
+</div>
+</div>
+<div class="section" id="combining-taggers"><h2 class="sigil_not_in_toc"><font id="511">5.4 组合标注器</font></h2>
+<p><font id="512">解决精度和覆盖范围之间的权衡的一个办法是尽可能的使用更精确的算法，但却在很多时候落后于具有更广覆盖范围的算法。</font><font id="513">例如，我们可以按如下方式组合二元标注器、一元注器和一个默认标注器，如下：</font></p>
+<ol class="arabic simple"><li><font id="514">尝试使用二元标注器标注标识符。</font></li>
+<li><font id="515">如果二元标注器无法找到一个标记，尝试一元标注器。</font></li>
+<li><font id="516">如果一元标注器也无法找到一个标记，使用默认标注器。</font></li>
+</ol>
+<p><font id="517">大多数NLTK标注器允许指定一个回退标注器。</font><font id="518">回退标注器自身可能也有一个回退标注器：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>t0 = nltk.DefaultTagger(<span class="pysrc-string">'NN'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>t1 = nltk.UnigramTagger(train_sents, backoff=t0)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>t2 = nltk.BigramTagger(train_sents, backoff=t1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>t2.evaluate(test_sents)
+<span class="pysrc-output">0.844513...</span></pre>
+<div class="note"><p class="first admonition-title"><font id="519">注意</font></p>
+<p class="last"><font id="520"><strong>轮到你来：</strong> 通过定义一个名为<tt class="doctest"><span class="pre">t3</span></tt>的<tt class="doctest"><span class="pre">TrigramTagger</span></tt>，扩展前面的例子，它是<tt class="doctest"><span class="pre">t2</span></tt>的回退标注器。</font></p>
+</div>
+<p><font id="521">请注意，我们在标注器初始化时指定回退标注器，从而使训练能利用回退标注器。</font><font id="522">于是，在一个特定的上下文中，如果二元标注器将分配与它的一元回退标注器一样的标记，那么二元标注器丢弃训练的实例。</font><font id="523">这样保持尽可能小的二元标注器模型。</font><font id="524">我们可以进一步指定一个标注器需要看到一个上下文的多个实例才能保留它，例如</font><font id="525"><tt class="doctest"><span class="pre">nltk.BigramTagger(sents, cutoff=2, backoff=t1)</span></tt>将会丢弃那些只看到一次或两次的上下文。</font></p>
+</div>
+<div class="section" id="tagging-unknown-words"><h2 class="sigil_not_in_toc"><font id="526">5.5 标注生词</font></h2>
+<p><font id="527">我们标注生词的方法仍然是回退到一个正则表达式标注器或一个默认标注器。</font><font id="528">这些都无法利用上下文。</font><font id="529">因此，如果我们的标注器遇到词<span class="example">blog</span>，训练过程中没有看到过，它会分配相同的标记，不论这个词出现的上下文是<span class="example">the blog</span>还是<span class="example">to blog</span>。</font><font id="530">我们怎样才能更好地处理这些生词，或<span class="termdef">词汇表以外</span>的项目？</font></p>
+<p><font id="531">一个有用的基于上下文标注生词的方法是限制一个标注器的词汇表为最频繁的<span class="math">n</span> 个词，使用<a class="reference internal" href="./ch05.html#sec-dictionaries">3</a>中的方法替代每个其他的词为一个特殊的词<span class="example">UNK</span>。</font><font id="532">训练时，一个一元标注器可能会学到<span class="example">UNK</span>通常是一个名词。</font><font id="533">然而，n-gram标注器会检测它的一些其他标记中的上下文。</font><font id="534">例如，如果前面的词是<span class="example">to</span>（标注为<tt class="doctest"><span class="pre">TO</span></tt>），那么<span class="example">UNK</span>可能会被标注为一个动词。</font></p>
+</div>
+<div class="section" id="storing-taggers"><h2 class="sigil_not_in_toc"><font id="535">5.6 存储标注器</font></h2>
+<p><font id="536">在大语料库上训练一个标注器可能需要大量的时间。</font><font id="537">没有必要在每次我们需要的时候训练一个标注器，很容易将一个训练好的标注器保存到一个文件以后重复使用。</font><font id="538">让我们保存我们的标注器<tt class="doctest"><span class="pre">t2</span></tt>到文件<tt class="doctest"><span class="pre">t2.pkl</span></tt>。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> pickle <span class="pysrc-keyword">import</span> dump
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>output = open(<span class="pysrc-string">'t2.pkl'</span>, <span class="pysrc-string">'wb'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>dump(t2, output, -1)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>output.close()</pre>
+<p><font id="539">现在，我们可以在一个单独的Python进程中，我们可以载入保存的标注器。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">from</span> pickle <span class="pysrc-keyword">import</span> load
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>input = open(<span class="pysrc-string">'t2.pkl'</span>, <span class="pysrc-string">'rb'</span>)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tagger = load(input)
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>input.close()</pre>
+<p><font id="540">现在让我们检查它是否可以用来标注。</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>text = <span class="pysrc-string">"""The board's action shows what free enterprise</span>
+<span class="pysrc-more">... </span><span class="pysrc-string">    is up against in our complex maze of regulatory laws ."""</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tokens = text.split()
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>tagger.tag(tokens)
+<span class="pysrc-output">[('The', 'AT'), ("board's", 'NN$'), ('action', 'NN'), ('shows', 'NNS'),</span>
+<span class="pysrc-output">('what', 'WDT'), ('free', 'JJ'), ('enterprise', 'NN'), ('is', 'BEZ'),</span>
+<span class="pysrc-output">('up', 'RP'), ('against', 'IN'), ('in', 'IN'), ('our', 'PP$'), ('complex', 'JJ'),</span>
+<span class="pysrc-output">('maze', 'NN'), ('of', 'IN'), ('regulatory', 'NN'), ('laws', 'NNS'), ('.', '.')]</span></pre>
+</div>
+<div class="section" id="performance-limitations"><h2 class="sigil_not_in_toc"><font id="541">5.7 准确性的极限</font></h2>
+<p><font id="542">一个n-gram标注器准确性的上限是什么？</font><font id="543">考虑一个三元标注器的情况。</font><font id="544">它遇到多少词性歧义的情况？</font><font id="545">我们可以根据经验决定这个问题的答案：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>cfd = nltk.ConditionalFreqDist(
+<span class="pysrc-more">... </span>           ((x[1], y[1], z[0]), z[1])
+<span class="pysrc-more">... </span>           <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> brown_tagged_sents
+<span class="pysrc-more">... </span>           <span class="pysrc-keyword">for</span> x, y, z <span class="pysrc-keyword">in</span> nltk.trigrams(sent))
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>ambiguous_contexts = [c <span class="pysrc-keyword">for</span> c <span class="pysrc-keyword">in</span> cfd.conditions() <span class="pysrc-keyword">if</span> len(cfd[c]) &gt; 1]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>sum(cfd[c].N() <span class="pysrc-keyword">for</span> c <span class="pysrc-keyword">in</span> ambiguous_contexts) / cfd.N()
+<span class="pysrc-output">0.049297702068029296</span></pre>
+<p><font id="546">因此，1/20的三元是有歧义的[示例]。</font><font id="547">给定当前单词及其前两个标记，根据训练数据，在5％的情况中，有一个以上的标记可能合理地分配给当前词。</font><font id="548">假设我们总是挑选在这种含糊不清的上下文中最有可能的标记，可以得出三元标注器准确性的一个下界。</font></p>
+<p><font id="549">调查标注器准确性的另一种方法是研究它的错误。</font><font id="550">有些标记可能会比别的更难分配，可能需要专门对这些数据进行预处理或后处理。</font><font id="551">一个方便的方式查看标注错误是<span class="termdef">混淆矩阵</span>。</font><font id="552">它用图表表示期望的标记（黄金标准）与实际由标注器产生的标记：</font></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>test_tags = [tag <span class="pysrc-keyword">for</span> sent <span class="pysrc-keyword">in</span> brown.sents(categories=<span class="pysrc-string">'editorial'</span>)
+<span class="pysrc-more">... </span>                 <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> t2.tag(sent)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span>gold_tags = [tag <span class="pysrc-keyword">for</span> (word, tag) <span class="pysrc-keyword">in</span> brown.tagged_words(categories=<span class="pysrc-string">'editorial'</span>)]
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(nltk.ConfusionMatrix(gold_tags, test_tags))           </pre>
+<p><font id="553">基于这样的分析，我们可能会决定修改标记集。</font><font id="554">或许标记之间很难做出的区分可以被丢弃，因为它在一些较大的处理任务的上下文中并不重要。</font></p>
+<p><font id="555">分析标注器准确性界限的另一种方式来自人类标注者之间并非100％的意见一致。</font><font id="556">[更多]</font></p>
+<p><font id="557">一般情况下，标注过程会损坏区别：例如</font><font id="558">当所有的人称代词被标注为<tt class="doctest"><span class="pre">PRP</span></tt>时，词的特性通常会失去。</font><font id="559">与此同时，标注过程引入了新的区别从而去除了含糊之处：例如</font><font id="560"><span class="example">deal</span>标注为<tt class="doctest"><span class="pre">VB</span></tt>或<tt class="doctest"><span class="pre">NN</span></tt>。</font><font id="561">这种消除某些区别并引入新的区别的特点是标注的一个重要的特征，有利于分类和预测。</font><font id="562">当我们引入一个标记集的更细的划分时，在n-gram标注器决定什么样的标记分配给一个特定的词时，可以获得关于左侧上下文的更详细的信息。</font><font id="563">然而，标注器同时也将需要做更多的工作来划分当前的词符，只是因为有更多可供选择的标记。</font><font id="564">相反，使用较少的区别（如简化的标记集），标注器有关上下文的信息会减少，为当前词符分类的选择范围也较小。</font></p>
+<p><font id="565">我们已经看到，训练数据中的歧义导致标注器准确性的上限。</font><font id="566">有时更多的上下文能解决这些歧义。</font><font id="567">然而，在其他情况下，如<a class="reference external" href="./bibliography.html#abney1996pst" id="id1">(Church, Young, &amp; Bloothooft, 1996)</a>中指出的，只有参考语法或现实世界的知识，才能解决歧义。</font><font id="568">尽管有这些缺陷，词性标注在用统计方法进行自然语言处理的兴起过程中起到了核心作用。</font><font id="569">1990年代初，统计标注器令人惊讶的精度是一个惊人的示范，可以不用更深的语言学知识解决一小部分语言理解问题，即词性消歧。</font><font id="570">这个想法能再推进吗？</font><font id="571">第<a class="reference external" href="./ch07.html#chap-chunk">7.</a>中，我们将看到，它可以。</font></p>
+</div>
+</div>
+<div class="section" id="transformation-based-tagging"><h2 class="sigil_not_in_toc"><font id="572">6 基于转换的标注</font></h2>
+<p><font id="573">n-gram标注器的一个潜在的问题是它们的n-gram表（或语言模型）的大小。</font><font id="574">如果使用各种语言技术的标注器部署在移动计算设备上，在模型大小和标注器准确性之间取得平衡是很重要的。</font><font id="575">使用回退标注器的n-gram标注器可能存储trigram和bigram表，这是很大的稀疏阵列，可能有数亿条条目。</font></p>
+<p><font id="576">第二个问题是关于上下文。</font><font id="577">n-gram标注器从前面的上下文中获得的唯一的信息是标记，虽然词本身可能是一个有用的信息源。</font><font id="578">n-gram模型使用上下文中的词的其他特征为条件是不切实际的。</font><font id="579">在本节中，我们考察Brill标注，一种归纳标注方法，它的性能很好，使用的模型只有n-gram标注器的很小一部分。</font></p>
+<p><font id="580">Brill标注是一种<em>基于转换的学习</em>，以它的发明者命名。</font><font id="581">一般的想法很简单：猜每个词的标记，然后返回和修复错误。</font><font id="582">在这种方式中，Brill标注器陆续将一个不良标注的文本转换成一个更好的。</font><font id="583">与n-gram标注一样，这是有<em>监督的学习</em>方法，因为我们需要已标注的训练数据来评估标注器的猜测是否是一个错误。</font><font id="584">然而，不像n-gram标注，它不计数观察结果，只编制一个转换修正规则列表。</font></p>
+<p><font id="585">Brill标注的的过程通常是与绘画类比来解释的。</font><font id="586">假设我们要画一棵树，包括大树枝、树枝、小枝、叶子和一个统一的天蓝色背景的所有细节。</font><font id="587">不是先画树然后尝试在空白处画蓝色，而是简单的将整个画布画成蓝色，然后通过在蓝色背景上上色“修正”树的部分。</font><font id="588">以同样的方式，我们可能会画一个统一的褐色的树干再回过头来用更精细的刷子画进一步的细节。</font><font id="589">Brill标注使用了同样的想法：以大笔画开始，然后修复细节，一点点的细致的改变。</font><font id="590">让我们看看下面的例子：</font></p>
+<p></p>
+<pre class="doctest"><span class="pysrc-prompt">&gt;&gt;&gt; </span>nltk.tag.brill.demo()
+Training Brill tagger on 80 sentences...
+Finding initial useful rules...
+    Found 6555 useful rules.
+
+           B      |
+   S   F   r   O  |        Score = Fixed - Broken
+   c   i   o   t  |  R     Fixed = num tags changed incorrect -&gt; correct
+   o   x   k   h  |  u     Broken = num tags changed correct -&gt; incorrect
+   r   e   e   e  |  l     Other = num tags changed incorrect -&gt; incorrect
+   e   d   n   r  |  e
+------------------+-------------------------------------------------------
+  12  13   1   4  | NN -&gt; VB <span class="pysrc-keyword">if</span> the tag of the preceding word <span class="pysrc-keyword">is</span> <span class="pysrc-string">'TO'</span>
+   8   9   1  23  | NN -&gt; VBD <span class="pysrc-keyword">if</span> the tag of the following word <span class="pysrc-keyword">is</span> <span class="pysrc-string">'DT'</span>
+   8   8   0   9  | NN -&gt; VBD <span class="pysrc-keyword">if</span> the tag of the preceding word <span class="pysrc-keyword">is</span> <span class="pysrc-string">'NNS'</span>
+   6   9   3  16  | NN -&gt; NNP <span class="pysrc-keyword">if</span> the tag of words i-2...i-1 <span class="pysrc-keyword">is</span> <span class="pysrc-string">'-NONE-'</span>
+   5   8   3   6  | NN -&gt; NNP <span class="pysrc-keyword">if</span> the tag of the following word <span class="pysrc-keyword">is</span> <span class="pysrc-string">'NNP'</span>
+   5   6   1   0  | NN -&gt; NNP <span class="pysrc-keyword">if</span> the text of words i-2...i-1 <span class="pysrc-keyword">is</span> <span class="pysrc-string">'like'</span>
+   5   5   0   3  | NN -&gt; VBN <span class="pysrc-keyword">if</span> the text of the following word <span class="pysrc-keyword">is</span> <span class="pysrc-string">'*-1'</span>
+<span class="pysrc-more">   ...</span>
+<span class="pysrc-prompt">&gt;&gt;&gt; </span><span class="pysrc-keyword">print</span>(open(<span class="pysrc-string">"errors.out"</span>).read())
+             left context |    word/test-&gt;gold     | right context
+--------------------------+------------------------+--------------------------
+                          |      Then/NN-&gt;RB       | ,/, <span class="pysrc-keyword">in</span>/IN the/DT guests/N
+, <span class="pysrc-keyword">in</span>/IN the/DT guests/NNS |       <span class="pysrc-string">'/VBD-&gt;POS       | honor/NN ,/, the/DT speed</span>
+<span class="pysrc-string">'</span>/POS honor/NN ,/, the/DT |    speedway/JJ-&gt;NN     | hauled/VBD out/RP four/CD
+NN ,/, the/DT speedway/NN |     hauled/NN-&gt;VBD     | out/RP four/CD drivers/NN
+DT speedway/NN hauled/VBD |      out/NNP-&gt;RP       | four/CD drivers/NNS ,/, c
+dway/NN hauled/VBD out/RP |      four/NNP-&gt;CD      | drivers/NNS ,/, crews/NNS
+hauled/VBD out/RP four/CD |    drivers/NNP-&gt;NNS    | ,/, crews/NNS <span class="pysrc-keyword">and</span>/CC even
+P four/CD drivers/NNS ,/, |     crews/NN-&gt;NNS      | <span class="pysrc-keyword">and</span>/CC even/RB the/DT off
+NNS <span class="pysrc-keyword">and</span>/CC even/RB the/DT |    official/NNP-&gt;JJ    | Indianapolis/NNP 500/CD a
+                          |     After/VBD-&gt;IN      | the/DT race/NN ,/, Fortun
+ter/IN the/DT race/NN ,/, |    Fortune/IN-&gt;NNP     | 500/CD executives/NNS dro
+s/NNS drooled/VBD like/IN |  schoolboys/NNP-&gt;NNS   | over/IN the/DT cars/NNS a
+olboys/NNS over/IN the/DT |      cars/NN-&gt;NNS      | <span class="pysrc-keyword">and</span>/CC drivers/NNS ./.</pre>
+
+<div class="section" id="how-to-determine-the-category-of-a-word"><h2 class="sigil_not_in_toc"><font id="647">7 如何确定一个词的分类</font></h2>
+<p><font id="648">我们已经详细研究了词类，现在转向一个更基本的问题：我们如何首先决定一个词属于哪一类？</font><font id="649">在一般情况下，语言学家使用形态学、句法和语义线索确定一个词的类别。</font></p>
+<div class="section" id="morphological-clues"><h2 class="sigil_not_in_toc"><font id="650">7.1 形态学线索</font></h2>
+<p><font id="651">一个词的内部结构可能为这个词分类提供有用的线索。</font><font id="652">举例来说：<span class="example">-ness</span>是一个后缀，与形容词结合产生一个名词，如</font><font id="653"><span class="example">happy</span> → <span class="example">happiness</span>, <span class="example">ill</span> → <span class="example">illness</span>。</font><font id="654">如果我们遇到的一个以<span class="example">-ness</span>结尾的词，很可能是一个名词。</font><font id="655">同样的，<span class="example">-ment</span>是与一些动词结合产生一个名词的后缀，如</font><font id="656"><span class="example">govern</span> → <span class="example">government</span>和<span class="example">establish</span> → <span class="example">establishment</span>。</font></p>
+<p><font id="657">英语动词也可以是形态复杂的。</font><font id="658">例如，一个<span class="termdef">动词的现在分词</span>以<span class="example">-ing</span>结尾，表示正在进行的还没有结束的行动（如</font><font id="659"><span class="example">falling</span>, <span class="example">eating</span>）。</font><font id="660"><span class="example">-ing</span>后缀也出现在从动词派生的名词中，如</font><font id="661"><span class="example">the falling of the leaves</span>（这被称为<span class="termdef">动名词</span>）。</font></p>
+</div>
+<div class="section" id="syntactic-clues"><h2 class="sigil_not_in_toc"><font id="662">7.2 句法线索</font></h2>
+<p><font id="663">另一个信息来源是一个词可能出现的典型的上下文语境。</font><font id="664">例如，假设我们已经确定了名词类。</font><font id="665">那么我们可以说，英语形容词的句法标准是它可以立即出现在一个名词前，或紧跟在词<span class="example">be</span>或<span class="example">very</span>后。</font><font id="666">根据这些测试，<span class="example">near</span>应该被归类为形容词：</font></p>
+<p></p>
+<pre class="literal-block">Statement  User117 Dude..., I wanted some of that
+ynQuestion User120 m I missing something?
+Bye        User117 I'm gonna go fix food, I'll be back later.
+System     User122 JOIN
+System     User2   slaps User122 around a bit with a large trout.
+Statement  User121 18/m pm me if u tryin to chat
+</pre>
+<div class="section" id="exercises"><h2 class="sigil_not_in_toc"><font id="782">10 练习</font></h2>
+<ol class="arabic simple"><li><font id="783">☼ 网上搜索“spoof newspaper headlines”，找到这种宝贝：<span class="example">British Left Waffles on Falkland Islands</span>和<span class="example">Juvenile Court to Try Shooting Defendant</span>。</font><font id="784">手工标注这些头条，看看词性标记的知识是否可以消除歧义。</font></li>
+<li><font id="785">☼ 和别人一起，轮流挑选一个既可以是名词也可以是动词的词（如</font><font id="786"><span class="example">contest</span>）；让对方预测哪一个可能是布朗语料库中频率最高的；检查对方的预测，为几个回合打分。</font></li>
+<li><font id="787">☼ 分词和标注下面的句子：<span class="example">They wind back the clock, while we chase after the wind</span>。</font><font id="788">涉及哪些不同的发音和词类？</font></li>
+<li><font id="789">☼ 回顾<a class="reference internal" href="./ch05.html#tab-linguistic-objects">3.1</a>中的映射。</font><font id="790">讨论你能想到的映射的其他的例子。</font><font id="791">它们从什么类型的信息映射到什么类型的信息？</font></li>
+<li><font id="792">☼ 在交互模式下使用Python解释器，实验本章中字典的例子。</font><font id="793">创建一个字典<tt class="doctest"><span class="pre">d</span></tt>，添加一些条目。</font><font id="794">如果你尝试访问一个不存在的条目会发生什么，如</font><font id="795"><tt class="doctest"><span class="pre">d[<span class="pysrc-string">'xyz'</span>]</span></tt>？</font></li>
+<li><font id="796">☼ 尝试从字典<tt class="doctest"><span class="pre">d</span></tt>删除一个元素，使用语法<tt class="doctest"><span class="pre"><span class="pysrc-keyword">del</span> d[<span class="pysrc-string">'abc'</span>]</span></tt>。</font><font id="797">检查被删除的项目。</font></li>
+<li><font id="798">☼ 创建两个字典，<tt class="doctest"><span class="pre">d1</span></tt>和<tt class="doctest"><span class="pre">d2</span></tt>，为每个添加一些条目。</font><font id="799">现在发出命令<tt class="doctest"><span class="pre">d1.update(d2)</span></tt>。</font><font id="800">这做了什么？</font><font id="801">它可能是有什么用？</font></li>
+<li><font id="802">☼ 创建一个字典<tt class="doctest"><span class="pre">e</span></tt>，表示你选择的一些词的一个单独的词汇条目。</font><font id="803">定义键如<tt class="doctest"><span class="pre">headword</span></tt>、<tt class="doctest"><span class="pre">part-of-speech</span></tt>、<tt class="doctest"><span class="pre">sense</span></tt>和<tt class="doctest"><span class="pre">example</span></tt>，分配给它们适当的值。</font></li>
+<li><font id="804">☼ 自己验证<span class="example">go</span>和<span class="example">went</span>在分布上的限制，也就是说，它们不能自由地在<a class="reference internal" href="./ch05.html#sec-how-to-determine-the-category-of-a-word">7</a>中的<a class="reference internal" href="./ch05.html#ex-go">(3d)</a>演示的那种上下文中互换。</font></li>
+<li><font id="805">☼ 训练一个一元标注器，在一些新的文本上运行。</font><font id="806">观察有些词没有分配到标记。</font><font id="807">为什么没有？</font></li>
+<li><font id="808">☼ 了解词缀标注器（输入<tt class="doctest"><span class="pre">help(nltk.AffixTagger)</span></tt>）。</font><font id="809">训练一个词缀标注器，在一些新的文本上运行。</font><font id="810">设置不同的词缀长度和最小词长做实验。</font><font id="811">讨论你的发现。</font></li>
+<li><font id="812">☼ 训练一个没有回退标注器的二元标注器，在一些训练数据上运行。</font><font id="813">下一步，在一些新的数据运行它。</font><font id="814">标注器的准确性会发生什么？</font><font id="815">为什么呢？</font></li>
+<li><font id="816">☼ 我们可以使用字典指定由一个格式化字符串替换的值。</font><font id="817">阅读关于格式化字符串的Python库文档<tt class="doctest"><span class="pre">http://docs.python.org/lib/typesseq-strings.html</span></tt>，使用这种方法以两种不同的格式显示今天的日期。</font></li>
+<li><font id="818">◑ 使用<tt class="doctest"><span class="pre">sorted()</span></tt>和<tt class="doctest"><span class="pre">set()</span></tt>获得布朗语料库使用的标记的排序的列表，删除重复。</font></li>
+<li><font id="827">◑ 写程序处理布朗语料库，找到以下问题的答案：</font><ol class="arabic"><li><font id="819">哪些名词常以它们复数形式而不是它们的单数形式出现？</font><font id="820">（只考虑常规的复数形式，<span class="example">-s</span>后缀形式的）。</font></li>
+<li><font id="821">哪个词的不同标记数目最多。</font><font id="822">它们是什么，它们代表什么？</font></li>
+<li><font id="823">按频率递减的顺序列出标记。</font><font id="824">前20个最频繁的标记代表什么？</font></li>
+<li><font id="825">名词后面最常见的是哪些标记？</font><font id="826">这些标记代表什么？</font></li>
+</ol></li>
+<li><font id="831">◑ 探索有关查找标注器的以下问题：</font><ol class="loweralpha"><li><font id="828">回退标注器被省略时，模型大小变化，标注器的准确性会发生什么？</font></li>
+<li><font id="829">思考<a class="reference internal" href="./ch05.html#fig-tag-lookup">4.2</a>的曲线；为查找标注器推荐一个平衡内存和准确性的好的规模。</font><font id="830">你能想出在什么情况下应该尽量减少内存使用，什么情况下性能最大化而不必考虑内存使用？</font></li>
+</ol></li>
+<li><font id="832">◑ 查找标注器的准确性上限是什么，假设其表的大小没有限制？</font><font id="833">（提示：写一个程序算出被分配了最有可能的标记的词的词符的平均百分比。）</font></li>
+<li><font id="837">◑ 生成已标注数据的一些统计数据，回答下列问题：</font><ol class="loweralpha"><li><font id="834">总是被分配相同词性的词类的比例是多少？</font></li>
+<li><font id="835">多少词是有歧义的，从某种意义上说，它们至少和两个标记一起出现？</font></li>
+<li><font id="836">布朗语料库中这些有歧义的词的<em>词符</em>的百分比是多少？</font></li>
+</ol></li>
+<li><font id="844">◑ <tt class="doctest"><span class="pre">evaluate()</span></tt>方法算出一个文本上运行的标注器的精度。</font><font id="845">例如，如果提供的已标注文本是<tt class="doctest"><span class="pre">[(<span class="pysrc-string">'the'</span>, <span class="pysrc-string">'DT'</span>), (<span class="pysrc-string">'dog'</span>, <span class="pysrc-string">'NN'</span>)]</span></tt>，标注器产生的输出是<tt class="doctest"><span class="pre">[(<span class="pysrc-string">'the'</span>, <span class="pysrc-string">'NN'</span>), (<span class="pysrc-string">'dog'</span>, <span class="pysrc-string">'NN'</span>)]</span></tt>，那么得分为<tt class="doctest"><span class="pre">0.5</span></tt>。</font><font id="846">让我们尝试找出评价方法是如何工作的：</font><ol class="loweralpha"><li><font id="838">一个标注器<tt class="doctest"><span class="pre">t</span></tt>将一个词汇列表作为输入，产生一个已标注词列表作为输出。</font><font id="839">然而，<tt class="doctest"><span class="pre">t.evaluate()</span></tt>只以一个正确标注的文本作为唯一的参数。</font><font id="840">执行标注之前必须对输入做些什么？</font></li>
+<li><font id="841">一旦标注器创建了新标注的文本，<tt class="doctest"><span class="pre">evaluate()</span></tt> 方法可能如何比较它与原来标注的文本，计算准确性得分？</font></li>
+<li><font id="842">现在，检查源代码来看看这个方法是如何实现的。</font><font id="843">检查<tt class="doctest"><span class="pre">nltk.tag.api.__file__</span></tt>找到源代码的位置，使用编辑器打开这个文件（一定要使用文件<tt class="doctest"><span class="pre">api.py</span></tt>，而不是编译过的二进制文件<tt class="doctest"><span class="pre">api.pyc</span></tt>）。</font></li>
+</ol></li>
+<li><font id="853">◑ 编写代码，搜索布朗语料库，根据标记查找特定的词和短语，回答下列问题：</font><ol class="loweralpha"><li><font id="847">产生一个标注为<tt class="doctest"><span class="pre">MD</span></tt>的不同的词的按字母顺序排序的列表。</font></li>
+<li><font id="848">识别可能是复数名词或第三人称单数动词的词（如</font><font id="849"><span class="example">deals</span>, <span class="example">flies</span>）。</font></li>
+<li><font id="850">识别三个词的介词短语形式IN + DET + NN（如</font><font id="851"><span class="example">in the lab</span>）。</font></li>
+<li><font id="852">男性与女性代词的比例是多少？</font></li>
+</ol></li>
+<li><font id="854">◑ 在<a class="reference external" href="./ch03.html#tab-absolutely">3.1</a>中我们看到动词<span class="example">adore</span>, <span class="example">love</span>, <span class="example">like</span>, <span class="example">prefer</span>及前面的限定符<span class="example">absolutely</span>和<span class="example">definitely</span>的频率计数的表格。</font><font id="855">探讨这四个动词前出现的所有限定符。</font></li>
+<li><font id="856">◑ 我们定义可以用来做生词的回退标注器的<tt class="doctest"><span class="pre">regexp_tagger</span></tt>。</font><font id="857">这个标注器只检查基数词。</font><font id="858">通过特定的前缀或后缀字符串进行测试，它应该能够猜测其他标记。</font><font id="859">例如，我们可以标注所有<span class="example">-s</span>结尾的词为复数名词。</font><font id="860">定义一个正则表达式标注器（使用<tt class="doctest"><span class="pre">RegexpTagger()</span></tt>），测试至少5 个单词拼写的其他模式。</font><font id="861">（使用内联文档解释规则。）</font></li>
+<li><font id="862">◑ 考虑上一练习中开发的正则表达式标注器。</font><font id="863">使用它的<tt class="doctest"><span class="pre">accuracy()</span></tt>方法评估标注器，尝试想办法提高其性能。</font><font id="864">讨论你的发现。</font><font id="865">客观的评估如何帮助开发过程？</font></li>
+<li><font id="866">◑ 数据稀疏问题有多严重？</font><font id="867">调查n-gram 标注器当<span class="math">n</span>从1增加到6时的准确性。</font><font id="868">为准确性得分制表。</font><font id="869">估计这些标注器需要的训练数据，假设词汇量大小为10<sup>5</sup>而标记集的大小为10<sup>2</sup>。</font></li>
+<li><font id="870">◑ 获取另一种语言的一些已标注数据，在其上测试和评估各种标注器。</font><font id="871">如果这种语言是形态复杂的，或者有词类的任何字形线索（如</font><font id="872">），可以考虑为它开发一个正则表达式标注器（排在一元标注器之后，默认标注器之前）。</font><font id="873">对比同样的运行在英文数据上的标注器，你的标注器的准确性如何？</font><font id="874">讨论你在运用这些方法到这种语言时遇到的问题。</font></li>
+<li><font id="875">◑ <a class="reference internal" href="./ch05.html#code-baseline-tagger">4.1</a>绘制曲线显示查找标注器的性能随模型的大小增加的变化。</font><font id="876">绘制当训练数据量变化时一元标注器的性能曲线。</font></li>
+<li><font id="877">◑ 检查<a class="reference internal" href="./ch05.html#sec-n-gram-tagging">5</a>中定义的二元标注器<tt class="doctest"><span class="pre">t2</span></tt>的混淆矩阵，确定简化的一套或多套标记。</font><font id="878">定义字典做映射，在简化的数据上评估标注器。</font></li>
+<li><font id="879">◑ 使用简化的标记集测试标注器（或制作一个你自己的，通过丢弃每个标记名中除第一个字母外所有的字母）。</font><font id="880">这种标注器需要做的区分更少，但由它获得的信息也更少。</font><font id="881">讨论你的发现。</font></li>
+<li><font id="882">◑ 回顾一个二元标注器训练过程中遇到生词，标注句子的其余部分为<tt class="doctest"><span class="pre">None</span></tt>的例子。</font><font id="883">一个二元标注器可能只处理了句子的一部分就失败了，即使句子中没有包含生词（即使句子在训练过程中使用过）。</font><font id="884">在什么情况下会出现这种情况呢？</font><font id="885">你可以写一个程序，找到一些这方面的例子吗？</font></li>
+<li><font id="886">◑ 预处理布朗新闻数据，替换低频词为<span class="example">UNK</span>，但留下标记不变。</font><font id="887">在这些数据上训练和评估一个二元标注器。</font><font id="888">这样有多少帮助？</font><font id="889">一元标注器和默认标注器的贡献是什么？</font></li>
+<li><font id="890">◑ 修改<a class="reference internal" href="./ch05.html#code-baseline-tagger">4.1</a>中的程序，通过将<tt class="doctest"><span class="pre">pylab.plot()</span></tt>替换为<tt class="doctest"><span class="pre">pylab.semilogx()</span></tt>，在<em>x</em>轴上使用对数刻度。</font><font id="891">关于结果图形的形状，你注意到了什么？</font><font id="892">梯度告诉你什么呢？</font></li>
+<li><font id="893">◑ 使用<tt class="doctest"><span class="pre">help(nltk.tag.brill.demo)</span></tt>阅读Brill标注器演示函数的文档。</font><font id="894">通过设置不同的参数值试验这个标注器。</font><font id="895">是否有任何训练时间（语料库大小）和性能之间的权衡？</font></li>
+<li><font id="896">◑ 写代码构建一个集合的字典的字典。</font><font id="897">用它来存储一套可以跟在具有给定词性标记的给定词后面的词性标记，例如</font><font id="898">word<sub>i</sub> → tag<sub>i</sub> → tag<sub>i+1</sub>。</font></li>
+<li><font id="901">★ 布朗语料库中有264个不同的词有3种可能的标签。</font><ol class="loweralpha"><li><font id="899">打印一个表格，一列中是整数1..10，另一列是语料库中有1..10个不同标记的不同词的数目。</font></li>
+<li><font id="900">对有不同的标记数量最多的词，输出语料库中包含这个词的句子，每个可能的标记一个。</font></li>
+</ol></li>
+<li><font id="902">★ 写一个程序，按照词<span class="example">must</span>后面的词的标记为它的上下文分类。</font><font id="903">这样可以区分<span class="example">must</span>的“必须”和“应该”两种词意上的用法吗？</font></li>
+<li><font id="909">★ 创建一个正则表达式标注器和各种一元以及n-gram标注器，包括回退，在布朗语料库上训练它们。</font><ol class="loweralpha"><li><font id="904">创建这些标注器的3种不同组合。</font><font id="905">测试每个组合标注器的准确性。</font><font id="906">哪种组合效果最好？</font></li>
+<li><font id="907">尝试改变训练语料的规模。</font><font id="908">它是如何影响你的结果的？</font></li>
+</ol></li>
+<li><font id="914">★ 我们标注生词的方法一直要考虑这个词的字母（使用<tt class="doctest"><span class="pre">RegexpTagger()</span></tt>），或完全忽略这个词，将它标注为一个名词（使用<tt class="doctest"><span class="pre">nltk.DefaultTagger()</span></tt>）。</font><font id="915">这些方法对于有新词却不是名词的文本不会很好。</font><font id="916">思考句子<span class="example">I like to blog on Kim's blog</span>。</font><font id="917">如果<span class="example">blog</span>是一个新词，那么查看前面的标记（<tt class="doctest"><span class="pre">TO</span></tt>和<tt class="doctest"><span class="pre">NP$</span></tt>）可能会有所帮助。</font><font id="918">即</font><font id="919">我们需要一个对前面的标记敏感的默认标注器。</font><ol class="loweralpha"><li><font id="910">创建一种新的一元标注器，查看前一个词的标记，而忽略当前词。</font><font id="911">（做到这一点的最好办法是修改<tt class="doctest"><span class="pre">UnigramTagger()</span></tt>的源代码，需要Python中的面向对象编程的知识。</font></li>
+<li><font id="912">将这个标注器加入到回退标注器序列（包括普通的三元和二元标注器），放在常用默认标注器的前面。</font></li>
+<li><font id="913">评价这个新的一元标注器的贡献。</font></li>
+</ol></li>
+<li><font id="920">★ 思考<a class="reference internal" href="./ch05.html#sec-n-gram-tagging">5</a>中的代码，它确定一个三元标注器的准确性上限。</font><font id="921">回顾Abney的关于精确标注的不可能性的讨论<a class="reference external" href="./bibliography.html#abney1996pst" id="id5">(Church, Young, &amp; Bloothooft, 1996)</a>。</font><font id="922">解释为什么正确标注这些例子需要获取词和标记以外的其他种类的信息。</font><font id="923">你如何估计这个问题的规模？</font></li>
+<li><font id="924">★ 使用<tt class="doctest"><span class="pre">nltk.probability</span></tt>中的一些估计技术，例如<em>Lidstone</em>或<em>Laplace</em> 估计，开发一种统计标注器，它在训练中没有遇到而测试中遇到的上下文中表现优于n-gram回退标注器。</font></li>
+<li><font id="925">★ 检查Brill标注器创建的诊断文件<tt class="doctest"><span class="pre">rules.out</span></tt>和<tt class="doctest"><span class="pre">errors.out</span></tt>。</font><font id="926">通过访问源代码（<tt class="doctest"><span class="pre">http://www.nltk.org/code</span></tt>）获得演示代码，创建你自己版本的Brill标注器。</font><font id="927">并根据你从检查<tt class="doctest"><span class="pre">rules.out</span></tt>了解到的，删除一些规则模板。</font><font id="928">增加一些新的规则模板，这些模板使用那些可能有助于纠正你在<tt class="doctest"><span class="pre">errors.out</span></tt>看到的错误的上下文。</font></li>
+<li><font id="929">★ 开发一个n-gram回退标注器，允许在标注器初始化时指定“anti-n-grams”，如<tt class="doctest"><span class="pre">[<span class="pysrc-string">"the"</span>, <span class="pysrc-string">"the"</span>]</span></tt>。</font><font id="930">一个anti-n-grams被分配一个数字0，被用来防止这个n-gram回退（如</font><font id="931">避免估计P(<span class="example">the</span> | <span class="example">the</span>)而只做P(<span class="example">the</span>)）。</font></li>
+<li><font id="932">★ 使用布朗语料库开发标注器时，调查三种不同的方式来定义训练和测试数据之间的分割：genre (<tt class="doctest"><span class="pre">category</span></tt>)、source (<tt class="doctest"><span class="pre">fileid</span></tt>)和句子。</font><font id="933">比较它们的相对性能，并讨论哪种方法最合理。</font><font id="934">（你可能要使用n-交叉验证，在<a class="reference external" href="./ch06.html#sec-evaluation">3</a>中讨论的，以提高评估的准确性。）</font></li>
+<li><font id="935">★ 开发你自己的<tt class="doctest"><span class="pre">NgramTagger</span></tt>，从NLTK中的类继承，封装本章中所述的已标注的训练和测试数据的词汇表缩减方法。</font><font id="936">确保一元和默认回退标注器有机会获得全部词汇。</font></li>
+</ol>
+<div class="admonition-about-this-document admonition"><p class="first admonition-title"><font id="937">关于本文档...</font></p>
+<p><font id="938">UPDATED FOR NLTK 3.0. </font><font id="939">本章来自于<em>Natural Language Processing with Python</em>，<a class="reference external" href="http://estive.net/">Steven Bird</a>, <a class="reference external" href="http://homepages.inf.ed.ac.uk/ewan/">Ewan Klein</a> 和<a class="reference external" href="http://ed.loper.org/">Edward Loper</a>，Copyright © 2014 作者所有。</font><font id="940">本章依据<em>Creative Commons Attribution-Noncommercial-No Derivative Works 3.0 United States License</em> [<a class="reference external" href="http://creativecommons.org/licenses/by-nc-nd/3.0/us/">http://creativecommons.org/licenses/by-nc-nd/3.0/us/</a>] 条款，与<em>自然语言工具包</em> [<tt class="doctest"><span class="pre">http://nltk.org/</span></tt>] 3.0 版一起发行。</font></p>
+<p class="last"><font id="941">本文档构建于星期三 2015 年 7 月 1 日 12:30:05 AEST</font></p>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
