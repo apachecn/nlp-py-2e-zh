@@ -2,13 +2,15 @@
 
 ## – 使用自然语言工具包分析文本
 
-作者：**Steven Bird, Ewan Klein 和 Edward Loper**
+> 作者：**Steven Bird, Ewan Klein 和 Edward Loper**
+> 
+> 译者：[Python 文档协作翻译小组](http://usyiyi.cn/translate/nltk_python/index.html)
+> 
+> 最后更新：2017.3.4
+> 
+> [Django 文档协作翻译小组](http://python.usyiyi.cn/django/index.html)人手紧缺，有兴趣的朋友可以加入我们，完全公益性质。交流群：467338606。
 
-译者：[Python 文档协作翻译小组](http://usyiyi.cn/translate/nltk_python/index.html)
-
-最后更新：2017.3.4
-
-[Django 文档协作翻译小组](http://python.usyiyi.cn/django/index.html)人手紧缺，有兴趣的朋友可以加入我们，完全公益性质。交流群：467338606。
++   [在线阅读](https://nltk.apachecn.org)
 
 本版本的 NLTK 已经针对 Python 3 和 NLTK 3 更新。本书的第一版由 O'Reilly 出版，可以在[http://nltk.org/book_1ed/](http://nltk.org/book_1ed/) 访问到。（本书目前没有计划出第二版）
 
