@@ -19,3 +19,13 @@
 本书的发行遵守[Creative Commons Attribution Noncommercial No-Derivative-Works 3.0 US License](http://creativecommons.org/licenses/by-nc-nd/3.0/us/) 条款。
 
 如果对材料有任何疑问请提交至[nltk-users](http://groups.google.com/group/nltk-users) 邮件列表。请在[issue tracker](https://github.com/nltk/nltk_book/issues) 上报告错误。
+
+## 下载
+
+### NPM
+
+```
+npm install -g nlp-py-2e-zh
+nlp-py-2e-zh <port>
+# 访问 http://localhost:{port} 查看文档
+```
