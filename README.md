@@ -22,6 +22,14 @@
 
 ## 下载
 
+### PYPI
+
+```
+pip install nlp-py-2e-zh
+nlp-py-2e-zh <port>
+# 访问 http://localhost:{port} 查看文档
+```
+
 ### NPM
 
 ```
