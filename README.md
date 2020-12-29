@@ -13,13 +13,13 @@
 +   [在线阅读](https://nltk.apachecn.org)
 +   [在线阅读（Gitee）](https://apachecn.gitee.io/nlp-py-2e-zh/)
 
-本版本的 NLTK 已经针对 Python 3 和 NLTK 3 更新。本书的第一版由 O'Reilly 出版，可以在[http://nltk.org/book_1ed/](http://nltk.org/book_1ed/) 访问到。（本书目前没有计划出第二版）
+本版本的 NLTK 已经针对 Python 3 和 NLTK 3 更新。本书的第一版由 O'Reilly 出版，可以在 [http://nltk.org/book_1ed/](http://nltk.org/book_1ed/) 访问到。（本书目前没有计划出第二版）
 
 本版本的初译基于[原书第一版的翻译](http://www.52nlp.cn/resources)，参见第一版[译者的话](./15.html)。
 
-本书的发行遵守[Creative Commons Attribution Noncommercial No-Derivative-Works 3.0 US License](http://creativecommons.org/licenses/by-nc-nd/3.0/us/) 条款。
+本书的发行遵守 [Creative Commons Attribution Noncommercial No-Derivative-Works 3.0 US License](http://creativecommons.org/licenses/by-nc-nd/3.0/us/) 条款。
 
-如果对材料有任何疑问请提交至[nltk-users](http://groups.google.com/group/nltk-users) 邮件列表。请在[issue tracker](https://github.com/nltk/nltk_book/issues) 上报告错误。
+如果对材料有任何疑问请提交至 [nltk-users](http://groups.google.com/group/nltk-users) 邮件列表。请在 [issue tracker](https://github.com/nltk/nltk_book/issues) 上报告错误。
 
 ## 下载
 
